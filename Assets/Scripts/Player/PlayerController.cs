@@ -13,10 +13,14 @@ public sealed class PlayerController : MonoBehaviour
     [SerializeField, Min(0f)] private float ascendSpeed = 3f;
     [SerializeField, Min(0f)] private float descendSpeed = 3f;
     [SerializeField, Range(0f, 89f)] private float maxPitch = 89f;
+    [SerializeField] private bool useGravity;
+    [SerializeField, Min(0f)] private float gravity = 20f;
+    [SerializeField, Min(0f)] private float terminalFallSpeed = 40f;
 
     private CharacterController characterController;
     private float yaw;
     private float pitch;
+    private float fallSpeed;
     public bool InputSuspended { get; set; }
 
     private void Awake()
@@ -83,6 +87,13 @@ public sealed class PlayerController : MonoBehaviour
         float verticalInput = verticalAction.action.ReadValue<float>();
         float verticalSpeed = verticalInput > 0 ? ascendSpeed : descendSpeed;
         Vector3 velocity = direction * moveSpeed + Vector3.up * (verticalInput * verticalSpeed);
-        characterController.Move(velocity * Time.deltaTime);
+        if (useGravity)
+        {
+            if (characterController.isGrounded && fallSpeed < 0) fallSpeed = -2f;
+            fallSpeed = Mathf.Max(fallSpeed - gravity * Time.deltaTime, -terminalFallSpeed);
+            velocity.y = fallSpeed;
+        }
+        var collisions = characterController.Move(velocity * Time.deltaTime);
+        if (useGravity && (collisions & CollisionFlags.Above) != 0) fallSpeed = Mathf.Min(fallSpeed, 0);
     }
 }

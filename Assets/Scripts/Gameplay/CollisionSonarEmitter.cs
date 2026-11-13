@@ -12,8 +12,15 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
     [Min(0f)] public float emissionInterval = .15f;
     public LayerMask collisionLayers = ~0;
 
+    [Header("Impact range")]
+    [Tooltip("Extra metres of sonar range per m/s above Minimum Impact Speed. The base range is on SonarObjectEmitter.")]
+    [Min(0f)] public float rangePerSpeed = 2f;
+    [Tooltip("Maximum collision sonar range, in metres. Never reduces the configured base range.")]
+    [Min(1f)] public float maximumRange = 36f;
+
     public int Emissions { get; private set; }
     public float LastImpactSpeed { get; private set; }
+    public float LastEmissionRange { get; private set; }
 
     SonarObjectEmitter sonar;
     float nextEmission;
@@ -29,6 +36,16 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
 
     void Awake() => sonar = GetComponent<SonarObjectEmitter>();
 
+    public float RangeForImpact(float impactSpeed)
+    {
+        float threshold = Mathf.Max(0, minimumImpactSpeed);
+        if (impactSpeed < threshold) return 0;
+        var source = sonar != null ? sonar : GetComponent<SonarObjectEmitter>();
+        float baseRange = source != null ? Mathf.Max(1, source.range) : 1;
+        float extraSpeed = Mathf.Max(0, impactSpeed - threshold);
+        return Mathf.Min(baseRange + extraSpeed * Mathf.Max(0, rangePerSpeed), Mathf.Max(baseRange, maximumRange));
+    }
+
     void OnCollisionEnter(Collision collision)
     {
         // Unity can send collision messages to disabled behaviours too.
@@ -42,10 +59,10 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
                 Mathf.Abs(Vector3.Dot(collision.relativeVelocity, collision.GetContact(i).normal)));
         if (impactSpeed < minimumImpactSpeed) return;
 
-        int before = sonar.Emissions;
-        sonar.EmitNow();
-        if (sonar.Emissions == before) return;
+        float pulseRange = RangeForImpact(impactSpeed);
+        if (!sonar.EmitWithRange(pulseRange)) return;
         LastImpactSpeed = impactSpeed;
+        LastEmissionRange = pulseRange;
         nextEmission = Time.time + emissionInterval;
         Emissions++;
     }

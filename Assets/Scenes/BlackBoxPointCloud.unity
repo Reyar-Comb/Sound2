@@ -2641,8 +2641,16 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
+      propertyPath: range
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: sonar
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
+      propertyPath: volume
+      value: 0.302
       objectReference: {fileID: 0}
     - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: afterglow
@@ -2658,15 +2666,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: waveSpeed
-      value: 20
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
+      propertyPath: firstDelay
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: pulseField
       value: 
       objectReference: {fileID: 760923461}
+    - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
+      propertyPath: soundRange
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 4156179385338595490, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: minimumImpactSpeed
-      value: 10
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6703033844639753018, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: m_Name

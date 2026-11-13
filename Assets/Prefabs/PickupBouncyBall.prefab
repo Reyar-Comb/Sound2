@@ -276,12 +276,13 @@ MonoBehaviour:
   toggleKey: 0
   automatic: 0
   interval: 3
-  firstDelay: 0.6
+  firstDelay: 0
   range: 12
+  soundRange: 16
   waveSpeed: 20
   afterglow: 0.2
   playSound: 1
-  volume: 0.2
+  volume: 0.302
 --- !u!114 &4156179385338595490
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -294,8 +295,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 458efe44eea6d234eaf243574107485a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CollisionSonarEmitter
-  minimumImpactSpeed: 10
+  minimumImpactSpeed: 2
   emissionInterval: 0.15
   collisionLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+  rangePerSpeed: 2
+  maximumRange: 36

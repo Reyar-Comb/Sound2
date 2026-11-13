@@ -15,6 +15,8 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     [Min(.2f)] public float interval = 3;
     [Min(0)] public float firstDelay = .6f;
     [Min(1)] public float range = 12;
+    [Tooltip("Audible distance at the base sonar range. Scales proportionally for a per-impact range override.")]
+    [Min(1)] public float soundRange = 16;
     [Min(.1f)] public float waveSpeed = 7;
     [Min(.05f)] public float afterglow = .7f;
     [Header("Pulse distance attenuation")]
@@ -49,6 +51,7 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     [Range(0, 1)] public float volume = .2f;
     public int Emissions { get; private set; }
     public Vector3 LastOrigin { get; private set; }
+    public float LastEmissionRange { get; private set; }
     AudioSource source;
     SpatialAudioEmitter emitter;
     SonarCueSource cue;
@@ -68,7 +71,7 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
         emitter.settings.reflections = false;
         emitter.settings.distanceMode = SoundDistanceMode.Linear;
         emitter.settings.minDistance = 1;
-        emitter.settings.maxDistance = 16;
+        emitter.settings.maxDistance = Mathf.Max(1, soundRange);
         emitter.volume = volume;
         emitter.Apply();
         nextEmission = Time.time + firstDelay;
@@ -89,17 +92,21 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     }
 
     [ContextMenu("Emit sonar now (Play mode)")]
-    public void EmitNow()
+    public void EmitNow() => EmitWithRange(range);
+
+    /// <summary>Emit one pulse with a range override; preserve the authored base range for later emissions.</summary>
+    public bool EmitWithRange(float pulseRange)
     {
-        if (!Application.isPlaying || pulseField == null || source == null) return;
+        if (!Application.isPlaying || !isActiveAndEnabled || pulseField == null || source == null) return false;
+        pulseRange = Mathf.Max(1, pulseRange);
+        if (!pulseField.EmitFrom(transform.position, pulseRange, waveSpeed, afterglow, distanceSettings)) return false;
+        emitter.settings.maxDistance = Mathf.Max(1, soundRange) * pulseRange / Mathf.Max(1, range);
         emitter.volume = volume;
         emitter.Apply();
-        bool emitted = pulseField.EmitFrom(transform.position, range, waveSpeed, afterglow, distanceSettings);
-        if (emitted)
-        {
-            if (playSound) cue.Play();
-            LastOrigin = transform.position;
-            Emissions++;
-        }
+        if (playSound) cue.Play();
+        LastOrigin = transform.position;
+        LastEmissionRange = pulseRange;
+        Emissions++;
+        return true;
     }
 }
