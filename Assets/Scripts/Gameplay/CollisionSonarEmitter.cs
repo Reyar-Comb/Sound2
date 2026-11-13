@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 /// <summary>Triggers the existing object sonar on impacts, independently of pickup behaviour.</summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody), typeof(SonarObjectEmitter))]
+// random
 public sealed class CollisionSonarEmitter : MonoBehaviour
 {
     [Tooltip("Minimum relative speed into the contact surface, in metres per second.")]
