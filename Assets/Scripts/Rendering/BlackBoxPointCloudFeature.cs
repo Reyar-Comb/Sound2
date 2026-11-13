@@ -22,7 +22,11 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
     {
         if (settings == null || renderingData.cameraData.cameraType == CameraType.Preview
             || renderingData.cameraData.cameraType == CameraType.Reflection) return;
-        pass.material = settings;
+        var cameraSettings = settings;
+        if (renderingData.cameraData.camera.TryGetComponent<SphericalSonar>(out var sonar)
+            && sonar.isActiveAndEnabled && sonar.renderingSettings != null)
+            cameraSettings = sonar.renderingSettings;
+        pass.material = cameraSettings;
         renderer.EnqueuePass(pass);
     }
 

@@ -47,6 +47,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         float _TwinkleEnabled, _TwinkleFraction, _TwinkleDuration;
         float _StarsEnabled, _StarChance, _StarDuration, _StarBrightness;
         float _PointAnimationTime;
+        #include "SonarRevealMask.hlsl"
         float4x4 _StarViewProjection;
         float4 _BlackBoxStyleVisibility;
         float4 _BlackBoxPlayerPosition;
@@ -182,6 +183,20 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             if(any(uv>=1)) return 0;
             float3 p,n;
             bool surface=SurfaceAt(uv,p,n);
+            if(_SonarActive>.5)
+            {
+                // Reuse the existing face distribution and contour detector.
+                if(!surface) return 0;
+                float reveal=SonarVisibility(p);
+                if(reveal<=0) return 0;
+                float sonarRank=OrderedRank(cell);
+                float sonarDistance=length(_BlackBoxPlayerPosition.xyz-p);
+                float sonarFaceDensity=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?FaceDensity(p,n):0;
+                float sonarFace=sonarRank<sonarFaceDensity*saturate(_FaceDensityScale)?reveal:0;
+                float contour=_EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5
+                    && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n)*reveal:0;
+                return float4(sonarFace,contour,0,sonarFaceDensity>0 || contour>0?1:0);
+            }
             float rank=OrderedRank(cell);
             float faceDensity=surface && _FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?FaceDensity(p,n):0;
             float distance=surface?length(_BlackBoxPlayerPosition.xyz-p):0;
