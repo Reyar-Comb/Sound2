@@ -20,6 +20,7 @@ public sealed class PlayerController : MonoBehaviour
     private CharacterController characterController;
     private float yaw;
     private float pitch;
+    public bool InputSuspended { get; set; }
 
     private void Awake()
     {
@@ -45,6 +46,7 @@ public sealed class PlayerController : MonoBehaviour
 
     private void OnEnable()
     {
+        if (InputSuspended) return;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -57,7 +59,7 @@ public sealed class PlayerController : MonoBehaviour
 
     private void OnApplicationFocus(bool hasFocus)
     {
-        if (hasFocus && isActiveAndEnabled)
+        if (hasFocus && isActiveAndEnabled && !InputSuspended)
         {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
@@ -66,6 +68,7 @@ public sealed class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (InputSuspended) return;
         Vector2 look = lookAction.action.ReadValue<Vector2>() * mouseSensitivity;
         yaw = Mathf.Repeat(yaw + look.x, 360f);
         pitch = Mathf.Clamp(pitch + (invertY ? look.y : -look.y), -maxPitch, maxPitch);
