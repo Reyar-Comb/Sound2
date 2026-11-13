@@ -16,8 +16,15 @@ public sealed class SphericalSonar : MonoBehaviour
     public bool emissionSound = true;
     [Header("Existing BlackBox rendering")]
     public Material renderingSettings;
+    [Tooltip("Shared face and contour dot radius in pixels at 720p. Diameter is twice this value; scales with resolution. Capped by the tighter grid spacing.")]
+    [Range(.25f, 4f)] public float dotRadius = 1.5f;
     public bool facePoints = true;
     public bool edgePoints = true;
+    [Header("Independent reveal modes (keys 3 / 4)")]
+    [Tooltip("Continuously reveal nearby surfaces using the original BlackBox distance rules.")]
+    public bool proximityRendering;
+    [Tooltip("Reveal surfaces when player or object pulses reach them. Does not mute emission sounds.")]
+    public bool sonarRendering = true;
     public SonarPulseField PulseField { get; private set; }
     public int Emissions => PulseField != null ? PulseField.Emissions : 0;
     public int LastHitCount => PulseField != null ? PulseField.LastHitCount : 0;
@@ -42,6 +49,7 @@ public sealed class SphericalSonar : MonoBehaviour
         style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Edge, edgePoints);
         style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Stars, false);
         style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Twinkle, false);
+        style.SetRevealModes(proximityRendering, sonarRendering);
         ClearPulses();
     }
     PlayerController player;
@@ -50,8 +58,15 @@ public sealed class SphericalSonar : MonoBehaviour
     bool ownsCue;
     float nextEmission;
     bool hud = true;
-    static readonly Rect HudRect = new Rect(16, 16, 480, 188);
+    static readonly Rect HudRect = new Rect(16, 16, 480, 232);
     bool InputCaptured => player != null && player.isActiveAndEnabled && !player.InputSuspended;
+
+    public void SetRevealModes(bool proximity, bool sonar)
+    {
+        proximityRendering = proximity;
+        sonarRendering = sonar;
+        GetComponent<BlackBoxProximitySource>().SetRevealModes(proximity, sonar);
+    }
 
     void Start()
     {
@@ -72,6 +87,7 @@ public sealed class SphericalSonar : MonoBehaviour
             style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Face, facePoints);
         if (style.IsStyleEnabled(BlackBoxProximitySource.PointStyle.Edge) != edgePoints)
             style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Edge, edgePoints);
+        style.SetRevealModes(proximityRendering, sonarRendering);
         var k = Keyboard.current;
         var m = Mouse.current;
         if (k != null)
@@ -81,6 +97,8 @@ public sealed class SphericalSonar : MonoBehaviour
             if (k.f1Key.wasPressedThisFrame) hud = !hud;
             if (k.digit1Key.wasPressedThisFrame) facePoints = !facePoints;
             if (k.digit2Key.wasPressedThisFrame) edgePoints = !edgePoints;
+            if (k.digit3Key.wasPressedThisFrame) SetRevealModes(!proximityRendering, sonarRendering);
+            if (k.digit4Key.wasPressedThisFrame) SetRevealModes(proximityRendering, !sonarRendering);
             if (k.rKey.wasPressedThisFrame) ClearPulses();
             if (k.enterKey.wasPressedThisFrame) Emit();
         }
@@ -136,6 +154,11 @@ public sealed class SphericalSonar : MonoBehaviour
         GUILayout.Label("Click / Enter: pulse   WASD: move   Mouse: look");
         GUILayout.Label("Space / Shift: up / down   Esc / Tab: release cursor");
         GUILayout.Label("1: faces   2: edges   C: cube   F: auto   R: clear   F1: HUD");
+        GUILayout.BeginHorizontal();
+        bool proximity = GUILayout.Toggle(proximityRendering, "3  Proximity reveal");
+        bool sonar = GUILayout.Toggle(sonarRendering, "4  Sonar reveal");
+        GUILayout.EndHorizontal();
+        if (proximity != proximityRendering || sonar != sonarRendering) SetRevealModes(proximity, sonar);
         GUILayout.Label($"Range {range:0} m   Speed {waveSpeed:0} m/s   Afterglow {afterglow:0.0} s");
         GUILayout.Label($"Auto {(automatic ? "ON" : "OFF")}   Pulses {Emissions}   Sample {LastSamplingMilliseconds:0.0} ms");
         if (GUILayout.Button("Emit spherical pulse")) Emit();

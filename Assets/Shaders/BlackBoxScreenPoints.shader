@@ -49,6 +49,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         float _PointAnimationTime;
         #include "SonarRevealMask.hlsl"
         float4x4 _StarViewProjection;
+        float4 _BlackBoxRevealModes; // x: continuous proximity, y: pulse reveal
         float4 _BlackBoxStyleVisibility;
         float4 _BlackBoxPlayerPosition;
         float _BlackBoxPlayerActive;
@@ -58,28 +59,35 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             Varyings o; UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
             o.positionCS=GetFullScreenTriangleVertexPosition(vertexID); return o;
         }
-        bool WorldAt(float2 uv, out float3 p)
+        bool WorldAtPixel(int2 pixel, out float3 p)
         {
             p=0;
-            if(any(uv<0)||any(uv>=1)) return false;
-            float z=LOAD_TEXTURE2D_X(_PointDepth, uint2(uv*_PointViewport.xy)).r;
+            if(any(pixel<0)||any(pixel>=int2(_PointViewport.xy))) return false;
+            float z=LOAD_TEXTURE2D_X(_PointDepth, pixel).r;
             #if UNITY_REVERSED_Z
                 if(z<0.000001) return false;
             #else
                 if(z>0.999999) return false;
                 z=lerp(UNITY_NEAR_CLIP_VALUE,1,z);
             #endif
+            // Reconstruct the center of the exact texel whose depth was read.
+            float2 uv=(float2(pixel)+.5)*_PointViewport.zw;
             p=ComputeWorldSpacePosition(uv,z,UNITY_MATRIX_I_VP);
             return true;
         }
         bool SurfaceAt(float2 uv,out float3 p,out float3 n)
         {
-            n=0; if(!WorldAt(uv,p)) return false;
+            n=0; p=0;
+            if(any(uv<0)||any(uv>=1)) return false;
+            int2 pixel=(int2)(uv*_PointViewport.xy);
+            if(!WorldAtPixel(pixel,p)) return false;
             float3 l,r,u,d;
-            bool vl=WorldAt(uv-float2(_PointViewport.z,0),l);
-            bool vr=WorldAt(uv+float2(_PointViewport.z,0),r);
-            bool vd=WorldAt(uv-float2(0,_PointViewport.w),d);
-            bool vu=WorldAt(uv+float2(0,_PointViewport.w),u);
+            // Integer offsets prevent a +/- one-pixel UV calculation rounding
+            // back to the center texel and producing a zero/invalid normal.
+            bool vl=WorldAtPixel(pixel+int2(-1,0),l);
+            bool vr=WorldAtPixel(pixel+int2(1,0),r);
+            bool vd=WorldAtPixel(pixel+int2(0,-1),d);
+            bool vu=WorldAtPixel(pixel+int2(0,1),u);
             if(!(vl||vr)||!(vd||vu)) return false;
             float3 dx=vl&&(!vr||dot(p-l,p-l)<dot(r-p,r-p))?p-l:r-p;
             float3 dy=vd&&(!vu||dot(p-d,p-d)<dot(u-p,u-p))?p-d:u-p;
@@ -166,7 +174,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         }
         float AmbientStar(uint id)
         {
-            if(_StarsEnabled<.5 || _BlackBoxStyleVisibility.z<.5) return 0;
+            if(_BlackBoxRevealModes.x<.5 || _StarsEnabled<.5 || _BlackBoxStyleVisibility.z<.5) return 0;
             uint seed=PointHash(id)^0x68bc21ebu;
             bool animate=_TwinkleEnabled>.5 && _BlackBoxStyleVisibility.w>.5;
             float cycle=_PointAnimationTime/max(_StarDuration,4)+Random01(seed);
@@ -183,33 +191,39 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             if(any(uv>=1)) return 0;
             float3 p,n;
             bool surface=SurfaceAt(uv,p,n);
-            if(_SonarActive>.5)
+            float4 result=0;
+            if(_BlackBoxRevealModes.x>.5)
             {
-                // Reuse the existing face distribution and contour detector.
-                if(!surface) return 0;
-                float reveal=SonarVisibility(p);
-                if(reveal<=0) return 0;
-                float sonarRank=OrderedRank(cell);
-                float sonarDistance=length(_BlackBoxPlayerPosition.xyz-p);
-                float sonarFaceDensity=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?FaceDensity(p,n):0;
-                float sonarFace=sonarRank<sonarFaceDensity*saturate(_FaceDensityScale)?reveal:0;
-                float contour=_EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5
-                    && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n)*reveal:0;
-                return float4(sonarFace,contour,0,sonarFaceDensity>0 || contour>0?1:0);
+                // Original continuous proximity reveal, including its density gaps.
+                float rank=OrderedRank(cell);
+                float faceDensity=surface && _FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?FaceDensity(p,n):0;
+                float distance=surface?length(_BlackBoxPlayerPosition.xyz-p):0;
+                float edgeRegion=0;
+                if(surface && _EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5 && distance<_EdgeRevealDistance)
+                    edgeRegion=Corner(uv,p,n);
+                float face=rank<faceDensity*saturate(_FaceDensityScale)?1:0;
+                float edge=rank<saturate(Tier(distance,_EdgeDensityLevels))?edgeRegion:0;
+                float visibility=PointVisibility(cell);
+                float occupied=faceDensity>0 || edgeRegion>0?1:0;
+                result=float4(face*visibility,edge*visibility,0,occupied);
             }
-            float rank=OrderedRank(cell);
-            float faceDensity=surface && _FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?FaceDensity(p,n):0;
-            float distance=surface?length(_BlackBoxPlayerPosition.xyz-p):0;
-            float edgeRegion=0;
-            if(surface && _EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5 && distance<_EdgeRevealDistance)
-                edgeRegion=Corner(uv,p,n);
-            float face=rank<faceDensity*saturate(_FaceDensityScale)?1:0;
-            float edge=rank<saturate(Tier(distance,_EdgeDensityLevels))?edgeRegion:0;
-            float visibility=PointVisibility(cell);
-            // Test the whole effect region, not just occupied lattice sites:
-            // stars must not fill the deliberate gaps in the density rings.
-            float occupied=faceDensity>0 || edgeRegion>0?1:0;
-            return float4(face*visibility,edge*visibility,0,occupied);
+            if(_BlackBoxRevealModes.y>.5 && _SonarActive>.5 && surface)
+            {
+                // Same points and contours, gated by pulse arrival and fade.
+                float reveal=SonarVisibility(p);
+                if(reveal>0)
+                {
+                    float sonarRank=OrderedRank(cell);
+                    float sonarDistance=length(_BlackBoxPlayerPosition.xyz-p);
+                    float sonarFaceDensity=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?FaceDensity(p,n):0;
+                    float sonarFace=sonarRank<sonarFaceDensity*saturate(_FaceDensityScale)?reveal:0;
+                    float contour=_EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5
+                        && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n)*reveal:0;
+                    // Union the two masks. Overlapping dots retain their original brightness and size.
+                    result=max(result,float4(sonarFace,contour,0,sonarFaceDensity>0 || contour>0?1:0));
+                }
+            }
+            return result;
         }
         float DrawPoints(Varyings input,int channel)
         {

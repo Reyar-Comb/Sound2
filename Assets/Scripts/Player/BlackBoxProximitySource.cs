@@ -28,6 +28,20 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
         PublishPosition();
     }
 
+    [Header("Reveal modes")]
+    [SerializeField] private bool proximityRendering = true;
+    [SerializeField] private bool sonarRendering = true;
+    public bool ProximityRendering => proximityRendering;
+    public bool SonarRendering => sonarRendering;
+
+    public void SetRevealModes(bool proximity, bool sonar)
+    {
+        proximityRendering = proximity;
+        sonarRendering = sonar;
+        PublishPosition();
+    }
+
+    private static readonly int RevealModesId = Shader.PropertyToID("_BlackBoxRevealModes");
     private static readonly int PositionId = Shader.PropertyToID("_BlackBoxPlayerPosition");
     private static readonly int ActiveId = Shader.PropertyToID("_BlackBoxPlayerActive");
     private static readonly int StylesId = Shader.PropertyToID("_BlackBoxStyleVisibility");
@@ -45,6 +59,7 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
         activeSource = null;
         Shader.SetGlobalFloat(ActiveId, 0f);
         Shader.SetGlobalVector(StylesId, Vector4.one);
+        Shader.SetGlobalVector(RevealModesId, new Vector4(1, 1, 0, 0));
     }
 
     private void OnEnable() => PublishPosition();
@@ -57,6 +72,7 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
         Vector3 position = trackingPoint != null ? trackingPoint.position : transform.position;
         Shader.SetGlobalVector(StylesId, new Vector4(facePoints ? 1 : 0, edgePoints ? 1 : 0,
             stars ? 1 : 0, twinkle ? 1 : 0));
+        Shader.SetGlobalVector(RevealModesId, new Vector4(proximityRendering ? 1 : 0, sonarRendering ? 1 : 0, 0, 0));
         Shader.SetGlobalVector(PositionId, new Vector4(position.x, position.y, position.z, 1f));
         Shader.SetGlobalFloat(ActiveId, 1f);
     }

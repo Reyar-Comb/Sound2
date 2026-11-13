@@ -114,6 +114,29 @@ public void Reveal(Vector3 origin)
 
 `SonarPulseField` 沿用原有六面采样、首个碰撞面遮挡、4 个波槽和 Shader 参数。一个场景共用一份 Field；所有物体指向它，不要为每个声源各建一份。它控制可视声波的直达可见性，声音的反射由 Steam Audio 负责。
 
+## 独立的靠近显影与声波显影
+
+玩家相机的 `SphericalSonar` 提供两个独立开关：
+
+| 开关 | 运行时面板 | 按键 | 效果 |
+| --- | --- | --- | --- |
+| Proximity Rendering | Proximity reveal | 3 | 原有近距离点阵和轮廓持续可见 |
+| Sonar Rendering | Sonar reveal | 4 | 根据声波的到达、遮挡和消退显示点阵和轮廓 |
+
+两个都打开时，最终亮度取两种显影结果的最大值，同一点不会重复叠亮或变粗。两个都关闭时隐藏这两种显影，不改变玩家移动、声波发射、方块自动发射和声音。`R` 只清空声波，不会清除靠近显影。
+
+默认保持 SonarHall 原来的仅声波模式。按 `3` 即可加入靠近显影，按 `4` 可独立关闭声波显影。`1`、`2` 仍控制面点阵、轮廓点，作为两种显影共用的样式开关。Inspector 参数可保存进场景；Play 模式中的切换用于即时比较。
+
+底层参数由 `BlackBoxProximitySource.SetRevealModes(proximity, sonar)` 发布，Shader 使用 `_BlackBoxRevealModes.xy` 合并两种结果。原始 BlackBox 场景的组件默认开启靠近显影，无需挂 `SphericalSonar`。星点跟随靠近显影开关；SonarHall 仍维持原来的星点关闭设置。
+
+## 面点云与声波轮廓的材质
+
+面点云直接使用 `PC_Renderer` 中 `BlackBoxPointCloudFeature.settings` 引用的队友原始材质 `SteppedWhiteDots`，保留 `FaceDensity` 的中心区、外圈和距离分档，以及原来的采样间距。轮廓使用玩家 `SphericalSonar.renderingSettings` 的 `SonarDots`，继续维持 9px 间距。
+
+玩家相机 Inspector → `Spherical Sonar` → `Dot Radius` 统一控制面点和轮廓点的半径，默认 1.5px（720p 参考，直径 3px，随分辨率缩放），滑条范围 0.25–4px。脚本也可直接设置 `sonar.dotRadius`，运行时立即生效。两组绘制通过 MaterialPropertyBlock 使用同一半径，不修改共享材质；如果材质间距被调小，半径统一限制为较小间距的 75%，避免两组被 Shader 截成不同大小。没有 SphericalSonar 的相机继续使用原始材质半径。
+
+两者分别调用同一个现有 Shader 的采样和绘制 Pass，再以最大亮度合成；没有另写点云算法。靠近和声波两个遮罩对面与轮廓都生效。调面点云的疏密时编辑 `SteppedWhiteDots`；调声波轮廓时编辑 `SonarDots`，避免面点云再被轮廓的稀疏设置一起削弱。
+
 ## 距离衰减的归属
 
 `SpatialAudioEmitter` 统一保证只有一个距离模型：
@@ -138,10 +161,17 @@ public void Reveal(Vector3 origin)
 - `SpatialAudioEmitter` 配置已有 AudioSource 并应用增益，不生成音频资产，不接收键盘输入。
 - 现有控制器仍包含移动、按键和 HUD；后续若接正式交互/UI，可继续拆控制层，音频基础组件无需改动。
 
+## 固定竖线伪影修复
+
+`BlackBoxScreenPoints.shader` 的深度读取和世界坐标还原统一使用实际深度 texel 的中心，法线重建改用整数像素的上下左右邻居。原来的浮点 UV 偏移在部分屏幕列可能取到重复或错位的深度样本，斜视平墙时会被误判成折角，产生固定在屏幕上的竖线。点阵中心、点半径、间距和密度规则不变；采样修正会使边界及密度阈值附近的少量点改变显隐。测试平墙需避免被远裁剪面截断，防止将裁剪边缘当成采样错误。
+
 ## 验证入口
 
 通过 Unity CLI 在对应场景 Play 模式运行 `script run --file <路径>`：
 
+- `AgentScripts/VerifyContourBorders.cs`：SonarHall；靠近/声波两种模式各检查 7 个视角的完整平墙没有假轮廓，同时确认真实立方体轮廓仍可见。
+- `AgentScripts/VerifyFaceCloud.cs`：SonarHall；在不同距离比较修复后的面点云与队友原始材质的逐像素结果，并检查声波遮罩、轮廓间距独立，以及统一半径对面点和轮廓点的实际缩放效果。
+- `AgentScripts/VerifyRevealModes.cs`：SonarHall；对四种组合进行实际画面像素验证，包括已有声波、无声波、清空声波和隐藏画面时继续发射。
 - `AgentScripts/VerifyAudioComponents.cs`：SonarHall；独立音源、衰减归属、波场解耦、并发调度、生命周期。
 - `AgentScripts/VerifyObjectSonar.cs`：SonarHall；方块声源、世界位置、玩家发射、实际音频输出。
 - `AgentScripts/VerifyFiveSwitches.cs`：CircularHall；五个玩法开关、小球反弹和飞行音、实际距离音量。

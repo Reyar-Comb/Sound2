@@ -13,7 +13,7 @@
 
 SonarHall 与 BlackBoxPointCloud 共用 `Assets/Prefabs/Player.prefab`，由 `PlayerController` 统一处理移动、视角和光标。声纳挂在 `Player/Main Camera`，只处理发射、显影、提示音和声纳面板。相机上禁用的 `BouncePlaytest` 仅保留大厅嗡鸣依赖的音频配置，不参与角色控制。
 
-Player/Main Camera 的 Spherical Sonar 当前场景参数：Range 40 m、Wave Speed 10 m/s、Afterglow 0.4 s、Emission Interval 0.8 s。SonarHall 使用独立的 SonarDots 材质参数副本；点大小、间距、轮廓宽度可在该材质调整。渲染仍使用队友的原 Shader。队友原场景的材质参数不受影响。
+Player/Main Camera 的 Spherical Sonar 当前场景参数：Range 40 m、Wave Speed 10 m/s、Afterglow 0.4 s、Emission Interval 0.8 s。SonarHall 使用独立的 SonarDots 材质参数副本；点大小统一在 Spherical Sonar 的 Dot Radius 调整，间距、轮廓宽度可在材质调整。渲染仍使用队友的原 Shader。队友原场景的材质参数不受影响。
 
 视觉传播刻意放慢；暂未接入反射后的二次显影或空间回声，发射声仍是短促提示音。遮挡采用 6 × 48 × 48 个方向采样，薄小物体及物体边界可能有采样误差。最多保留四次发射。
 
@@ -26,3 +26,7 @@ Player/Main Camera 的 Spherical Sonar 当前场景参数：Range 40 m、Wave Sp
 大厅内的 Cube 已挂上 `SonarObjectEmitter`，默认每 3 秒自动发射，范围 12 m，速度 7 m/s，余像 0.7 s。按 C 开关方块的自动发射。发射起点固定在方块当前的位置，沿用现有点阵显影；玩家移动不改变已发出的波。方块自己先显现，随后声波到达周围环境。初始视角朝向该方块，方便比较。
 
 方块的参数在 Cube > Sonar Object Emitter 调整，与 Main Camera 的玩家发射参数独立。`Play Sound` 控制方块提示音；短提示音使用物体位置的 3D AudioSource 和现有 Steam Audio 空间化，暂不开启该提示音的房间反射。C 只停止后续自动发射，已发出的声波会自然结束。
+
+## 独立显影开关
+
+`SphericalSonar` 的 `Proximity Rendering`（按键 3）与 `Sonar Rendering`（按键 4）可分别开启、同时开启或全部关闭。运行时面板也提供两个复选框。同时开启时取两种显影亮度的最大值；R 清空声波后靠近显影仍可见。默认保持仅声波模式，声音和发射逻辑独立于显影开关。
