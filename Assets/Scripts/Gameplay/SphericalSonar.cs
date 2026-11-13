@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 /// <summary>Feeds spherical arrival/fade and blocking data to the existing BlackBox renderer.
 /// This component does not generate or draw any points, surfaces or lines.</summary>
-[RequireComponent(typeof(Camera), typeof(CharacterController), typeof(BlackBoxProximitySource))]
+[RequireComponent(typeof(Camera), typeof(BlackBoxProximitySource))]
 public sealed class SphericalSonar : MonoBehaviour
 {
     [Header("Spherical pulse")]
@@ -14,7 +14,6 @@ public sealed class SphericalSonar : MonoBehaviour
     public LayerMask obstacleLayers = Physics.DefaultRaycastLayers;
     public bool automatic;
     public bool emissionSound = true;
-    public float moveSpeed = 3;
     [Header("Existing BlackBox rendering")]
     public Material renderingSettings;
     public bool facePoints = true;
@@ -27,6 +26,13 @@ public sealed class SphericalSonar : MonoBehaviour
 
     void OnEnable()
     {
+        player = GetComponentInParent<PlayerController>();
+        if (player == null)
+        {
+            Debug.LogError("SphericalSonar must be attached to the Player prefab's camera.", this);
+            enabled = false;
+            return;
+        }
         PulseField = GetComponent<SonarPulseField>();
         if (PulseField == null) PulseField = gameObject.AddComponent<SonarPulseField>();
         PulseField.enabled = true;
@@ -38,19 +44,17 @@ public sealed class SphericalSonar : MonoBehaviour
         style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Twinkle, false);
         ClearPulses();
     }
-    CharacterController walker;
+    PlayerController player;
     AudioSource source;
     SonarCueSource cue;
     bool ownsCue;
-    float yaw, pitch, nextEmission;
-    bool captured;
+    float nextEmission;
     bool hud = true;
+    static readonly Rect HudRect = new Rect(16, 16, 480, 188);
+    bool InputCaptured => player != null && player.isActiveAndEnabled && !player.InputSuspended;
 
     void Start()
     {
-        walker = GetComponent<CharacterController>();
-        yaw = transform.eulerAngles.y;
-        pitch = Mathf.DeltaAngle(0, transform.eulerAngles.x);
         source = gameObject.AddComponent<AudioSource>();
         source.playOnAwake = false;
         source.spatialBlend = 0; // Player-generated emission cue; not a simulated returning echo.
@@ -78,27 +82,17 @@ public sealed class SphericalSonar : MonoBehaviour
             if (k.digit1Key.wasPressedThisFrame) facePoints = !facePoints;
             if (k.digit2Key.wasPressedThisFrame) edgePoints = !edgePoints;
             if (k.rKey.wasPressedThisFrame) ClearPulses();
-            if (k.spaceKey.wasPressedThisFrame) Emit();
-            if (captured)
-            {
-                var move = new Vector3((k.dKey.isPressed ? 1 : 0) - (k.aKey.isPressed ? 1 : 0), 0,
-                    (k.wKey.isPressed ? 1 : 0) - (k.sKey.isPressed ? 1 : 0));
-                walker.Move((Quaternion.Euler(0, yaw, 0) * Vector3.ClampMagnitude(move, 1) * moveSpeed
-                    + Vector3.down * 2) * Time.deltaTime);
-            }
+            if (k.enterKey.wasPressedThisFrame) Emit();
         }
         if (automatic && Time.time >= nextEmission) Emit();
         if (m == null) return;
-        if (m.leftButton.wasPressedThisFrame && (captured || m.position.ReadValue().y < Screen.height - 180))
+        var mousePosition = m.position.ReadValue();
+        bool overHud = hud && HudRect.Contains(new Vector2(mousePosition.x, Screen.height - mousePosition.y));
+        if (m.leftButton.wasPressedThisFrame && (InputCaptured || !overHud))
         {
-            if (!captured) Capture(true);
+            if (!InputCaptured) Capture(true);
             Emit();
         }
-        if (!captured) return;
-        var delta = m.delta.ReadValue();
-        yaw += delta.x * .12f;
-        pitch = Mathf.Clamp(pitch - delta.y * .12f, -85, 85);
-        transform.rotation = Quaternion.Euler(pitch, yaw, 0);
     }
 
     public bool Emit()
@@ -121,7 +115,7 @@ public sealed class SphericalSonar : MonoBehaviour
     }
 
     public void ClearPulses() { if (PulseField != null) PulseField.ClearPulses(); }
-    void Capture(bool active) { captured = active; Cursor.lockState = active ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !active; }
+    void Capture(bool active) { if (player != null) player.SetInputCaptured(active); }
     void OnApplicationFocus(bool focused) { if (!focused) Capture(false); }
     void OnDisable()
     {
@@ -137,9 +131,10 @@ public sealed class SphericalSonar : MonoBehaviour
     void OnGUI()
     {
         if (!hud) return;
-        GUILayout.BeginArea(new Rect(16, 16, 440, 166), GUI.skin.box);
+        GUILayout.BeginArea(HudRect, GUI.skin.box);
         GUILayout.Label("SPHERICAL SONAR  |  BlackBox dots");
-        GUILayout.Label("Click / Space: pulse   WASD: move   Mouse: look");
+        GUILayout.Label("Click / Enter: pulse   WASD: move   Mouse: look");
+        GUILayout.Label("Space / Shift: up / down   Esc / Tab: release cursor");
         GUILayout.Label("1: faces   2: edges   C: cube   F: auto   R: clear   F1: HUD");
         GUILayout.Label($"Range {range:0} m   Speed {waveSpeed:0} m/s   Afterglow {afterglow:0.0} s");
         GUILayout.Label($"Auto {(automatic ? "ON" : "OFF")}   Pulses {Emissions}   Sample {LastSamplingMilliseconds:0.0} ms");

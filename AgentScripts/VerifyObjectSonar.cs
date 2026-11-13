@@ -16,11 +16,12 @@ public static class VerifyObjectSonar
         var origin=new Vector3(p[slot].x,p[slot].y,p[slot].z);
         bool correctOrigin=Vector3.Distance(origin,e.transform.position)<.001f;
         var cameraPosition=s.transform.position;
-        var controller=s.GetComponent<CharacterController>();
-        controller.enabled=false;s.transform.position+=Vector3.right;
+        var controller=s.GetComponentInParent<CharacterController>();
+        var playerPosition=controller.transform.position;
+        controller.enabled=false;controller.transform.position+=Vector3.right;
         var afterMove=Shader.GetGlobalVectorArray("_SonarOrigins");
         bool fixedOrigin=afterMove[slot]==p[slot];
-        s.transform.position=cameraPosition;controller.enabled=true;
+        controller.transform.position=playerPosition;controller.enabled=true;
         bool playerStillWorks=s.Emit();
         var audio=e.GetComponent<AudioSource>();
         bool spatial=audio.spatialBlend==1&&audio.spatialize;
@@ -45,6 +46,7 @@ public static class VerifyObjectSonar
             float sum=0;foreach(float sample in data)sum+=sample*sample;
             peakRms=Mathf.Max(peakRms,Mathf.Sqrt(sum/data.Length));
         }
-        System.IO.File.WriteAllText("/tmp/Sound2-ObjectSonar-Audio.txt","listenerPeakRms="+peakRms+"; audibleSignal="+(peakRms>.00001f));
+        System.IO.File.WriteAllText(System.IO.Path.Combine(Application.temporaryCachePath, "Sound2-ObjectSonar-Audio.txt"),
+            "listenerPeakRms="+peakRms+"; audibleSignal="+(peakRms>.00001f));
     }
 }

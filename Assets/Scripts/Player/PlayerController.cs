@@ -41,23 +41,32 @@ public sealed class PlayerController : MonoBehaviour
     private void OnEnable()
     {
         if (InputSuspended) return;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        ApplyCursorCapture(true);
     }
 
     private void OnDisable()
     {
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        ApplyCursorCapture(false);
     }
 
     private void OnApplicationFocus(bool hasFocus)
     {
         if (hasFocus && isActiveAndEnabled && !InputSuspended)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            ApplyCursorCapture(true);
         }
+    }
+
+    public void SetInputCaptured(bool captured)
+    {
+        InputSuspended = !captured;
+        ApplyCursorCapture(captured && isActiveAndEnabled);
+    }
+
+    private static void ApplyCursorCapture(bool captured)
+    {
+        Cursor.lockState = captured ? CursorLockMode.Locked : CursorLockMode.None;
+        Cursor.visible = !captured;
     }
 
     private void Update()

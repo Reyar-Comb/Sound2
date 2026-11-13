@@ -2,8 +2,8 @@
 
 打开 `Assets/Scenes/SonarHall.unity`，进入 Play。
 
-- 左键 / Space / 左上角按钮：发射。
-- WASD / 鼠标：移动和转头；Esc / Tab：释放鼠标。
+- 左键 / Enter / 左上角按钮：发射。
+- WASD / 鼠标：移动和转头；Space / 左 Shift：上升和下降；Esc / Tab：释放鼠标并暂停移动，点击面板外恢复。
 - F：自动连续发射；R：清空声波；F1：隐藏面板。
 - H：原来的中心嗡鸣，默认静音。
 
@@ -11,11 +11,15 @@
 
 `SphericalSonar` 不创建点、线或 Mesh。它只记录每次发射的位置、时刻、球形范围，以及首个碰撞表面的遮挡数据。原 Shader 在采样轮廓时读取 `SonarRevealMask.hlsl`，按距离和时间控制轮廓的显现、淡出。声波关闭时，BlackBox 原有的近距离效果仍走原来的分支。
 
-Main Camera 的 Spherical Sonar 参数：Range（默认 12 m）、Wave Speed（8 m/s）、Afterglow（1.4 s）、Emission Interval（0.8 s）。SonarHall 使用独立的 SonarDots 材质参数副本；点大小、间距、轮廓宽度可在该材质调整。渲染仍使用队友的原 Shader。队友原场景的材质参数不受影响。
+SonarHall 与 BlackBoxPointCloud 共用 `Assets/Prefabs/Player.prefab`，由 `PlayerController` 统一处理移动、视角和光标。声纳挂在 `Player/Main Camera`，只处理发射、显影、提示音和声纳面板。相机上禁用的 `BouncePlaytest` 仅保留大厅嗡鸣依赖的音频配置，不参与角色控制。
+
+Player/Main Camera 的 Spherical Sonar 当前场景参数：Range 40 m、Wave Speed 10 m/s、Afterglow 0.4 s、Emission Interval 0.8 s。SonarHall 使用独立的 SonarDots 材质参数副本；点大小、间距、轮廓宽度可在该材质调整。渲染仍使用队友的原 Shader。队友原场景的材质参数不受影响。
 
 视觉传播刻意放慢；暂未接入反射后的二次显影或空间回声，发射声仍是短促提示音。遮挡采用 6 × 48 × 48 个方向采样，薄小物体及物体边界可能有采样误差。最多保留四次发射。
 
 `VerifySphericalSonar.cs` 在 Play 下验证复用原渲染器、面点阵和轮廓开关、发射不生成 Renderer、遮挡数据、发射原点固定及 Shader 编译。自动发射关闭且冷却结束后运行。
+
+`VerifySharedPlayer.cs` 在 Play 下用临时虚拟键鼠验证共享角色的移动、视角、升降、声纳按键及输入释放／恢复，并检查相机和监听器唯一性。测试结束恢复输入设置、角色姿态及自动发射状态。创建场景时自动使用共享 Player；已有旧场景可运行 `CreateSonarHall.cs` 的 `CreateSonarHall.ReusePlayer` 入口迁移，保留当前声纳参数及音频引用。
 
 ## 方块自主发声
 
