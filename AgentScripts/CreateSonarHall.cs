@@ -116,6 +116,7 @@ public static class CreateSonarHall
 
         var sonar = camera.gameObject.AddComponent<SphericalSonar>();
         EditorUtility.CopySerialized(previousSonar, sonar);
+        player.AddComponent<FootstepEmitter>();
         var style = camera.GetComponent<BlackBoxProximitySource>();
         EditorUtility.CopySerialized(previousCamera.GetComponent<BlackBoxProximitySource>(), style);
         style.TrackingPoint = camera.transform;

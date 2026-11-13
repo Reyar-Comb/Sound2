@@ -1,9 +1,10 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 /// <summary>Emits from this object's position through the player's existing sonar renderer.</summary>
 [RequireComponent(typeof(AudioSource))]
-public sealed class SonarObjectEmitter : MonoBehaviour
+public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackReceiver
 {
     [Tooltip("Legacy player reference; existing scenes keep working.")]
     public SphericalSonar sonar;
@@ -16,6 +17,34 @@ public sealed class SonarObjectEmitter : MonoBehaviour
     [Min(1)] public float range = 12;
     [Min(.1f)] public float waveSpeed = 7;
     [Min(.05f)] public float afterglow = .7f;
+    [Header("Pulse distance attenuation")]
+    public SonarDistanceSettings distanceSettings = new SonarDistanceSettings();
+    // Preserve existing scene/prefab values while moving the flat fields into a shared configuration.
+    [SerializeField, HideInInspector] int distanceSettingsVersion;
+    [SerializeField, HideInInspector, FormerlySerializedAs("distanceAttenuation")] bool legacyDistanceAttenuation;
+    [SerializeField, HideInInspector, FormerlySerializedAs("fadeStartDistance")] float legacyFadeStart = .5f;
+    [SerializeField, HideInInspector, FormerlySerializedAs("fadeEndDistance")] float legacyFadeEnd = 3;
+    [SerializeField, HideInInspector, FormerlySerializedAs("falloffPower")] float legacyFalloffPower = 2;
+    [SerializeField, HideInInspector, FormerlySerializedAs("pulseStrength")] float legacyStrength = .65f;
+
+    // Compatibility API for scene tools and existing gameplay callers.
+    public bool distanceAttenuation { get => distanceSettings.enabled; set => distanceSettings.enabled = value; }
+    public float fadeStartDistance { get => distanceSettings.fadeStartDistance; set => distanceSettings.fadeStartDistance = value; }
+    public float fadeEndDistance { get => distanceSettings.fadeEndDistance; set => distanceSettings.fadeEndDistance = value; }
+    public float falloffPower { get => distanceSettings.falloffPower; set => distanceSettings.falloffPower = value; }
+    public float pulseStrength { get => distanceSettings.pulseStrength; set => distanceSettings.pulseStrength = value; }
+
+    public void OnBeforeSerialize() { distanceSettingsVersion = 1; }
+    public void OnAfterDeserialize()
+    {
+        if (distanceSettingsVersion != 0) return;
+        distanceSettings = new SonarDistanceSettings {
+            enabled = legacyDistanceAttenuation, fadeStartDistance = legacyFadeStart,
+            fadeEndDistance = legacyFadeEnd, falloffPower = legacyFalloffPower, pulseStrength = legacyStrength
+        };
+        distanceSettingsVersion = 1;
+    }
+    [Header("Emission audio")]
     public bool playSound = true;
     [Range(0, 1)] public float volume = .2f;
     public int Emissions { get; private set; }
@@ -65,7 +94,8 @@ public sealed class SonarObjectEmitter : MonoBehaviour
         if (!Application.isPlaying || pulseField == null || source == null) return;
         emitter.volume = volume;
         emitter.Apply();
-        if (pulseField.EmitFrom(transform.position, range, waveSpeed, afterglow))
+        bool emitted = pulseField.EmitFrom(transform.position, range, waveSpeed, afterglow, distanceSettings);
+        if (emitted)
         {
             if (playSound) cue.Play();
             LastOrigin = transform.position;

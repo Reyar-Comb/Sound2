@@ -14,9 +14,11 @@ Assets/Scripts/
 │   ├── SonarCueSource.cs                声波发射提示音；支持音频文件或原有合成 ping
 │   └── ProceduralAudioClips.cs          生成 ping / 循环正弦 AudioClip 的纯工厂
 ├── Gameplay/
+│   ├── SonarDistanceSettings.cs         可复用的单次可视声波距离/强度配置
+│   ├── FootstepEmitter.cs               按实际水平位移触发脚步波，可选音效与事件
 │   ├── SonarPulseField.cs               可视声波传播/遮挡数据，不处理音频、移动、输入
 │   ├── SonarObjectEmitter.cs            任意物体的定时/手动声波触发，可组合发射提示音
-│   ├── SphericalSonar.cs                玩家输入、移动、HUD、发射冷却、点阵显示开关
+│   ├── SphericalSonar.cs                玩家声纳输入、HUD、发射冷却、点阵显示开关
 │   ├── BouncePlaytest.cs                发球、五个实验开关、输入/HUD、音频参数适配
 │   ├── BounceProbe.cs                   小球碰撞计数、消失、飞行音包络
 │   └── HallHumEmitter.cs                大厅嗡鸣参数和 H 键，转交基础音源组件
@@ -32,6 +34,8 @@ Assets/Scripts/
 flowchart TD
   Player[SphericalSonar 玩家触发] --> Field[SonarPulseField 传播与遮挡]
   Object[SonarObjectEmitter 物体触发] --> Field
+  Foot[FootstepEmitter 实际水平步距] --> Field
+  Foot --> Event[OnStep / Stepped 音效扩展]
   Field --> Shader[现有 BlackBox Shader 和 Renderer]
   Player --> Cue[SonarCueSource 提示音]
   Object --> Cue
@@ -112,7 +116,7 @@ public void Reveal(Vector3 origin)
 }
 ```
 
-`SonarPulseField` 沿用原有六面采样、首个碰撞面遮挡、4 个波槽和 Shader 参数。一个场景共用一份 Field；所有物体指向它，不要为每个声源各建一份。它控制可视声波的直达可见性，声音的反射由 Steam Audio 负责。
+`SonarPulseField` 沿用原有六面采样、首个碰撞面遮挡和 Shader 参数；4 个主波槽供主动探测与物体使用，另有 4 个脚步波槽。一个场景共用一份 Field；所有物体指向它，不要为每个声源各建一份。它控制可视声波的直达可见性，声音的反射由 Steam Audio 负责。
 
 ## 独立的靠近显影与声波显影
 
@@ -135,7 +139,7 @@ public void Reveal(Vector3 origin)
 
 玩家相机 Inspector → `Spherical Sonar` → `Dot Radius` 统一控制面点和轮廓点的半径，默认 1.5px（720p 参考，直径 3px，随分辨率缩放），滑条范围 0.25–4px。脚本也可直接设置 `sonar.dotRadius`，运行时立即生效。两组绘制通过 MaterialPropertyBlock 使用同一半径，不修改共享材质；如果材质间距被调小，半径统一限制为较小间距的 75%，避免两组被 Shader 截成不同大小。没有 SphericalSonar 的相机继续使用原始材质半径。
 
-两者分别调用同一个现有 Shader 的采样和绘制 Pass，再以最大亮度合成；没有另写点云算法。靠近和声波两个遮罩对面与轮廓都生效。调面点云的疏密时编辑 `SteppedWhiteDots`；调声波轮廓时编辑 `SonarDots`，避免面点云再被轮廓的稀疏设置一起削弱。
+两者分别调用同一个现有 Shader 的采样和绘制 Pass，再以最大亮度合成；没有另写点云算法。靠近和声波两个遮罩对面与轮廓都生效。声波与靠近显影直接共用 FaceDensityAt 的完整规则，包括墙面投影、核心区、径向环、距离分档和 OrderedRank。靠近模式使用玩家原点和比例 1；声波按各自固定原点计算，按有效范围相对材质原始范围缩放图案，分别累计轮廓与面亮度。有效范围为 Range 与启用的 Fade End Distance 取较小值。声波在投影圈之外保留最外圈的稀疏档，再由距离衰减完全淡出；靠近模式仍在原投影圈外隐藏。保留到达时间、遮挡、距离衰减与余像，且不受玩家所在位置限制。调面点云的疏密时编辑 `SteppedWhiteDots`；调声波轮廓时编辑 `SonarDots`，避免面点云再被轮廓的稀疏设置一起削弱。
 
 ## 距离衰减的归属
 
@@ -165,10 +169,25 @@ public void Reveal(Vector3 origin)
 
 `BlackBoxScreenPoints.shader` 的深度读取和世界坐标还原统一使用实际深度 texel 的中心，法线重建改用整数像素的上下左右邻居。原来的浮点 UV 偏移在部分屏幕列可能取到重复或错位的深度样本，斜视平墙时会被误判成折角，产生固定在屏幕上的竖线。点阵中心、点半径、间距和密度规则不变；采样修正会使边界及密度阈值附近的少量点改变显隐。测试平墙需避免被远裁剪面截断，防止将裁剪边缘当成采样错误。
 
+## 每次声波距离衰减与脚步
+
+`SonarDistanceSettings` 是玩家、物体、脚步共用的可序列化配置类型，每个组件独立持有实例。包含 enabled、fadeStartDistance、fadeEndDistance、falloffPower、pulseStrength，Inspector 在 Distance Settings 下调整。已有玩家/物体平铺字段通过 FormerlySerializedAs 和版本标记迁移，原调用名称仍作为兼容属性保留。现有场景的玩家与方块配置保持原值。
+
+`SonarPulseField.EmitFrom(origin, range, speed, afterglow, settings)` 在发射时打包配置，旧四参数入口仍关闭衰减，原八参数入口也保留。Shader 的 `_SonarPulseDistanceFalloffs` 为每个槽独立记录开始/终止距离、指数及强度。距离从固定发声原点计算，终止距离外硬裁剪；范围内将距离增益乘到原时间淡出上，多个波仍取 max。这是可视探索范围，与音频距离增益分别配置。
+
+`FootstepEmitter` 位于 SonarHall 的 Player 根物体，只读取 `PlayerController` 实际水平位移，不接管输入或移动。默认每 1.5m 一步，最小间隔 0.18s；停步、转头、纯升降、顶墙、输入暂停不触发。单帧位移超过 2m 重置累计，不补发传送脚步。Require Grounded 默认关闭以适配当前自由升降控制；正式贴地行走时可打开。
+
+脚步调用 `EmitFootstepFrom`，起点为胶囊底部上方 0.12m，默认 3m 范围、8m/s、0.3s 余像、0.4–3m 距离衰减、指数 2、强度 0.6。波槽 0–3 供主波使用，4–7 供脚步使用，各自循环，不互相覆盖。Shader 共读取 8 槽；脚步使用 24×24×6 方向采样，主波使用 48×48×6，沿用同一首碰撞面纹理布局。局部脚步的角采样精度较低，薄小物体和边界可能存在误差。
+
+脚步的音效素材暂空，可选 AudioSource + Clips 轮流播放，或从 `onStep` / `Stepped` 收到世界坐标后接音效池。普通 AudioSource 随玩家移动，若希望尾音固定在脚步位置，使用已有 `ImpactSoundPool.PlayAt`。脚步开关在组件 `Emission Enabled` 和按键 6；按键 5 只控制主动探测波。BlackBox 原始场景与共享 Player prefab 未增加脚步行为。
+
 ## 验证入口
 
 通过 Unity CLI 在对应场景 Play 模式运行 `script run --file <路径>`：
 
+- `AgentScripts/VerifySonarFaces.cs`：SonarHall；14 项实际画面检查，验证远离玩家的面点激活、脚步槽、到达/消失/硬范围、混合独立性及开关，以及与原核心/外圈图案的逐像素一致性和实际点密度差异，以及脚步高度发波照到地面时的中心密/外圈疏。
+- `AgentScripts/VerifyFootsteps.cs`：SonarHall；真实输入下的移动/停步/顶墙/纯升降/传送/贴地选项、事件、按键开关及脚步槽隔离。
+- `AgentScripts/VerifyPulseAttenuation.cs`：SonarHall；距离显影递减、硬范围、关闭后逐像素一致、混合独立参数及玩家开关。
 - `AgentScripts/VerifyContourBorders.cs`：SonarHall；靠近/声波两种模式各检查 7 个视角的完整平墙没有假轮廓，同时确认真实立方体轮廓仍可见。
 - `AgentScripts/VerifyFaceCloud.cs`：SonarHall；在不同距离比较修复后的面点云与队友原始材质的逐像素结果，并检查声波遮罩、轮廓间距独立，以及统一半径对面点和轮廓点的实际缩放效果。
 - `AgentScripts/VerifyRevealModes.cs`：SonarHall；对四种组合进行实际画面像素验证，包括已有声波、无声波、清空声波和隐藏画面时继续发射。
@@ -178,4 +197,6 @@ public void Reveal(Vector3 origin)
 - `AgentScripts/VerifyHallHumAndCurve.cs`：CircularHall；LFO、曲线编辑、反弹和嗡鸣独立。
 - `AgentScripts/VerifyDirectHum.cs`：CircularHall；实际左右声道输出、远近增益。
 
-报告输出在 `/tmp/Sound2-*.json`，不会成为游戏运行代码。
+本次验证：脚步行为 16 项、衰减与实际画面 19 项、共享角色控制 16 项、显影开关 10 项全部通过，C# 编译无错误或警告。截图检查包括脚步专用槽的近处显影、3m 外全黑和余像消失。
+
+像素测试报告输出在 `/tmp/Sound2-*.json`；脚步与共享角色测试直接返回结构化结果，不会成为游戏运行代码。

@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 /// <summary>Feeds spherical arrival/fade and blocking data to the existing BlackBox renderer.
 /// This component does not generate or draw any points, surfaces or lines.</summary>
 [RequireComponent(typeof(Camera), typeof(BlackBoxProximitySource))]
-public sealed class SphericalSonar : MonoBehaviour
+public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiver
 {
     [Header("Spherical pulse")]
     [Min(1)] public float range = 12;
@@ -14,6 +15,33 @@ public sealed class SphericalSonar : MonoBehaviour
     public LayerMask obstacleLayers = Physics.DefaultRaycastLayers;
     public bool automatic;
     public bool emissionSound = true;
+    [Header("Pulse distance attenuation")]
+    public SonarDistanceSettings distanceSettings = new SonarDistanceSettings();
+    // Preserve existing scene/prefab values while moving the flat fields into a shared configuration.
+    [SerializeField, HideInInspector] int distanceSettingsVersion;
+    [SerializeField, HideInInspector, FormerlySerializedAs("distanceAttenuation")] bool legacyDistanceAttenuation;
+    [SerializeField, HideInInspector, FormerlySerializedAs("fadeStartDistance")] float legacyFadeStart = .5f;
+    [SerializeField, HideInInspector, FormerlySerializedAs("fadeEndDistance")] float legacyFadeEnd = 3;
+    [SerializeField, HideInInspector, FormerlySerializedAs("falloffPower")] float legacyFalloffPower = 2;
+    [SerializeField, HideInInspector, FormerlySerializedAs("pulseStrength")] float legacyStrength = .65f;
+
+    // Compatibility API for scene tools and existing gameplay callers.
+    public bool distanceAttenuation { get => distanceSettings.enabled; set => distanceSettings.enabled = value; }
+    public float fadeStartDistance { get => distanceSettings.fadeStartDistance; set => distanceSettings.fadeStartDistance = value; }
+    public float fadeEndDistance { get => distanceSettings.fadeEndDistance; set => distanceSettings.fadeEndDistance = value; }
+    public float falloffPower { get => distanceSettings.falloffPower; set => distanceSettings.falloffPower = value; }
+    public float pulseStrength { get => distanceSettings.pulseStrength; set => distanceSettings.pulseStrength = value; }
+
+    public void OnBeforeSerialize() { distanceSettingsVersion = 1; }
+    public void OnAfterDeserialize()
+    {
+        if (distanceSettingsVersion != 0) return;
+        distanceSettings = new SonarDistanceSettings {
+            enabled = legacyDistanceAttenuation, fadeStartDistance = legacyFadeStart,
+            fadeEndDistance = legacyFadeEnd, falloffPower = legacyFalloffPower, pulseStrength = legacyStrength
+        };
+        distanceSettingsVersion = 1;
+    }
     [Header("Existing BlackBox rendering")]
     public Material renderingSettings;
     [Tooltip("Shared face and contour dot radius in pixels at 720p. Diameter is twice this value; scales with resolution. Capped by the tighter grid spacing.")]
@@ -53,12 +81,13 @@ public sealed class SphericalSonar : MonoBehaviour
         ClearPulses();
     }
     PlayerController player;
+    FootstepEmitter footsteps;
     AudioSource source;
     SonarCueSource cue;
     bool ownsCue;
     float nextEmission;
     bool hud = true;
-    static readonly Rect HudRect = new Rect(16, 16, 480, 232);
+    static readonly Rect HudRect = new Rect(16, 16, 480, 305);
     bool InputCaptured => player != null && player.isActiveAndEnabled && !player.InputSuspended;
 
     public void SetRevealModes(bool proximity, bool sonar)
@@ -70,6 +99,7 @@ public sealed class SphericalSonar : MonoBehaviour
 
     void Start()
     {
+        footsteps = player.GetComponent<FootstepEmitter>();
         source = gameObject.AddComponent<AudioSource>();
         source.playOnAwake = false;
         source.spatialBlend = 0; // Player-generated emission cue; not a simulated returning echo.
@@ -99,6 +129,9 @@ public sealed class SphericalSonar : MonoBehaviour
             if (k.digit2Key.wasPressedThisFrame) edgePoints = !edgePoints;
             if (k.digit3Key.wasPressedThisFrame) SetRevealModes(!proximityRendering, sonarRendering);
             if (k.digit4Key.wasPressedThisFrame) SetRevealModes(proximityRendering, !sonarRendering);
+            if (k.digit5Key.wasPressedThisFrame) distanceAttenuation = !distanceAttenuation;
+            if (k.digit6Key.wasPressedThisFrame && footsteps != null)
+                footsteps.emissionEnabled = !footsteps.emissionEnabled;
             if (k.rKey.wasPressedThisFrame) ClearPulses();
             if (k.enterKey.wasPressedThisFrame) Emit();
         }
@@ -129,7 +162,7 @@ public sealed class SphericalSonar : MonoBehaviour
     {
         if (!isActiveAndEnabled || PulseField == null) return false;
         PulseField.obstacleLayers = obstacleLayers;
-        return PulseField.EmitFrom(origin, pulseRange, pulseSpeed, pulseAfterglow);
+        return PulseField.EmitFrom(origin, pulseRange, pulseSpeed, pulseAfterglow, distanceSettings);
     }
 
     public void ClearPulses() { if (PulseField != null) PulseField.ClearPulses(); }
@@ -159,6 +192,12 @@ public sealed class SphericalSonar : MonoBehaviour
         bool sonar = GUILayout.Toggle(sonarRendering, "4  Sonar reveal");
         GUILayout.EndHorizontal();
         if (proximity != proximityRendering || sonar != sonarRendering) SetRevealModes(proximity, sonar);
+        distanceAttenuation = GUILayout.Toggle(distanceAttenuation, "5  Distance attenuation (new pulses)");
+        if (footsteps != null)
+            footsteps.emissionEnabled = GUILayout.Toggle(footsteps.emissionEnabled,
+                $"6  Footstep pulses   Steps {footsteps.Steps}");
+        if (distanceAttenuation)
+            GUILayout.Label($"Fade {fadeStartDistance:0.0}–{Mathf.Min(range, fadeEndDistance):0.0} m   Power {falloffPower:0.0}   Strength {pulseStrength:0.00}");
         GUILayout.Label($"Range {range:0} m   Speed {waveSpeed:0} m/s   Afterglow {afterglow:0.0} s");
         GUILayout.Label($"Auto {(automatic ? "ON" : "OFF")}   Pulses {Emissions}   Sample {LastSamplingMilliseconds:0.0} ms");
         if (GUILayout.Button("Emit spherical pulse")) Emit();

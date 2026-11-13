@@ -10,8 +10,8 @@ public static class VerifyObjectSonar
         e.automatic=false;s.automatic=false;s.ClearPulses();
         int before=e.Emissions;
         e.EmitNow();
-        var p=Shader.GetGlobalVectorArray("_SonarOrigins");
-        var settings=Shader.GetGlobalVectorArray("_SonarParameters");
+        var p=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
+        var settings=Shader.GetGlobalVectorArray("_SonarPulseParameters");
         int slot=Array.FindIndex(settings,v=>v.w>.5f);
         var origin=new Vector3(p[slot].x,p[slot].y,p[slot].z);
         bool correctOrigin=Vector3.Distance(origin,e.transform.position)<.001f;
@@ -19,7 +19,7 @@ public static class VerifyObjectSonar
         var controller=s.GetComponentInParent<CharacterController>();
         var playerPosition=controller.transform.position;
         controller.enabled=false;controller.transform.position+=Vector3.right;
-        var afterMove=Shader.GetGlobalVectorArray("_SonarOrigins");
+        var afterMove=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
         bool fixedOrigin=afterMove[slot]==p[slot];
         controller.transform.position=playerPosition;controller.enabled=true;
         bool playerStillWorks=s.Emit();

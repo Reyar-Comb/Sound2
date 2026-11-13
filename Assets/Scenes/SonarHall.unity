@@ -343,6 +343,46 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 21012222}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &34768621 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+  m_PrefabInstance: {fileID: 1326449163}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &34768625
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 34768621}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d7985339859d4f49aa352bdf3af6094, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
+  pulseField: {fileID: 0}
+  emissionEnabled: 1
+  stepDistance: 1.5
+  minimumInterval: 0.18
+  minimumSpeed: 0.05
+  requireGrounded: 0
+  teleportDistance: 2
+  range: 3
+  waveSpeed: 8
+  afterglow: 0.3
+  originHeight: 0.12
+  distanceSettings:
+    enabled: 1
+    fadeStartDistance: 0.4
+    fadeEndDistance: 3
+    falloffPower: 2
+    pulseStrength: 0.6
+  audioSource: {fileID: 0}
+  clips: []
+  volume: 0.4
+  onStep:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &138372052
 GameObject:
   m_ObjectHideFlags: 0
@@ -5318,6 +5358,9 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 34768625}
     - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1326449169}
@@ -5469,9 +5512,24 @@ MonoBehaviour:
     m_Bits: 51
   automatic: 0
   emissionSound: 1
+  distanceSettings:
+    enabled: 1
+    fadeStartDistance: 0.5
+    fadeEndDistance: 3
+    falloffPower: 2
+    pulseStrength: 0.65
+  distanceSettingsVersion: 1
+  legacyDistanceAttenuation: 1
+  legacyFadeStart: 0.5
+  legacyFadeEnd: 3
+  legacyFalloffPower: 2
+  legacyStrength: 0.65
   renderingSettings: {fileID: 2100000, guid: a73c361c40a464571b33f735b1c6ae42, type: 2}
+  dotRadius: 1.5
   facePoints: 1
   edgePoints: 1
+  proximityRendering: 0
+  sonarRendering: 1
 --- !u!114 &1326449168
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5489,6 +5547,8 @@ MonoBehaviour:
   edgePoints: 1
   stars: 0
   twinkle: 0
+  proximityRendering: 1
+  sonarRendering: 1
 --- !u!114 &1326449169
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9422,6 +9482,18 @@ MonoBehaviour:
   range: 12
   waveSpeed: 7
   afterglow: 0.2
+  distanceSettings:
+    enabled: 1
+    fadeStartDistance: 3
+    fadeEndDistance: 10
+    falloffPower: 2
+    pulseStrength: 0.65
+  distanceSettingsVersion: 1
+  legacyDistanceAttenuation: 1
+  legacyFadeStart: 3
+  legacyFadeEnd: 10
+  legacyFalloffPower: 2
+  legacyStrength: 0.65
   playSound: 1
   volume: 0.2
 --- !u!82 &2123475881

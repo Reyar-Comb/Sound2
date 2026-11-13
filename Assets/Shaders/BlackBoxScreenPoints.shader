@@ -47,7 +47,6 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         float _TwinkleEnabled, _TwinkleFraction, _TwinkleDuration;
         float _StarsEnabled, _StarChance, _StarDuration, _StarBrightness;
         float _PointAnimationTime;
-        #include "SonarRevealMask.hlsl"
         float4x4 _StarViewProjection;
         float4 _BlackBoxRevealModes; // x: continuous proximity, y: pulse reveal
         float4 _BlackBoxStyleVisibility;
@@ -112,23 +111,32 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             return distance<_DistanceBands.x?density.x:distance<_DistanceBands.y?density.y:
                 distance<_DistanceBands.z?density.z:density.w;
         }
-        float FaceDensity(float3 p,float3 n)
+        // One density rule for proximity and pulses. A pulse scales the original pattern
+        // to its own effective range; the proximity path uses the original scale of one.
+        float FaceDensityAt(float3 p,float3 n,float3 source,float patternScale,bool sparseOutside)
         {
-            float3 delta=_BlackBoxPlayerPosition.xyz-p;
+            float3 delta=(source-p)/patternScale;
             float signedDistance=dot(delta,n), wallDistance=abs(signedDistance), pointDistance=length(delta);
             float limit=min(_RevealDistance,_DistanceBands.w);
             if(limit<=0||pointDistance>=limit) return 0;
-            float3 center=_BlackBoxPlayerPosition.xyz-n*signedDistance;
-            // Face reveal is permanently locked to the player's wall projection.
+            float3 center=source-n*signedDistance*patternScale;
             float scale=saturate(1-wallDistance/limit);
-            float radius=length(p-center);
-            if(scale<=0||radius>=_WorldCircleRadius*scale) return 0;
+            float radius=length(p-center)/patternScale;
+            // Pulses keep the original sparse outer tier beyond the projection patch.
+            // Proximity retains its original hard circle boundary.
+            float outside=sparseOutside?saturate(_RadialDensityLevels.w*Tier(pointDistance,_DensityLevels)):0;
+            if(scale<=0||radius>=_WorldCircleRadius*scale) return outside;
             if(radius<_WorldCoreRadius*scale) return saturate(Tier(pointDistance,_CoreDensityLevels));
             float4 rings=_WorldRadialBandEnds*scale;
             float radial=radius<rings.x?_RadialDensityLevels.x:radius<rings.y?_RadialDensityLevels.y:
                 radius<rings.z?_RadialDensityLevels.z:radius<rings.w?_RadialDensityLevels.w:0;
             return saturate(radial*Tier(pointDistance,_DensityLevels));
         }
+        float FaceDensity(float3 p,float3 n)
+        {
+            return FaceDensityAt(p,n,_BlackBoxPlayerPosition.xyz,1,false);
+        }
+        #include "SonarRevealMask.hlsl"
         float Corner(float2 uv,float3 p,float3 n)
         {
             float angleLimit=cos(radians(_EdgeAngle));
@@ -210,17 +218,17 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             if(_BlackBoxRevealModes.y>.5 && _SonarActive>.5 && surface)
             {
                 // Same points and contours, gated by pulse arrival and fade.
-                float reveal=SonarVisibility(p);
+                float sonarRank=OrderedRank(cell);
+                float2 pulseReveal=SonarVisibility(p,n,sonarRank);
+                float reveal=pulseReveal.x;
                 if(reveal>0)
                 {
-                    float sonarRank=OrderedRank(cell);
                     float sonarDistance=length(_BlackBoxPlayerPosition.xyz-p);
-                    float sonarFaceDensity=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?FaceDensity(p,n):0;
-                    float sonarFace=sonarRank<sonarFaceDensity*saturate(_FaceDensityScale)?reveal:0;
+                    float sonarFace=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?pulseReveal.y:0;
                     float contour=_EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5
                         && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n)*reveal:0;
                     // Union the two masks. Overlapping dots retain their original brightness and size.
-                    result=max(result,float4(sonarFace,contour,0,sonarFaceDensity>0 || contour>0?1:0));
+                    result=max(result,float4(sonarFace,contour,0,sonarFace>0 || contour>0?1:0));
                 }
             }
             return result;

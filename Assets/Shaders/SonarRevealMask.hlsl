@@ -1,20 +1,30 @@
-// Arrival/fade mask only. All contour detection, dot sizing and drawing stay
-// in the teammate's BlackBoxScreenPoints shader.
+// Pulse arrival, distance attenuation and per-source face density. Contour detection,
+// ordered point placement, dot sizing and drawing stay in BlackBoxScreenPoints.shader.
 float _SonarActive, _SonarMaskSize;
-float4 _SonarOrigins[4], _SonarParameters[4];
+float4 _SonarPulseOrigins[8], _SonarPulseParameters[8];
+float4 _SonarPulseDistanceFalloffs[8]; // start metres, end metres, power (0 = disabled), strength
 TEXTURE2D_ARRAY(_SonarBlockingPlanes);
 
-float SonarVisibility(float3 positionWS)
+// x: contour reveal; y: face reveal after the existing ordered density selection.
+float2 SonarVisibility(float3 positionWS, float3 normalWS, float orderedRank)
 {
-    float brightness = 0;
-    [unroll] for (int i = 0; i < 4; i++)
+    float2 brightness = 0;
+    [unroll] for (int i = 0; i < 8; i++)
     {
-        float4 settings = _SonarParameters[i];
+        float4 settings = _SonarPulseParameters[i];
         if (settings.w < .5) continue;
-        float3 delta = positionWS - _SonarOrigins[i].xyz;
+        float3 delta = positionWS - _SonarPulseOrigins[i].xyz;
         float distance = length(delta);
         if (distance > settings.x || distance < .0001) continue;
-        float age = _PointAnimationTime - _SonarOrigins[i].w - distance / settings.y;
+        float4 attenuation = _SonarPulseDistanceFalloffs[i];
+        float distanceGain = attenuation.w;
+        if (attenuation.z > 0)
+        {
+            // The cap belongs to this emission's fixed world origin, never to the moving camera.
+            if (distance >= attenuation.y) continue;
+            distanceGain *= pow(saturate(1 - smoothstep(attenuation.x, attenuation.y, distance)), attenuation.z);
+        }
+        float age = _PointAnimationTime - _SonarPulseOrigins[i].w - distance / settings.y;
         if (age < 0 || age >= settings.z) continue;
         float3 magnitude = abs(delta);
         int face;
@@ -29,7 +39,14 @@ float SonarVisibility(float3 positionWS)
         float4 plane = LOAD_TEXTURE2D_ARRAY(_SonarBlockingPlanes, cell, i * 6 + face);
         if (dot(plane.xyz, plane.xyz) > .5 && dot(plane.xyz, delta) < plane.w - .06) continue;
         float fade = 1 - age / settings.z;
-        brightness = max(brightness, fade * fade);
+        float reveal = distanceGain * fade * fade;
+        // Reuse the complete core/ring/distance density rule around this pulse's fixed origin.
+        float reach = attenuation.z > 0 ? min(settings.x, attenuation.y) : settings.x;
+        float referenceRange = max(.001, min(_RevealDistance, _DistanceBands.w));
+        float patternScale = max(.001, reach / referenceRange);
+        float density = FaceDensityAt(positionWS, normalWS, _SonarPulseOrigins[i].xyz, patternScale, true)
+            * saturate(_FaceDensityScale);
+        brightness = max(brightness, float2(reveal, orderedRank < density ? reveal : 0));
     }
     return brightness;
 }
