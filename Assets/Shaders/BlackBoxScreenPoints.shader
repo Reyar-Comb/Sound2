@@ -49,8 +49,8 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         float _PointAnimationTime;
         float4x4 _StarViewProjection;
         float4 _BlackBoxStyleVisibility;
-        float4 _BlackBoxPlayerPosition, _BlackBoxGazeHit, _BlackBoxGazeNormal;
-        float _BlackBoxPlayerActive, _BlackBoxCenterMode;
+        float4 _BlackBoxPlayerPosition;
+        float _BlackBoxPlayerActive;
         struct Varyings { float4 positionCS : SV_POSITION; UNITY_VERTEX_OUTPUT_STEREO };
         Varyings Vert(uint vertexID : SV_VertexID)
         {

@@ -8,29 +8,23 @@ using UnityEngine.Rendering.Universal;
 // Independent composition passes draw whole circles, never wall-clipped fragments.
 public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
 {
+    [Tooltip("Material using the Screen Grid Face And Corner Points shader.")]
     public Material settings;
-    public Shader pointShader;
-    private Material material;
     private PointPass pass;
 
     public override void Create()
     {
-        CoreUtils.Destroy(material);
-        if (pointShader != null) material = CoreUtils.CreateEngineMaterial(pointShader);
         pass = new PointPass { renderPassEvent = RenderPassEvent.BeforeRenderingTransparents };
         pass.ConfigureInput(ScriptableRenderPassInput.Depth);
     }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        if (material == null || settings == null || renderingData.cameraData.cameraType == CameraType.Preview
+        if (settings == null || renderingData.cameraData.cameraType == CameraType.Preview
             || renderingData.cameraData.cameraType == CameraType.Reflection) return;
-        material.CopyPropertiesFromMaterial(settings);
-        pass.material = material;
+        pass.material = settings;
         renderer.EnqueuePass(pass);
     }
-
-    protected override void Dispose(bool disposing) => CoreUtils.Destroy(material);
 
     private sealed class PointPass : ScriptableRenderPass
     {

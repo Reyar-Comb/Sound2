@@ -96,4 +96,3 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BlackBoxPointCloudFeature
   m_Active: 1
   settings: {fileID: 2100000, guid: f3ed42257d8a35f4c8d5b3ab0c75da4e, type: 2}
-  pointShader: {fileID: 4800000, guid: 2380a62e24ccd3a48afe3d6242d7c8ab, type: 3}

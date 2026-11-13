@@ -7,15 +7,12 @@ public sealed class PlayerController : MonoBehaviour
 {
     [SerializeField] private InputActionReference moveAction;
     [SerializeField] private InputActionReference lookAction;
-    [SerializeField] private InputActionReference ascendAction;
-    [SerializeField] private InputActionReference descendAction;
+    [SerializeField] private InputActionReference verticalAction;
     [SerializeField] private Transform cameraTransform;
     [SerializeField, Min(0f)] private float moveSpeed = 5f;
     [SerializeField, Min(0f)] private float ascendSpeed = 3f;
     [SerializeField, Min(0f)] private float descendSpeed = 3f;
-    [SerializeField, Min(0f)] private float mouseSensitivity = 0.1f;
     [SerializeField, Range(0f, 89f)] private float maxPitch = 89f;
-    [SerializeField] private bool invertY;
 
     private CharacterController characterController;
     private float yaw;
@@ -25,15 +22,12 @@ public sealed class PlayerController : MonoBehaviour
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
-        characterController.stepOffset = 0f;
-        characterController.minMoveDistance = 0f;
 
         if (moveAction == null || moveAction.action == null
             || lookAction == null || lookAction.action == null
-            || ascendAction == null || ascendAction.action == null
-            || descendAction == null || descendAction.action == null || cameraTransform == null)
+            || verticalAction == null || verticalAction.action == null || cameraTransform == null)
         {
-            Debug.LogError("Assign Move, Look, Ascend, Descend and Camera Transform references.", this);
+            Debug.LogError("Assign Move, Look, Vertical and Camera Transform references.", this);
             enabled = false;
             return;
         }
@@ -69,16 +63,15 @@ public sealed class PlayerController : MonoBehaviour
     private void Update()
     {
         if (InputSuspended) return;
-        Vector2 look = lookAction.action.ReadValue<Vector2>() * mouseSensitivity;
+        Vector2 look = lookAction.action.ReadValue<Vector2>();
         yaw = Mathf.Repeat(yaw + look.x, 360f);
-        pitch = Mathf.Clamp(pitch + (invertY ? look.y : -look.y), -maxPitch, maxPitch);
+        pitch = Mathf.Clamp(pitch + look.y, -maxPitch, maxPitch);
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
 
         Vector2 move = Vector2.ClampMagnitude(moveAction.action.ReadValue<Vector2>(), 1f);
         Vector3 direction = transform.right * move.x + transform.forward * move.y;
-        int verticalInput = (ascendAction.action.IsPressed() ? 1 : 0)
-            - (descendAction.action.IsPressed() ? 1 : 0);
+        float verticalInput = verticalAction.action.ReadValue<float>();
         float verticalSpeed = verticalInput > 0 ? ascendSpeed : descendSpeed;
         Vector3 velocity = direction * moveSpeed + Vector3.up * (verticalInput * verticalSpeed);
         characterController.Move(velocity * Time.deltaTime);

@@ -97,23 +97,13 @@
                     "priority": 0
                 },
                 {
-                    "name": "Ascend",
-                    "type": "Button",
-                    "id": "247709b1-ae66-4507-9f6f-0605758b4698",
-                    "expectedControlType": "Button",
+                    "name": "Vertical",
+                    "type": "Value",
+                    "id": "1b245be1-0199-40ef-b521-1ffee8555343",
+                    "expectedControlType": "Axis",
                     "processors": "",
                     "interactions": "",
-                    "initialStateCheck": false,
-                    "priority": 0
-                },
-                {
-                    "name": "Descend",
-                    "type": "Button",
-                    "id": "1991aa9e-61ac-4ab7-be1f-1f6ac461b3aa",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false,
+                    "initialStateCheck": true,
                     "priority": 0
                 }
             ],
@@ -255,7 +245,7 @@
                     "id": "8c8e490b-c610-4785-884f-f04217b23ca4",
                     "path": "<Mouse>/delta",
                     "interactions": "",
-                    "processors": "",
+                    "processors": "scaleVector2(x=0.1,y=-0.1)",
                     "groups": "Keyboard&Mouse",
                     "action": "Look",
                     "isComposite": false,
@@ -482,26 +472,37 @@
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "",
-                    "id": "45efba7e-aa99-4f35-b9f7-07aa61737639",
+                    "name": "1DAxis",
+                    "id": "1fd47e73-9296-4cc4-bd35-d0f5e1e1c122",
+                    "path": "1DAxis(whichSideWins=0)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Vertical",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "positive",
+                    "id": "b1e8917b-c5c9-4347-91b9-d75c8d45e4d6",
                     "path": "<Keyboard>/space",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "Ascend",
+                    "action": "Vertical",
                     "isComposite": false,
-                    "isPartOfComposite": false
+                    "isPartOfComposite": true
                 },
                 {
-                    "name": "",
-                    "id": "5ebbf1d5-24cc-4c8f-8ba2-4a30432d9c38",
+                    "name": "negative",
+                    "id": "6e3cb534-fe61-4b17-b0ad-116148e407d9",
                     "path": "<Keyboard>/leftShift",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "Descend",
+                    "action": "Vertical",
                     "isComposite": false,
-                    "isPartOfComposite": false
+                    "isPartOfComposite": true
                 }
             ]
         },
@@ -1026,6 +1027,140 @@
                     "processors": "",
                     "groups": "XR",
                     "action": "TrackedDeviceOrientation",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "PointCloud",
+            "id": "9933e15b-5615-45c4-bddc-29d582f9cfc5",
+            "actions": [
+                {
+                    "name": "ToggleFace",
+                    "type": "Button",
+                    "id": "ce7d0b34-85c1-48d4-beb0-58a332dec609",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "ToggleEdge",
+                    "type": "Button",
+                    "id": "46d8d436-f018-4846-b2c1-333b48369e8a",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "ToggleStars",
+                    "type": "Button",
+                    "id": "19e25bc8-b3f1-4925-ad9e-efdd90f58fe0",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "ToggleTwinkle",
+                    "type": "Button",
+                    "id": "3b4ae33c-eb40-4b76-b378-aabd1c69bac5",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "ToggleMenu",
+                    "type": "Button",
+                    "id": "444ce125-e2ad-4670-a647-ba40a4279d2c",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                },
+                {
+                    "name": "CloseMenu",
+                    "type": "Button",
+                    "id": "53832e2e-e322-4536-aeb0-1d6fc2254197",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false,
+                    "priority": 0
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "18b0ab39-3781-4a51-9809-6d403ac608a0",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "ToggleFace",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "3f4a4cbd-c4cc-4fe9-a724-a879457dec3b",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "ToggleEdge",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e36ff431-65cf-45ab-9052-f1acc4ca0750",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "ToggleStars",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e27d1317-06b7-4ebf-b3ec-d478bede54eb",
+                    "path": "<Keyboard>/4",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "ToggleTwinkle",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0d097bee-4543-496a-b2e7-8c3af2644be0",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "ToggleMenu",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "bed5aedb-2c38-48b0-a58e-c30a5527e86b",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "CloseMenu",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
