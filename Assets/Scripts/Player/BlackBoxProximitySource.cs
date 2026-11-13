@@ -9,7 +9,11 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
 
     [SerializeField, Tooltip("Use the player camera for an eye-height wall projection.")]
     private Transform trackingPoint;
-    [SerializeField] private CenterMode centerMode = CenterMode.Midpoint;
+    public enum PointStyle { Face, Edge, Stars, Twinkle }
+    [SerializeField] private bool facePoints = true;
+    [SerializeField] private bool edgePoints = true;
+    [SerializeField] private bool stars = true;
+    [SerializeField] private bool twinkle = true;
     [SerializeField, Min(0.1f)] private float gazeDistance = 40f;
     [SerializeField] private LayerMask obstacleLayers = ~0;
 
@@ -18,13 +22,26 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
     public Vector3 GazePoint { get; private set; }
     public Vector3 GazeNormal { get; private set; }
     public Vector3 WallProjectionPoint { get; private set; }
-    public Vector3 SelectedCenter => !HasGazeHit ? WallProjectionPoint : centerMode == CenterMode.Gaze ? GazePoint
-        : centerMode == CenterMode.WallProjection ? WallProjectionPoint
-        : (GazePoint + WallProjectionPoint) * 0.5f;
+    public Vector3 SelectedCenter => WallProjectionPoint;
     public CenterMode Mode
     {
-        get => centerMode;
-        set { centerMode = value; PublishPosition(); }
+        get => CenterMode.WallProjection;
+        set { PublishPosition(); } // Retain API compatibility; face centre is locked.
+    }
+
+    public bool IsStyleEnabled(PointStyle style) => style == PointStyle.Face ? facePoints :
+        style == PointStyle.Edge ? edgePoints : style == PointStyle.Stars ? stars : twinkle;
+
+    public void SetStyleEnabled(PointStyle style, bool enabled)
+    {
+        switch (style)
+        {
+            case PointStyle.Face: facePoints = enabled; break;
+            case PointStyle.Edge: edgePoints = enabled; break;
+            case PointStyle.Stars: stars = enabled; break;
+            case PointStyle.Twinkle: twinkle = enabled; break;
+        }
+        PublishPosition();
     }
 
     private static readonly int PositionId = Shader.PropertyToID("_BlackBoxPlayerPosition");
@@ -32,6 +49,7 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
     private static readonly int HitId = Shader.PropertyToID("_BlackBoxGazeHit");
     private static readonly int NormalId = Shader.PropertyToID("_BlackBoxGazeNormal");
     private static readonly int ModeId = Shader.PropertyToID("_BlackBoxCenterMode");
+    private static readonly int StylesId = Shader.PropertyToID("_BlackBoxStyleVisibility");
     private static BlackBoxProximitySource activeSource;
 
     public Transform TrackingPoint
@@ -46,7 +64,8 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
         activeSource = null;
         Shader.SetGlobalFloat(ActiveId, 0f);
         Shader.SetGlobalVector(HitId, Vector4.zero);
-        Shader.SetGlobalFloat(ModeId, (float)CenterMode.Midpoint);
+        Shader.SetGlobalFloat(ModeId, (float)CenterMode.WallProjection);
+        Shader.SetGlobalVector(StylesId, Vector4.one);
     }
 
     private void OnEnable() => PublishPosition();
@@ -79,7 +98,9 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
             ? position - GazeNormal * Vector3.Dot(position - GazePoint, GazeNormal) : position;
         Shader.SetGlobalVector(HitId, new Vector4(GazePoint.x, GazePoint.y, GazePoint.z, HasGazeHit ? 1f : 0f));
         Shader.SetGlobalVector(NormalId, GazeNormal);
-        Shader.SetGlobalFloat(ModeId, (float)centerMode);
+        Shader.SetGlobalFloat(ModeId, (float)CenterMode.WallProjection);
+        Shader.SetGlobalVector(StylesId, new Vector4(facePoints ? 1 : 0, edgePoints ? 1 : 0,
+            stars ? 1 : 0, twinkle ? 1 : 0));
         Shader.SetGlobalVector(PositionId, new Vector4(position.x, position.y, position.z, 1f));
         Shader.SetGlobalFloat(ActiveId, 1f);
     }

@@ -12,7 +12,11 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_InvalidKeywords:
+  - _EDGEENABLED_ON
+  - _FACEENABLED_ON
+  - _STARSENABLED_ON
+  - _TWINKLEENABLED_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -29,17 +33,31 @@ Material:
     - _CoreRadius: 0.28
     - _DotRadius: 0.0165
     - _DotSpacing: 0.022
+    - _EdgeAngle: 35
+    - _EdgeEnabled: 1
+    - _EdgeRevealDistance: 3
+    - _EdgeWidth: 7
+    - _FaceDensityScale: 0.03
+    - _FaceEnabled: 1
     - _RevealDistance: 3
     - _ScreenCircleRadius: 300
     - _ScreenCoreRadius: 70
     - _ScreenDotRadius: 4.125
     - _ScreenDotSpacing: 5.5
+    - _StarBrightness: 0.65
+    - _StarChance: 0.2
+    - _StarDuration: 10
+    - _StarsEnabled: 1
+    - _TwinkleDuration: 6
+    - _TwinkleEnabled: 1
+    - _TwinkleFraction: 0.005
     - _WorldCircleRadius: 1.2
     - _WorldCoreRadius: 0.28
     m_Colors:
     - _CoreDensityLevels: {r: 1, g: 0.99, b: 0.98, a: 0.97}
     - _DensityLevels: {r: 1, g: 0.75, b: 0.5, a: 0.3}
     - _DistanceBands: {r: 0.75, g: 1.5, b: 2.25, a: 3}
+    - _EdgeDensityLevels: {r: 1, g: 0.65, b: 0.35, a: 0.15}
     - _RadialBandEnds: {r: 0.52, g: 0.78, b: 1, a: 1.2}
     - _RadialDensityLevels: {r: 0.55, g: 0.22, b: 0.075, a: 0.02}
     - _ScreenRadialBandEnds: {r: 130, g: 195, b: 250, a: 300}

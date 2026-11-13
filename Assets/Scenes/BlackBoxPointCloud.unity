@@ -1033,7 +1033,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlackBoxProximitySource
   trackingPoint: {fileID: 2035204186}
-  centerMode: 2
+  facePoints: 1
+  edgePoints: 1
+  stars: 1
+  twinkle: 1
   gazeDistance: 40
   obstacleLayers:
     serializedVersion: 2
