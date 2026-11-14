@@ -14,7 +14,7 @@ public static class VerifyMenuDissolve
         var material=new Material(menu.menuShader);var view=menu.player.GetComponentInChildren<Camera>();
         float pitch=BlackBoxPointCloudFeature.GetDotSpacing(view),radius=BlackBoxPointCloudFeature.GetDotDiameter(view)*.5f;
         material.SetVector("_MenuSize",new Vector4(W,H,W,H));material.SetFloat("_GridPitch",pitch);material.SetFloat("_DotRadius",radius);
-        material.SetFloat("_TitleDensity",.5f);material.SetFloat("_TitleDotScale",1.65f);
+        material.SetFloat("_TitleDensity",.5f);material.SetFloat("_TitleDotScale",1.65f);material.SetFloat("_RoomHalfSize",0);
         var rt=RenderTexture.GetTemporary(W,H,0,RenderTextureFormat.ARGB32);var texture=new Texture2D(W,H,TextureFormat.RGB24,false);var previous=RenderTexture.active;
         var checks=new List<string>();void Check(bool ok,string name)=>checks.Add((ok?"PASS: ":"FAIL: ")+name);
         System.IO.Directory.CreateDirectory("Logs/MenuDissolve");
@@ -34,17 +34,6 @@ public static class VerifyMenuDissolve
         int cuts=0,fades=0,blinks=0,centroids=0,offGrid=0;float largestOffset=0;
         try
         {
-            var bars=Draw(0,3.4f,"spectrum");var later=Draw(0,4.9f,"spectrum-later");
-            var heights=new List<int>();var columns=new List<int>();int changed=0,column=0;
-            for(float x=pitch*.5f;x<W;x+=pitch,column++)
-            {
-                int count=0,other=0;
-                for(float y=pitch*.5f;y<H;y+=pitch){if(bars[Index(x,y)].r<128)count++;if(later[Index(x,y)].r<128)other++;}
-                if(count>1){columns.Add(column);heights.Add(count);}if(count!=other)changed++;
-            }
-            Check(columns.Count>30 && columns.Zip(columns.Skip(1),(a,b)=>b-a>=3).All(x=>x),"Spectrum consists of separated vertical stacks with empty columns between them");
-            Check(heights.Distinct().Count()>8 && heights.Max()>10,"Individual spectrum columns have distinct multi-dot heights");
-            Check(changed>20,"Spectrum bars keep changing independently over time");
             for(int frame=0;frame<=120;frame++)
             {
                 float t=frame*.0075f;var pixels=Draw(t,0,frame==48?"dissolve-middle":frame==80?"dissolve-outer":null);

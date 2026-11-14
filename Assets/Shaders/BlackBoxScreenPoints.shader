@@ -209,9 +209,9 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         }
         float AmbientStar(uint id)
         {
-            if(_BlackBoxRevealModes.x<.5 || _StarsEnabled<.5 || _BlackBoxStyleVisibility.z<.5) return 0;
+            if(_StarsEnabled<.5 || _BlackBoxStyleVisibility.z<.5) return 0;
             uint seed=PointHash(id)^0x68bc21ebu;
-            bool animate=_TwinkleEnabled>.5 && _BlackBoxStyleVisibility.w>.5;
+            bool animate=true;
             float cycle=_PointAnimationTime/max(_StarDuration,4)+Random01(seed);
             uint eventSeed=seed^PointHash((animate?(uint)floor(cycle):0u)+97531u);
             if(Random01(eventSeed)>=saturate(_StarChance)) return 0;
@@ -353,7 +353,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             if(brightness<=0) return o;
             // Fixed world directions on a sphere; camera rotation moves the
             // projected centers, while camera translation has no parallax.
-            float y=1-2*(id+.5)/128.0;
+            float y=1-2*(id+.5)/384.0;
             float angle=id*2.39996323;
             float r=sqrt(saturate(1-y*y));
             float3 direction=float3(cos(angle)*r,y,sin(angle)*r);
@@ -374,6 +374,12 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             float radius=clamp(_ScreenDotRadius,0,max(_ScreenDotSpacing,1)*.75);
             float extent=radius+.70710678*720.0/_PointViewport.y;
             o.offset=corners[vertexID]*extent;
+            float2 snapped=(float2(cell)+.5)*pitch*_PointViewport.zw;
+            #if UNITY_UV_STARTS_AT_TOP
+                snapped.y=1-snapped.y;
+            #endif
+            ndc=snapped*2-1;
+            uv=(float2(cell)+.5)*pitch*_PointViewport.zw;
             float2 clipOffset=o.offset*(_PointViewport.y/720.0)*_PointViewport.zw*2;
             o.positionCS=float4(ndc+clipOffset,0,1);
             o.brightness=brightness*CrosshairPointVisibility(uv*_PointViewport.xy*(720.0/_PointViewport.y),extent)

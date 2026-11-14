@@ -22,6 +22,7 @@ public static class VerifyColoredSonar
     static IEnumerator Run()
     {
         var s=UnityEngine.Object.FindAnyObjectByType<SphericalSonar>();var field=s.PulseField;var player=s.GetComponentInParent<PlayerController>();var capsule=player.GetComponent<CharacterController>();
+        var source=UnityEngine.Object.FindAnyObjectByType<BlackBoxProximitySource>();bool oldStars=source.IsStyleEnabled(BlackBoxProximitySource.PointStyle.Stars);source.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Stars,false);
         var motion=player.GetComponent<PlayerCameraMotion>();bool motionEnabled=motion!=null && motion.enabled;if(motion!=null)motion.enabled=false;
         var emitters=UnityEngine.Object.FindObjectsByType<SonarObjectEmitter>();var auto=Array.ConvertAll(emitters,e=>e.automatic);
         var scans=UnityEngine.Object.FindObjectsByType<MonsterScanEmitter>();var enabled=Array.ConvertAll(scans,e=>e.enabled);
@@ -43,6 +44,8 @@ public static class VerifyColoredSonar
             foreach(var e in emitters)e.automatic=false;foreach(var scan in scans)scan.enabled=false;
             s.automatic=false;player.enabled=false;capsule.enabled=false;hud.SetValue(s,false);
             s.SetRevealModes(false,true);s.transform.SetPositionAndRotation(new Vector3(100,100,100),Quaternion.identity);
+            // Allow deferred collider destruction and UI/camera state to settle before occlusion sampling.
+            yield return null; Physics.SyncTransforms();
             foreach(bool face in new[]{true,false})
             {
                 s.facePoints=face;s.edgePoints=!face;string style=face?"faces":"contours";
@@ -59,7 +62,7 @@ public static class VerifyColoredSonar
                 density.fadeEndDistance=face?3:2f;
                 field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000,SonarPulseKind.Lightning,profile,density);yield return Capture("thinned-"+style);
                 Check(Lit()>0 && Lit()<full,"Density attenuation removes "+style+" points rather than only dimming them");
-                Check(pixels.Where((p,i)=>p.b>8).Select((p)=>p.b).Any() && pixels.Select((p,i)=>p.b==0 || p.b==fullPixels[i].b).All(v=>v),"Retained "+style+" keep their original pixel brightness");
+                Check(pixels.Where((p,i)=>p.b>8).Select((p)=>p.b).Any() && pixels.Select((p,i)=>p.b==0 || Math.Abs(p.b-fullPixels[i].b)<=2).All(v=>v),"Retained "+style+" keep their original pixel brightness within two HDR quantization levels");
             }
             s.facePoints=s.edgePoints=true;field.ClearPulses();
             field.EmitFrom(origin,3,100000000,10000000,SonarPulseKind.Coin,profile);
@@ -102,6 +105,7 @@ public static class VerifyColoredSonar
         }
         finally
         {
+            source.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Stars,oldStars);
             PlayerUiPointMask.SetLegacyPanel(field,default,false);
             s.transform.SetPositionAndRotation(position,rotation);if(motion!=null)motion.enabled=motionEnabled;capsule.enabled=collision;player.enabled=moving;
             s.automatic=oldAuto;s.facePoints=faces;s.edgePoints=edges;s.SetRevealModes(near,sonar);hud.SetValue(s,oldHud);status.visible=oldStatus;

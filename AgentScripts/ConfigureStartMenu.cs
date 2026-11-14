@@ -16,7 +16,8 @@ public static class ConfigureStartMenu
         menu.menuShader=Shader.Find("Sound2/SonicSpace Point Menu");menu.glyphMaskShader=Shader.Find("Sound2/Menu Glyph Mask");
         menu.transitionSeconds=2.6f;
         menu.titleDelay=.55f;menu.characterInterval=.13f;menu.titleDotScale=1.65f;
-        menu.titlePointDensity=.5f;menu.characterFloat=5;
+        menu.titlePointDensity=.5f;menu.titleShimmer=1;
+        menu.roomSize=10;menu.roomFieldOfView=80;menu.mouseSensitivity=.18f;menu.lookSmoothTime=.065f;
         EditorUtility.SetDirty(menu);EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);
         return new {scene=scene.path,menu=menu.name,font=GameUiTheme.Current.textFont.name};
     }

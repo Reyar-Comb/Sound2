@@ -1,20 +1,26 @@
-# SONICSPACE 开始菜单
+# SONICSPACE 房间开始菜单
 
-入口在 `Assets/Scenes/BaiYu-Test.unity` 的 `SONICSPACE Entry`。进入 Play 从纯白开始，横贯画面的细点线快速浮现，随后展开为离散的竖直频谱柱。每柱由共享网格上的一列圆点组成，柱间留两列空位，各柱按独立相位柔和起伏，整体振幅与活跃宽度逐渐扩大。约 0.55 秒后居中逐字出现 S → SO → … → SONICSPACE，每字间隔 0.13 秒；已有字符平滑向两侧让位，各字符通过独立平滑噪声持续轻微上下漂浮。副标题“声 之 域”和“开 始”随后浮现。所有字形使用 GameUiTheme 中的 SECONDERSIGN 字体，中文缺字检测通过。
+入口为 `Assets/Scenes/BaiYu-Test.unity` 中的 `SONICSPACE Entry`。白色密闭立方体房间替代频谱表演，黑色点阵显示房间棱角、随机墙面声波及星点。鼠标移动控制独立的菜单视角，平滑跟随水平转向和上下俯仰；手柄右摇杆也可转头。游戏玩家仍暂停，不会随菜单转动或移动。
 
-文字点位密度为原来的 50%，点径为场景基础点径的 1.65 倍（保留圆点间隙）；屏幕网格坐标、720p 缩放与有序筛选规则仍与游戏共用。声纹使用较细的点，位于文字下层，并根据每帧真实字形向外留出约 7.5 像素的避让空间。
+主标题 SONICSPACE 的实际字形几何始终水平、竖直居中，不随转头移动，也不再上下漂浮。保留约 0.55 秒后开始的逐字出现；完整标题出现后，点位独立随机闪动或非线性淡出／淡入，绝大多数点持续可见以维持可读性。使用现有 SECONDERSIGN 字体。菜单只保留英文标题，不再创建中文副标题、开始文字或按钮。
 
-开场完成后点击开始，或按 Enter／空格／手柄确认键，播放默认 2.6 秒的网格消散。所有圆点始终位于原屏幕网格中心，没有旋转、漩涡、平移或透视拉伸。白色表面在原格点处收缩成白点，消散时序由距屏幕中心的距离加上固定的逐点／局部随机延迟决定，形成从中心向外扩散的不规则前沿。每个点独立采用直接熄灭、柔和非线性渐隐、随机闪动后熄灭三种方式之一；同一圈的点不会同步消失。最后黑场平滑露出游戏，并接入游戏声波。可调参数为 `Title Delay`、`Character Interval`、`Title Dot Scale`、`Title Point Density`、`Character Float` 和 `Transition Seconds`。开场计时从首个可绘制帧开始，并限制加载卡顿对时间推进的影响，避免跳过白场和字母。
+房间在 shader 中按真实三维射线与立方体六个面求交，观察点固定在立方体的几何正中心（0, 0, 0），与六面墙等距；鼠标仅改变朝向。黑点投影使用游戏共用的左上角屏幕网格及圆点尺寸；旋转只改变看见的墙面和棱角，不扭曲网格。随机波源位于墙面，按空间距离等待传播到达，再使用与游戏声波相同的平方余辉衰减。所有房间点避让完整 UI 字形边缘，主标题点暂时消失时也不会被背景点填入。
 
-`SonicSpaceStartMenu` 使用 uGUI 全屏显示和 TMP 字形遮罩，不创建新 EventSystem，不更改输入资源或项目配置。遮罩纹理只在进入菜单和分辨率变化时分配，复用 CommandBuffer 每帧更新字符位置，结束时释放。已有游戏场景在白底后初始化；菜单持有 Time.timeScale、AudioListener.pause 与玩家输入的暂时控制权，动画用未缩放时间推进，结束或被禁用时恢复原值。楼层字幕队列保留到进入游戏才开始播放，开始点击不会传给拾取或声波逻辑。仅该测试场景新增入口组件，其他场景原入口保持不变。
+开场就绪后，在画面任意位置按鼠标左键（或 Enter／空格／手柄确认），进入 2.6 秒的网格消散。白色表面在原格点处收缩成白点，按中心向外的随机时序，混合直接熄灭、柔和渐隐及闪动熄灭。没有点位平移、漩涡或透视拉伸；末尾露出游戏画面并恢复声音、输入和 F0 字幕。保留按住输入时的防误触及入场点击消费逻辑。
 
-验证入口：
+星点固定在空间方向上，随视角转动投影，不黏在屏幕上。菜单为黑色星点，使用独立随机周期柔和显隐，并避让完整标题；游戏为白色星点，独立于近距离显现、声波和表面闪烁开关，沿用 Stars 样式开关。两者都对齐原有屏幕点阵，游戏星点也服从准心、字幕和交互 UI 的避让。
 
-- `AgentScripts/VerifyStartMenu.cs`：真实鼠标点击、输入隔离、中文、阶段截图、重复开始、实际时间过渡和 F0 字幕，共 14 项。
-- `VerifyStartMenu.Resolutions`：1280×720、1920×1080、800×600、2560×1080 的实际 GPU 字体点阵，确认无越界、圆点对齐同一屏幕网格。
-- `AgentScripts/VerifyMenuMotion.cs`：21 项动画/GPU 检查，涵盖白场、横线、居中逐字、独立漂浮、点数约减半、加粗、声纹避让、中心塌陷与无白屏闪烁，截图和结果在 `Logs/MenuMotion/`。
-- `AgentScripts/VerifyMenuDissolve.cs`：9 项 GPU 检查，验证竖直频谱柱的空列间隔、独立起伏、121 个过渡时刻中的三种消失行为、中心先于外围消散、同圈随机延迟及固定网格点位。实际采样 1062 个点的亮度重心，最大栅格化偏差 0.17 像素，无偏离网格的点；结果和截图在 `Logs/MenuDissolve/`。
-- `AgentScripts/VerifyColoredSonar.cs`：共享点阵规则提取后的 29 项声波渲染回归。
-- 菜单中途禁用：恢复游戏时间、音频、输入，无暂停状态残留。
+## 可调参数
 
-截图与结果保存在 `Logs/StartMenu/`。`AgentScripts/ConfigureStartMenu.cs` 可给已保存的 BaiYu-Test 添加或更新入口；`ConfigureBaiYuTest.cs` 新建场景时也会创建菜单。
+SonicSpaceStartMenu：Room Size 默认 10m，Room Field Of View 默认 80°，Mouse Sensitivity 默认 0.18，Look Smooth Time 默认 0.065 秒，Title Shimmer 默认 1（0 可关闭随机显隐）。保留 Title Delay、Character Interval、Title Dot Scale（1.65）、Title Point Density（0.5）及 Transition Seconds。
+
+实现沿用 uGUI/TMP 字形遮罩，英文主标题占红通道。不创建新 EventSystem、不改输入资源和项目设置。遮罩纹理仅在初始化／分辨率变化时分配，退出或禁用菜单时释放图形资源并恢复暂停状态。
+
+## 验证
+
+- `AgentScripts/VerifyMenuRoom.cs`：27 项实际 GPU／输入检查，包括居中、房间、星点、显隐、网格和游戏隔离。报告和截图在 `Logs/MenuRoom/`。
+- `AgentScripts/VerifyStartMenu.cs`：14 项真实任意位置点击、无按钮／中文菜单、暂停与输入交接、过渡结束和 F0 字幕检查。
+- `AgentScripts/VerifyMenuDissolve.cs`：6 项网格消散 GPU 检查，移除了已取消的频谱断言。
+- `AgentScripts/VerifyMergeBuild.cs`：Windows x64 构建验证。
+
+旧 VerifyMenuMotion 的漂浮／频谱验证已由 VerifyMenuRoom 替代。ConfigureStartMenu 可更新已保存的测试场景菜单参数；新建场景仍由 ConfigureBaiYuTest 创建同一菜单组件。

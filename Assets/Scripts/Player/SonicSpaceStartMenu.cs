@@ -16,7 +16,13 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
     [Min(.04f)] public float characterInterval=.13f;
     [Range(1,2.5f)] public float titleDotScale=1.65f;
     [Range(.1f,1)] public float titlePointDensity=.5f;
-    [Min(0)] public float characterFloat=5f;
+    [Header("Menu room")]
+    [Min(2)] public float roomSize=10f;
+    [Range(50,110)] public float roomFieldOfView=80f;
+    [Min(0)] public float mouseSensitivity=.18f;
+    [Min(.01f)] public float lookSmoothTime=.065f;
+    [Range(0,1)] public float titleShimmer=1f;
+    public Quaternion RoomViewRotation {get;private set;}=Quaternion.identity;
     public float OpeningElapsed => Mathf.Max(0,Time.unscaledTime-introStartedAt);
     public int VisibleTitleCharacters {get;private set;}
     public bool IntroReady => OpeningElapsed>=titleDelay+Title.Length*characterInterval+.55f;
@@ -24,7 +30,6 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
     public bool IsTransitioning {get;private set;}
     public bool HasStarted {get;private set;}
     public float TransitionProgress {get;private set;}
-    public RectTransform StartButtonRect {get;private set;}
     public static bool BlocksGameplay => active!=null && !active.HasStarted;
     static SonicSpaceStartMenu active;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -32,14 +37,12 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
 
     Canvas canvas,maskCanvas;
     UnityEngine.UI.RawImage image;
-    UnityEngine.UI.Button startButton;
-    TextMeshProUGUI title,subtitle,startLabel;
+    TextMeshProUGUI title;
     Material menuMaterial,glyphMaterial;
     RenderTexture mask;
     Camera view;
-    float previousTimeScale,startedAt,hover,introStartedAt;
-    readonly float[] characterX=new float[Title.Length];
-    readonly bool[] characterPositioned=new bool[Title.Length];
+    float previousTimeScale,startedAt,introStartedAt;
+    Vector2 lookTarget,lookAngles,lookVelocity;
     TextMeshProUGUI[] labels;
     CommandBuffer maskCommands;
     MaterialPropertyBlock glyphProperties;
@@ -69,21 +72,13 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         var rect=image.rectTransform;rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
         menuMaterial=new Material(menuShader){name="SONICSPACE menu (runtime)"};glyphMaterial=new Material(glyphMaskShader){name="Menu glyph rasterizer (runtime)"};image.material=menuMaterial;
 
-        var hit=new GameObject("Start Button",typeof(RectTransform),typeof(UnityEngine.UI.Button));hit.transform.SetParent(go.transform,false);
-        StartButtonRect=hit.GetComponent<RectTransform>();StartButtonRect.anchorMin=StartButtonRect.anchorMax=new Vector2(.5f,.5f);
-        StartButtonRect.anchoredPosition=new Vector2(0,-182);StartButtonRect.sizeDelta=new Vector2(240,86);
-        startButton=hit.GetComponent<UnityEngine.UI.Button>();startButton.transition=UnityEngine.UI.Selectable.Transition.None;
-        startButton.navigation=new UnityEngine.UI.Navigation{mode=UnityEngine.UI.Navigation.Mode.None};startButton.onClick.AddListener(BeginGame);
-
         // Never shown directly: TMP supplies the real SECONDERSIGN glyphs (including fallback submeshes).
         var templates=new GameObject("Menu glyph templates",typeof(RectTransform),typeof(Canvas));templates.transform.SetParent(transform,false);
         maskCanvas=templates.GetComponent<Canvas>();maskCanvas.renderMode=RenderMode.WorldSpace;maskCanvas.enabled=false;
-        title=MakeLabel("Main title","",118,66,Color.red);
-        subtitle=MakeLabel("Chinese subtitle","声 之 域",62,-46,Color.red);
-        startLabel=MakeLabel("Start label","开 始",46,-182,Color.green);
-        labels=new[]{title,subtitle,startLabel};
+        title=MakeLabel("Main title","",118,0,Color.red);
+        labels=new[]{title};
         glyphProperties=new MaterialPropertyBlock();
-        maskCommands=new CommandBuffer {name="Animate SECONDERSIGN menu glyphs"};
+        maskCommands=new CommandBuffer {name="Rasterize centered SECONDERSIGN menu glyphs"};
         RebuildMask();
     }
 
@@ -115,7 +110,6 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         float age=OpeningElapsed;
         int count=Mathf.Clamp(Mathf.FloorToInt((age-titleDelay)/Mathf.Max(.04f,characterInterval))+1,0,Title.Length);
         if(count!=VisibleTitleCharacters){title.text=Title.Substring(0,count);VisibleTitleCharacters=count;}
-        float fullAt=titleDelay+Title.Length*characterInterval;
         float referenceWidth=720f*width/height;
         var command=maskCommands;command.Clear();
         command.SetRenderTarget(mask);command.ClearRenderTarget(false,true,Color.clear);
@@ -123,27 +117,28 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         foreach(var text in labels)
         {
             text.ForceMeshUpdate(true,true);
+            // Center the visible glyph geometry, not the font's asymmetric ascender/descender box.
+            Vector3 offset=Vector3.zero;
+            if(text==title && text.textInfo.characterCount>0)
+            {
+                Vector2 min=new Vector2(float.PositiveInfinity,float.PositiveInfinity),max=new Vector2(float.NegativeInfinity,float.NegativeInfinity);
+                for(int c=0;c<text.textInfo.characterCount;c++)
+                {
+                    var glyph=text.textInfo.characterInfo[c];if(!glyph.isVisible)continue;
+                    var vertices=text.textInfo.meshInfo[glyph.materialReferenceIndex].vertices;
+                    for(int k=0;k<4;k++){Vector2 v=vertices[glyph.vertexIndex+k];min=Vector2.Min(min,v);max=Vector2.Max(max,v);}
+                }
+                if(!float.IsInfinity(min.x))offset=-(Vector3)((min+max)*.5f);
+            }
             for(int c=0;c<text.textInfo.characterCount;c++)
             {
                 var character=text.textInfo.characterInfo[c];if(!character.isVisible)continue;
                 var meshInfo=text.textInfo.meshInfo[character.materialReferenceIndex];int v=character.vertexIndex;
-                float born=text==title?titleDelay+c*characterInterval:text==subtitle?fullAt:fullAt+.25f;
+                float born=titleDelay+c*characterInterval;
                 float appear=Smooth01((age-born)/.26f);
-                float y=(Mathf.PerlinNoise(c*7.13f+4.7f,age*.28f)*2-1)*characterFloat*1.5f
-                    +Mathf.Sin(age*1.1f+c*2.399f)*characterFloat*.24f+(1-appear)*8;
-                float x=0;
-                if(text==title)
-                {
-                    float target=(meshInfo.vertices[v].x+meshInfo.vertices[v+2].x)*.5f;
-                    if(!characterPositioned[c]){characterX[c]=target;characterPositioned[c]=true;}
-                    characterX[c]=Mathf.Lerp(characterX[c],target,1-Mathf.Exp(-Time.unscaledDeltaTime*16));
-                    x=characterX[c]-target;
-                }
-                // Start's hit target stays still. Title/subtitle letters each have independent smooth noise.
-                if(text==startLabel)y=0;
                 for(int corner=0;corner<4;corner++)
                 {
-                    meshInfo.vertices[v+corner]+=new Vector3(x,y,0);
+                    meshInfo.vertices[v+corner]+=offset;
                     var color=meshInfo.colors32[v+corner];color.a=(byte)(255*appear);meshInfo.colors32[v+corner]=color;
                 }
             }
@@ -167,13 +162,11 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         else if(!IsTransitioning)introStartedAt+=Mathf.Max(0,Time.unscaledDeltaTime-.05f);
         if(width!=Screen.width || height!=Screen.height)RebuildMask();
         else RenderGlyphs();
-        // Explicit mouse hit testing avoids changing the scene's existing EventSystem/action setup.
-        bool over=Mouse.current!=null && RectTransformUtility.RectangleContainsScreenPoint(StartButtonRect,Mouse.current.position.ReadValue());
-        hover=Mathf.MoveTowards(hover,over && IntroReady && !IsTransitioning?1:0,Time.unscaledDeltaTime*5);
-        startButton.interactable=IntroReady && !IsTransitioning;
-        if(inputArmed && IntroReady && !IsTransitioning && ((over && Mouse.current.leftButton.wasPressedThisFrame)
+        UpdateRoomLook();
+        // Any fresh left click enters; keep the opening/held-input gate and consume the transition click.
+        if(inputArmed && IntroReady && !IsTransitioning && (Mouse.current?.leftButton.wasPressedThisFrame==true
             || Keyboard.current?.enterKey.wasPressedThisFrame==true || Keyboard.current?.spaceKey.wasPressedThisFrame==true
-            || Gamepad.current?.buttonSouth.wasPressedThisFrame==true))startButton.onClick.Invoke();
+            || Gamepad.current?.buttonSouth.wasPressedThisFrame==true))BeginGame();
         // Opening a scene while a submit key/button is held must not skip its title screen.
         if(!inputArmed && Time.frameCount>openedFrame+1 && Mouse.current?.leftButton.isPressed!=true
             && Keyboard.current?.enterKey.isPressed!=true && Keyboard.current?.spaceKey.isPressed!=true
@@ -183,15 +176,40 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         menuMaterial.SetFloat("_GridPitch",BlackBoxPointCloudFeature.GetDotSpacing(view));
         menuMaterial.SetFloat("_DotRadius",BlackBoxPointCloudFeature.GetDotDiameter(view)*.5f);
         menuMaterial.SetFloat("_TitleDotScale",titleDotScale);menuMaterial.SetFloat("_TitleDensity",titlePointDensity);
+        menuMaterial.SetFloat("_TitleShimmer",titleShimmer);menuMaterial.SetFloat("_MenuStarsEnabled",1);
+        menuMaterial.SetFloat("_RoomHalfSize",Mathf.Max(2,roomSize)*.5f);
+        menuMaterial.SetFloat("_RoomTanHalfFov",Mathf.Tan(Mathf.Clamp(roomFieldOfView,50,110)*Mathf.Deg2Rad*.5f));
+        menuMaterial.SetMatrix("_RoomView",Matrix4x4.Rotate(RoomViewRotation));
         menuMaterial.SetFloat("_OpeningTime",OpeningElapsed);
-        menuMaterial.SetFloat("_Transition",TransitionProgress);menuMaterial.SetFloat("_Hover",hover);
+        menuMaterial.SetFloat("_Transition",TransitionProgress);
         if(TransitionProgress>=1 && !finishing){finishing=true;StartCoroutine(FinishAfterInputFrame());}
+    }
+
+    void UpdateRoomLook()
+    {
+        if(IsTransitioning)return;
+        // Menu-only look: gameplay stays paused while the pointer looks around.
+        if(Mouse.current!=null)
+        {
+            Vector2 position=Mouse.current.position.ReadValue();
+            if(position.x>=0 && position.x<=Screen.width && position.y>=0 && position.y<=Screen.height)
+            {
+                Vector2 delta=Vector2.ClampMagnitude(Mouse.current.delta.ReadValue(),150)*mouseSensitivity;
+                lookTarget.x+=delta.x;lookTarget.y=Mathf.Clamp(lookTarget.y-delta.y,-78,78);
+            }
+        }
+        if(Gamepad.current!=null)lookTarget+=new Vector2(Gamepad.current.rightStick.x.ReadValue(),-Gamepad.current.rightStick.y.ReadValue())*(75*Time.unscaledDeltaTime);
+        lookTarget.y=Mathf.Clamp(lookTarget.y,-78,78);
+        // Keep yaw numerically bounded without changing the relative smoothing distance.
+        float turns=Mathf.Floor((lookTarget.x+180)/360)*360;lookTarget.x-=turns;lookAngles.x-=turns;
+        lookAngles=Vector2.SmoothDamp(lookAngles,lookTarget,ref lookVelocity,Mathf.Max(.01f,lookSmoothTime),Mathf.Infinity,Time.unscaledDeltaTime);
+        RoomViewRotation=Quaternion.Euler(lookAngles.y,lookAngles.x,0);
     }
 
     public void BeginGame()
     {
         if(!ownsPause || !IntroReady || IsTransitioning || HasStarted)return;
-        IsTransitioning=true;startedAt=Time.unscaledTime;startButton.interactable=false;
+        IsTransitioning=true;startedAt=Time.unscaledTime;
     }
 
     IEnumerator FinishAfterInputFrame()

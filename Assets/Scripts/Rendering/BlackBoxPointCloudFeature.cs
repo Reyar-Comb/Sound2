@@ -234,7 +234,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                         if (d.dangerGrid.IsValid()) properties.SetTexture("_DangerPointGrid", (RTHandle)d.dangerGrid);
                         if (d.depth.IsValid()) properties.SetTexture("_PointDepth", (RTHandle)d.depth);
                         context.cmd.DrawProcedural(Matrix4x4.identity, d.material, d.index,
-                            MeshTopology.Triangles, d.index == 3 ? 6 : 3, d.index == 3 ? 128 : 1, properties);
+                            MeshTopology.Triangles, d.index == 3 ? 6 : 3, d.index == 3 ? 384 : 1, properties);
                     });
                 }
             }

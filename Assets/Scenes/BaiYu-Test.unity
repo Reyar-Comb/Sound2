@@ -541,7 +541,11 @@ MonoBehaviour:
   characterInterval: 0.13
   titleDotScale: 1.65
   titlePointDensity: 0.5
-  characterFloat: 5
+  roomSize: 10
+  roomFieldOfView: 80
+  mouseSensitivity: 0.18
+  lookSmoothTime: 0.065
+  titleShimmer: 1
 --- !u!4 &1744119719
 Transform:
   m_ObjectHideFlags: 0

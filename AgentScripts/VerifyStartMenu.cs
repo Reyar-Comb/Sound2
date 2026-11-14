@@ -76,16 +76,16 @@ public static class VerifyStartMenu
         {
             Check(SonicSpaceStartMenu.BlocksGameplay && Time.timeScale==0 && AudioListener.pause && player.InputSuspended,"Menu pauses gameplay, audio and player input");
             var labels=menu.GetComponentsInChildren<TMPro.TextMeshProUGUI>(true);
-            Check(labels.Any(t=>t.text=="SONICSPACE") && labels.Any(t=>t.text=="声 之 域") && labels.All(t=>t.font==GameUiTheme.Current.textFont),"Both exact titles use the SECONDERSIGN theme font");
-            Check(labels.All(t=>t.text.Where(c=>!char.IsWhiteSpace(c)).All(c=>t.font.HasCharacter(c,true,true))),"Every menu glyph exists, including Chinese");
+            Check(labels.Length==1 && labels[0].text=="SONICSPACE" && labels.All(t=>t.font==GameUiTheme.Current.textFont),"Only the English title uses the SECONDERSIGN theme font");
+            Check(menu.GetComponentsInChildren<UnityEngine.UI.Button>(true).Length==0,"No Start button remains");
             float initial=await Capture("01-menu");Check(initial>.9f && initial<.999f,"Initial screen is white with visible black dotted lettering");
             mouse.MakeCurrent();keyboard.MakeCurrent();InputSystem.QueueStateEvent(keyboard,new KeyboardState(Key.W,Key.F1,Key.C));
-            InputSystem.QueueStateEvent(mouse,new MouseState {position=new Vector2(10,10)}.WithButton(MouseButton.Left));await Task.Delay(200);
-            Check(!menu.IsTransitioning && Vector3.Distance(position,player.transform.position)<.001f && sonar.Emissions==emissions && Time.time==worldTime,"Outside click / movement / debug keys do not start or affect the game");
+            InputSystem.QueueStateEvent(mouse,new MouseState {position=new Vector2(10,10)});await Task.Delay(200);
+            Check(!menu.IsTransitioning && Vector3.Distance(position,player.transform.position)<.001f && sonar.Emissions==emissions && Time.time==worldTime,"Movement / debug keys do not start or affect the game");
             InputSystem.QueueStateEvent(mouse,new MouseState {position=new Vector2(10,10)});await Task.Delay(60);
-            var point=RectTransformUtility.WorldToScreenPoint(null,menu.StartButtonRect.position);
+            var point=new Vector2(10,10);
             InputSystem.QueueStateEvent(mouse,new MouseState {position=point}.WithButton(MouseButton.Left));await Task.Delay(70);
-            Check(menu.IsTransitioning,"Real mouse click on Start begins the transition");
+            Check(menu.IsTransitioning,"A real mouse click in the screen corner begins the transition");
             InputSystem.QueueStateEvent(mouse,new MouseState {position=point});InputSystem.QueueStateEvent(keyboard,new KeyboardState());
             menu.transitionSeconds=1000;
             var start=typeof(SonicSpaceStartMenu).GetField("startedAt",Fields);
