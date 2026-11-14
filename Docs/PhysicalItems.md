@@ -20,3 +20,4 @@ PlayerPickup 的持物惯性由四元数指数追随和 SmoothDamp 位置平滑�
 
 报告和 GPU 截图位于 `Logs/PhysicalItems`、`Logs/CoinPoints`、`Logs/TeammateIntegration_20261114`。测试在 Unity Editor Play Mode 执行，未进行独立 Player 构建。旧 VerifyWorldObjects 的经济断言属于已移除玩法，不再作为现行入口；使用上述物理道具及渲染回归入口。
 
+所有 PickupItem 在新建和载入时补齐碰撞声波组件，关闭定时发波／共享切换键；有效碰撞发布独立 AI 听觉事件。

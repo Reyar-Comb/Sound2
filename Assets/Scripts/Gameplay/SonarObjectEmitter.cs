@@ -61,11 +61,19 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     SpatialAudioEmitter emitter;
     SonarCueSource cue;
     float nextEmission;
+    bool initialized;
 
     void Start()
     {
+        Initialize();
+        nextEmission = Time.time + firstDelay;
+    }
+
+    void Initialize()
+    {
         if (pulseField == null && sonar != null) pulseField = sonar.PulseField;
         if (pulseField == null) pulseField = FindAnyObjectByType<SonarPulseField>();
+        if (initialized) return;
         emitter = GetComponent<SpatialAudioEmitter>();
         if (emitter == null) emitter = gameObject.AddComponent<SpatialAudioEmitter>();
         source = emitter.Source;
@@ -79,7 +87,7 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
         emitter.settings.maxDistance = Mathf.Max(1, soundRange);
         emitter.volume = volume;
         emitter.Apply();
-        nextEmission = Time.time + firstDelay;
+        initialized = true;
     }
 
     void Update()
@@ -105,7 +113,9 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     /// <summary>Emit one pulse with a range override; preserve the authored base range for later emissions.</summary>
     public bool EmitWithRange(float pulseRange)
     {
-        if (!Application.isPlaying || !isActiveAndEnabled || pulseField == null || source == null) return false;
+        if (!Application.isPlaying || !isActiveAndEnabled) return false;
+        Initialize();
+        if (pulseField == null || source == null) return false;
         pulseRange = Mathf.Max(1, pulseRange);
         Vector3 origin = emissionOrigin != null ? emissionOrigin.position : transform.position;
         if (!pulseField.EmitFrom(origin,pulseRange,waveSpeed,afterglow,pulseKind,distanceSettings,densitySettings)) return false;

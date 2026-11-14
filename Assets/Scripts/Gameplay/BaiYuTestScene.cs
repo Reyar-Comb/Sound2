@@ -130,7 +130,7 @@ public sealed class BaiYuTestScene : MonoBehaviour
         var pickup = relay.AddComponent<PickupItem>();
         var body=relay.GetComponent<Rigidbody>();body.mass=.6f;body.interpolation=RigidbodyInterpolation.Interpolate;
         body.collisionDetectionMode=CollisionDetectionMode.ContinuousDynamic;
-        var pulse = relay.AddComponent<SonarObjectEmitter>();
+        var pulse = relay.GetComponent<SonarObjectEmitter>();
         pulse.toggleKey = UnityEngine.InputSystem.Key.None; pulse.range = 3; pulse.interval = 5;
         pulse.firstDelay = 1.5f; pulse.playSound = true;
 

@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>A reusable rigidbody item with a post-throw pickup lockout.</summary>
 [DisallowMultipleComponent]
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Rigidbody), typeof(CollisionSonarEmitter))]
 public sealed class PickupItem : InteractableObject
 {
     [Min(0f)] public float pickupCooldown = 1f;
@@ -40,12 +40,22 @@ public sealed class PickupItem : InteractableObject
 
     void Awake()
     {
+        // RequireComponent handles new items; this also upgrades already-authored scene/prefab instances.
+        EnsureImpactFeedback();
         body = GetComponent<Rigidbody>();
         var owned = new List<Collider>();
         foreach (var candidate in GetComponentsInChildren<Collider>(true))
             if (candidate.attachedRigidbody == body && !candidate.isTrigger) owned.Add(candidate);
         colliders = owned.ToArray();
         colliderEnabled = new bool[colliders.Length];
+    }
+
+    public void EnsureImpactFeedback()
+    {
+        if (GetComponent<CollisionSonarEmitter>() == null) gameObject.AddComponent<CollisionSonarEmitter>();
+        var sonar = GetComponent<SonarObjectEmitter>();
+        sonar.automatic = false;
+        sonar.toggleKey = UnityEngine.InputSystem.Key.None;
     }
 
     public bool TryPickUp(PlayerPickup picker, Transform anchor)

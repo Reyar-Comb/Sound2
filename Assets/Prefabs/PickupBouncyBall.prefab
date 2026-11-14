@@ -156,6 +156,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 32b9bed85ae39ff478e485143ff1a350, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupItem
+  interactionAnchor: {fileID: 0}
+  interactionEnabled: 1
+  interactionHint: "\u4EA4\u4E92"
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
   pickupCooldown: 1
   wallLayers:
     serializedVersion: 2
@@ -273,6 +279,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SonarObjectEmitter
   sonar: {fileID: 0}
   pulseField: {fileID: 0}
+  pulseKind: 0
+  emissionOrigin: {fileID: 0}
+  densitySettings:
+    enabled: 0
+    fadeStartDistance: 6
+    fadeEndDistance: 10
+    falloffPower: 1
   toggleKey: 0
   automatic: 0
   interval: 3
@@ -281,6 +294,18 @@ MonoBehaviour:
   soundRange: 16
   waveSpeed: 20
   afterglow: 0.2
+  distanceSettings:
+    enabled: 0
+    fadeStartDistance: 0.5
+    fadeEndDistance: 3
+    falloffPower: 2
+    pulseStrength: 0.65
+  distanceSettingsVersion: 1
+  legacyDistanceAttenuation: 0
+  legacyFadeStart: 0.5
+  legacyFadeEnd: 3
+  legacyFalloffPower: 2
+  legacyStrength: 0.65
   playSound: 1
   volume: 0.302
 --- !u!114 &4156179385338595490
@@ -302,3 +327,4 @@ MonoBehaviour:
     m_Bits: 4294967295
   rangePerSpeed: 2
   maximumRange: 36
+  hearingRange: 20

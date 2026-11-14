@@ -4,7 +4,6 @@ using UnityEngine.InputSystem;
 /// <summary>Triggers the existing object sonar on impacts, independently of pickup behaviour.</summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody), typeof(SonarObjectEmitter))]
-// random
 public sealed class CollisionSonarEmitter : MonoBehaviour
 {
     [Tooltip("Minimum relative speed into the contact surface, in metres per second.")]
@@ -39,7 +38,12 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
         objectSonar.toggleKey = Key.None;
     }
 
-    void Awake() => sonar = GetComponent<SonarObjectEmitter>();
+    void Awake()
+    {
+        sonar = GetComponent<SonarObjectEmitter>();
+        // Runtime-added components do not receive the editor's Reset callback.
+        if (GetComponent<PickupItem>() != null) sonar.toggleKey = Key.None;
+    }
 
     public float RangeForImpact(float impactSpeed)
     {
@@ -54,9 +58,11 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
     void OnCollisionEnter(Collision collision)
     {
         // Unity can send collision messages to disabled behaviours too.
-        if (!isActiveAndEnabled || sonar == null || !sonar.isActiveAndEnabled
+        if (!isActiveAndEnabled || sonar == null
             || Time.time < nextEmission || collision.contactCount == 0
             || (collisionLayers.value & (1 << collision.collider.gameObject.layer)) == 0) return;
+        if ((TryGetComponent<PickupItem>(out var item) && item.IsHeld)
+            || collision.collider.GetComponentInParent<PlayerController>() != null) return;
 
         float impactSpeed = 0;
         for (int i = 0; i < collision.contactCount; i++)
@@ -65,7 +71,8 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
         if (impactSpeed < minimumImpactSpeed) return;
 
         float pulseRange = RangeForImpact(impactSpeed);
-        if (!sonar.EmitWithRange(pulseRange)) return;
+        sonar.EmitWithRange(pulseRange);
+        // AI hearing is a gameplay event, not contingent on a renderer or audio source being ready.
         GameplayNoise.Emit(collision.GetContact(0).point, hearingRange * pulseRange / Mathf.Max(1, sonar.range),
             GameplayNoiseKind.Impact, this);
         LastImpactSpeed = impactSpeed;
