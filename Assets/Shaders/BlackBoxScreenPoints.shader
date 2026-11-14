@@ -38,6 +38,13 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
         float4 _PointViewport, _PointGridSize;
+        int _CoinSurfaceCount;
+        float4x4 _CoinSurfaceSpaces[128];
+        float4 _CoinSurfaceWaves[128]; // start time, total duration, density, travel fraction
+        float4 _LightningCloudCenter; // xyz centre, w radius
+        float4 _LightningCloudParameters; // rotation phase, state brightness, number of 3D points
+        float _PulsePalette;
+        float4 _PulseColor;
         float4 _CrosshairClearZone; // xy: viewport centre; zw: clear radius/feather at 720p
         int _PlayerUiCount;
         float4 _PlayerUiRects[128], _PlayerUiOptions[128];
@@ -67,7 +74,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             return smoothstep(_CrosshairClearZone.z+radius,
                 _CrosshairClearZone.z+radius+max(.1,_CrosshairClearZone.w),distance);
         }
-        TEXTURE2D(_PointGrid); TEXTURE2D_X_FLOAT(_PointDepth);
+        TEXTURE2D(_PointGrid); TEXTURE2D(_DangerPointGrid); TEXTURE2D_X_FLOAT(_PointDepth);
         float _RevealDistance, _WorldCircleRadius, _WorldCoreRadius;
         float _ScreenDotSpacing, _ScreenDotRadius;
         float4 _DistanceBands, _DensityLevels, _CoreDensityLevels, _WorldRadialBandEnds, _RadialDensityLevels;
@@ -125,16 +132,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         }
         // A fixed, periodic Bayer ordering thins one common lattice. No random
         // offsets, no changing pitch, and all density levels are nested subsets.
-        float OrderedRank(uint2 cell)
-        {
-            uint rank=0;
-            [unroll] for(uint bit=0;bit<8;bit++)
-            {
-                uint x=(cell.x>>bit)&1, y=(cell.y>>bit)&1;
-                rank|=(((x^y)<<1)|y)<<(2*(7-bit));
-            }
-            return (rank+0.5)/65536.0;
-        }
+        #include "ScreenPointLattice.hlsl"
         float Tier(float distance,float4 density)
         {
             return distance<_DistanceBands.x?density.x:distance<_DistanceBands.y?density.y:
@@ -219,13 +217,15 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             if(Random01(eventSeed)>=saturate(_StarChance)) return 0;
             return (animate?GentlePulse(frac(cycle)):1)*saturate(_StarBrightness);
         }
-        float4 SampleGrid(Varyings input):SV_Target
+        struct GridSamples { float4 normal:SV_Target0; float4 danger:SV_Target1; };
+        GridSamples SampleGrid(Varyings input)
         {
-            if(_BlackBoxPlayerActive<.5) return 0;
+            GridSamples samples; samples.normal=0; samples.danger=0;
+            if(_BlackBoxPlayerActive<.5) return samples;
             uint2 cell=(uint2)input.positionCS.xy;
             float pitch=max(_ScreenDotSpacing,1)*_PointViewport.y/720.0;
             float2 uv=(float2(cell)+.5)*pitch*_PointViewport.zw;
-            if(any(uv>=1)) return 0;
+            if(any(uv>=1)) return samples;
             float3 p,n;
             bool surface=SurfaceAt(uv,p,n);
             float4 result=0;
@@ -248,23 +248,56 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             {
                 // Same points and contours, gated by pulse arrival and fade.
                 float sonarRank=OrderedRank(cell);
-                float2 pulseReveal=SonarVisibility(p,n,sonarRank);
-                float reveal=pulseReveal.x;
+                PulseReveals pulseReveal=SonarVisibility(p,n,sonarRank);
+                float reveal=pulseReveal.white.x;
                 if(reveal>0)
                 {
                     float sonarDistance=length(_BlackBoxPlayerPosition.xyz-p);
-                    float sonarFace=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?pulseReveal.y:0;
+                    float sonarFace=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?pulseReveal.white.y:0;
                     float contour=_EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5
                         && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n)*reveal:0;
                     // Union the two masks. Overlapping dots retain their original brightness and size.
                     result=max(result,float4(sonarFace,contour,0,sonarFace>0 || contour>0?1:0));
                 }
+                float sonarDistance=length(_BlackBoxPlayerPosition.xyz-p);
+                bool faces=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5;
+                float edgeMask=_EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5
+                    && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n):0;
+                float2 red=float2(faces?pulseReveal.danger.y:0,edgeMask*pulseReveal.danger.x);
+                float2 blue=float2(faces?pulseReveal.lightning.y:0,edgeMask*pulseReveal.lightning.x);
+                float2 gold=float2(faces?pulseReveal.coin.y:0,edgeMask*pulseReveal.coin.x);
+                // Store brightness and palette separately for the two original styles.
+                float2 face=red.x>0?float2(red.x,1.0/3):blue.x>0?float2(blue.x,2.0/3):float2(gold.x,1);
+                float2 edge=red.y>0?float2(red.y,1.0/3):blue.y>0?float2(blue.y,2.0/3):float2(gold.y,1);
+                samples.danger=float4(face.x,edge.x,face.y,edge.y);
+            }
+            if(surface)
+            {
+                [loop] for(int coin=0;coin<min(_CoinSurfaceCount,128);coin++)
+                {
+                    float3 local=mul(_CoinSurfaceSpaces[coin],float4(p,1)).xyz;
+                    float radial=length(local.xz);
+                    if(radial>1.035 || abs(local.y)>1.035)continue;
+                    float4 wave=_CoinSurfaceWaves[coin];
+                    float age=_PointAnimationTime-wave.x-saturate(radial)*wave.y*wave.w;
+                    float brightness=PulseAfterglow(age,wave.y*(1-wave.w));
+                    float points=OrderedRank(cell)<wave.z?brightness:0;
+                    // The intrinsic wave replaces proximity/other pulses on the coin itself.
+                    // It uses the original screen lattice, dot radius and UI exclusions.
+                    result=float4(_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?points:0,0,0,1);
+                    samples.danger=0;
+                    break;
+                }
             }
             float radius=clamp(_ScreenDotRadius,0,max(_ScreenDotSpacing,1)*.75)+.70710678*720.0/_PointViewport.y;
-            result.rg*=PlayerUiVisibility(uv*_PointViewport.xy,radius);
-            return result;
+            float uiVisibility=PlayerUiVisibility(uv*_PointViewport.xy,radius);
+            result.rg*=uiVisibility;
+            samples.danger.rg*=uiVisibility;
+            samples.normal=result;
+            return samples;
         }
-        float DrawPoints(Varyings input,int channel)
+        // Every color uses this exact grid, circle, AA and reticle mask calculation.
+        float2 PointResponse(Varyings input,int channel,bool danger)
         {
             float referencePixel=720.0/_PointViewport.y;
             float2 screen=input.positionCS.xy*referencePixel;
@@ -272,20 +305,39 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             int2 cell=(int2)floor(screen/pitch);
             float radius=clamp(_ScreenDotRadius,0,pitch*.75);
             float aa=.70710678*referencePixel;
-            float result=0;
+            float2 result=0;
             [unroll] for(int y=-1;y<=1;y++) [unroll] for(int x=-1;x<=1;x++)
             {
                 int2 candidate=cell+int2(x,y);
                 if(any(candidate<0)||any(candidate>=int2(_PointGridSize.xy))) continue;
-                float decision=LOAD_TEXTURE2D(_PointGrid,candidate)[channel];
-                decision*=CrosshairPointVisibility((float2(candidate)+.5)*pitch,radius+aa);
-                float distance=length(screen-(float2(candidate)+.5)*pitch);
-                result=max(result,decision*(1-smoothstep(radius-aa,radius+aa,distance)));
+                float4 gridSample=danger?LOAD_TEXTURE2D(_DangerPointGrid,candidate):LOAD_TEXTURE2D(_PointGrid,candidate);
+                float decision=gridSample[channel];
+                if(danger && abs(gridSample[channel+2]*3-_PulsePalette)>.25) decision=0;
+                float mask=CrosshairPointVisibility((float2(candidate)+.5)*pitch,radius+aa);
+                float circle=1-smoothstep(radius-aa,radius+aa,length(screen-(float2(candidate)+.5)*pitch));
+                result.x=max(result.x,decision*mask*circle);
+                if(decision>0) result.y=max(result.y,mask*circle);
             }
             return result;
         }
+        float DrawPoints(Varyings input,int channel) { return PointResponse(input,channel,false).x; }
         half4 DrawFaces(Varyings input):SV_Target { float v=DrawPoints(input,0);return half4(v,v,v,0); }
         half4 DrawCorners(Varyings input):SV_Target { float v=DrawPoints(input,1);return half4(v,v,v,0); }
+        half4 DrawDanger(Varyings input,int channel)
+        {
+            float2 dotResponse=PointResponse(input,channel,true);
+            // White underneath is cleared first; maximum blending preserves overlapping red AA.
+            return half4(_PulseColor.rgb*dotResponse.x,dotResponse.y);
+        }
+        half4 DrawDangerFaces(Varyings input):SV_Target { return DrawDanger(input,0); }
+        half4 DrawDangerCorners(Varyings input):SV_Target { return DrawDanger(input,1); }
+        half4 ClearDanger(Varyings input,int channel)
+        {
+            clip(PointResponse(input,channel,true).y-0.000001);
+            return 0;
+        }
+        half4 ClearDangerFaces(Varyings input):SV_Target { return ClearDanger(input,0); }
+        half4 ClearDangerCorners(Varyings input):SV_Target { return ClearDanger(input,1); }
         struct StarVaryings
         {
             float4 positionCS:SV_POSITION;
@@ -335,6 +387,59 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             float v=input.brightness*(1-smoothstep(radius-aa,radius+aa,length(input.offset)));
             return half4(v,v,v,0);
         }
+        // Actual 3D volume samples: independent billboards, no opaque sphere and no point depth writes.
+        struct CloudVaryings {float4 positionCS:SV_POSITION;float2 offset:TEXCOORD0;float brightness:TEXCOORD1;};
+        CloudVaryings CloudVert(uint vertexID:SV_VertexID,uint pointID:SV_InstanceID)
+        {
+            CloudVaryings o;o.positionCS=float4(2,2,0,1);o.offset=0;o.brightness=0;
+            if(_BlackBoxPlayerActive<.5 || _BlackBoxStyleVisibility.x<.5)return o;
+            float y=1-2*(pointID+.5)/max(1,_LightningCloudParameters.z);
+            float angle=pointID*2.39996323+_LightningCloudParameters.x;
+            float ring=sqrt(saturate(1-y*y));
+            float3 normal=float3(cos(angle)*ring,y,sin(angle)*ring);
+            float radius=pow(frac((pointID+.5)*.754877666),1.0/3);
+            float3 p=_LightningCloudCenter.xyz+normal*radius*_LightningCloudCenter.w;
+            float4 center=mul(_StarViewProjection,float4(p,1));
+            if(center.w<=.0001)return o;
+            float2 ndc=center.xy/center.w,uv=ndc*.5+.5;
+            #if UNITY_UV_STARTS_AT_TOP
+                uv.y=1-uv.y;
+            #endif
+            if(any(uv<0)||any(uv>=1))return o;
+            // Only real scene geometry occludes these points. Front cloud points never hide back points.
+            float3 wall;
+            if(WorldAtPixel((int2)(uv*_PointViewport.xy),wall)
+                && distance(_WorldSpaceCameraPos,p)>distance(_WorldSpaceCameraPos,wall)+.035)return o;
+            float pitch=max(1,_ScreenDotSpacing),scale=_PointViewport.y/720;
+            uint2 cell=(uint2)floor(uv*_PointViewport.xy/(pitch*scale));
+            float2 screenCenter=(float2(cell)+.5)*pitch;
+            float distanceToPlayer=distance(p,_BlackBoxPlayerPosition.xyz);
+            float brightness=_BlackBoxRevealModes.x>.5?1-smoothstep(_RevealDistance*.8,_RevealDistance,distanceToPlayer):0;
+            if(_BlackBoxRevealModes.y>.5 && _SonarActive>.5)
+            {
+                PulseReveals pulse=SonarVisibility(p,normal,OrderedRank(cell));
+                brightness=max(brightness,max(max(pulse.white.x,pulse.coin.x),max(pulse.danger.x,pulse.lightning.x)));
+            }
+            float dotRadius=clamp(_ScreenDotRadius,0,pitch*.75),extent=dotRadius+.70710678/scale;
+            brightness*=_LightningCloudParameters.y*CrosshairPointVisibility(screenCenter,extent)
+                *PlayerUiVisibility(screenCenter*scale,extent);
+            if(brightness<.0001)return o;
+            float2 snapped=screenCenter*scale*_PointViewport.zw;
+            #if UNITY_UV_STARTS_AT_TOP
+                snapped.y=1-snapped.y;
+            #endif
+            float2 corners[6]={float2(-1,-1),float2(-1,1),float2(1,1),float2(-1,-1),float2(1,1),float2(1,-1)};
+            o.offset=corners[vertexID]*extent;
+            o.positionCS=float4(snapped*2-1+o.offset*scale*_PointViewport.zw*2,0,1);
+            o.brightness=brightness;return o;
+        }
+        float CloudCircle(CloudVaryings i)
+        {
+            float radius=clamp(_ScreenDotRadius,0,max(1,_ScreenDotSpacing)*.75),aa=.70710678*720/_PointViewport.y;
+            return 1-smoothstep(radius-aa,radius+aa,length(i.offset));
+        }
+        half4 ClearCloud(CloudVaryings i):SV_Target {clip(i.brightness*CloudCircle(i)-.000001);return 0;}
+        half4 DrawCloud(CloudVaryings i):SV_Target {float v=i.brightness*CloudCircle(i);return half4(0,0,v,0);}
         ENDHLSL
         Pass
         {
@@ -372,6 +477,64 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             HLSLPROGRAM
             #pragma vertex StarVert
             #pragma fragment DrawStars
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "DangerFaceDots"
+            Blend One One
+            BlendOp Max
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment DrawDangerFaces
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "DangerCornerDots"
+            Blend One One
+            BlendOp Max
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment DrawDangerCorners
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "ClearDangerFaces"
+            Blend Off
+            ColorMask RGB
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment ClearDangerFaces
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "ClearDangerCorners"
+            Blend Off
+            ColorMask RGB
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment ClearDangerCorners
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "ClearLightningCloud"
+            Blend Off ColorMask RGB
+            HLSLPROGRAM
+            #pragma vertex CloudVert
+            #pragma fragment ClearCloud
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "LightningVolumePoints"
+            Blend One One BlendOp Max
+            HLSLPROGRAM
+            #pragma vertex CloudVert
+            #pragma fragment DrawCloud
             ENDHLSL
         }
     }

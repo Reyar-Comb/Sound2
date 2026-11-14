@@ -133,14 +133,14 @@ namespace Sound2.LevelEditing.Editor
         {
             rootVisualElement.Q("tools").Clear(); rootVisualElement.Q("objects").Clear();
             rootVisualElement.Q("properties").Clear(); rootVisualElement.Q("footer").Clear();
-            rootVisualElement.Q<Label>("instructions").text = "独立程序化模式：楼层编号 = 种子。相同楼层可复现，越深房间、分支与资源越多。手工布局不受影响。";
+            rootVisualElement.Q<Label>("instructions").text = "独立程序化模式：楼层编号 = 种子。相同楼层可复现，越深房间、分支与可搬运物品越多。手工布局不受影响。";
             var area = rootVisualElement.Q("settings"); area.Clear();
             var target = new ObjectField("程序化地图") { objectType = typeof(LevelMap), allowSceneObjects = true, value = seededMap };
             target.RegisterValueChangedCallback(e => { seededMap = (LevelMap)e.newValue; Refresh(); }); area.Add(target);
             var seed = new IntegerField("预览层数 / 种子") { value = previewFloor, isDelayed = true };
             seed.RegisterValueChangedCallback(e => { previewFloor = Mathf.Max(0, e.newValue); Refresh(); }); area.Add(seed);
             var plan = SeededFloorPlan.Generate(previewFloor, seededMap != null ? seededMap.growthLimit : 24);
-            area.Add(new Label($"F{previewFloor}：{plan.Rooms.Count} 房间 · {plan.Connections.Count} 连接 · {plan.Cells.Count} m² · {plan.Resources.Count} 资源"));
+            area.Add(new Label($"F{previewFloor}：{plan.Rooms.Count} 房间 · {plan.Connections.Count} 连接 · {plan.Cells.Count} m² · {plan.Resources.Count} 物品"));
             area.Add(new Label("输入仅预览指定层。实际游戏从 F0 开始，穿过竖井后进入 F1、F2……"));
             if (seededMap != null)
             {

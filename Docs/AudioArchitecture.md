@@ -116,7 +116,7 @@ public void Reveal(Vector3 origin)
 }
 ```
 
-`SonarPulseField` 沿用原有六面采样、首个碰撞面遮挡和 Shader 参数；4 个主波槽供主动探测与物体使用，另有 4 个脚步波槽。一个场景共用一份 Field；所有物体指向它，不要为每个声源各建一份。它控制可视声波的直达可见性，声音的反射由 Steam Audio 负责。
+`SonarPulseField` 沿用原有六面采样、首个碰撞面遮挡和 Shader 参数；4 个主波槽供主动探测与物体使用，另有 4 个脚步波槽、4 个危险波槽、8 个金币波槽和 4 个闪电波槽。一个场景共用一份 Field；所有物体指向它，不要为每个声源各建一份。它控制可视声波的直达可见性，声音的反射由 Steam Audio 负责。
 
 ## 独立的靠近显影与声波显影
 
@@ -173,11 +173,11 @@ public void Reveal(Vector3 origin)
 
 `SonarDistanceSettings` 是玩家、物体、脚步共用的可序列化配置类型，每个组件独立持有实例。包含 enabled、fadeStartDistance、fadeEndDistance、falloffPower、pulseStrength，Inspector 在 Distance Settings 下调整。已有玩家/物体平铺字段通过 FormerlySerializedAs 和版本标记迁移，原调用名称仍作为兼容属性保留。现有场景的玩家与方块配置保持原值。
 
-`SonarPulseField.EmitFrom(origin, range, speed, afterglow, settings)` 在发射时打包配置，旧四参数入口仍关闭衰减，原八参数入口也保留。Shader 的 `_SonarPulseDistanceFalloffs` 为每个槽独立记录开始/终止距离、指数及强度。距离从固定发声原点计算，终止距离外硬裁剪；范围内将距离增益乘到原时间淡出上，多个波仍取 max。这是可视探索范围，与音频距离增益分别配置。
+`SonarPulseField.EmitFrom(origin, range, speed, afterglow, settings)` 在发射时打包配置，旧四参数入口仍关闭衰减，原八参数入口也保留。Shader 的 `_SonarSceneDistanceFalloffs` 为每个槽独立记录开始/终止距离、指数及强度。距离从固定发声原点计算，终止距离外硬裁剪；范围内将距离增益乘到原时间淡出上，多个波仍取 max。这是可视探索范围，与音频距离增益分别配置。
 
 `FootstepEmitter` 位于 SonarHall 的 Player 根物体，只读取 `PlayerController` 实际水平位移，不接管输入或移动。默认每 1.5m 一步，最小间隔 0.18s；停步、转头、纯升降、顶墙、输入暂停不触发。单帧位移超过 2m 重置累计，不补发传送脚步。Require Grounded 默认关闭以适配当前自由升降控制；正式贴地行走时可打开。
 
-脚步调用 `EmitFootstepFrom`，起点为胶囊底部上方 0.12m，默认 3m 范围、8m/s、0.3s 余像、0.4–3m 距离衰减、指数 2、强度 0.6。波槽 0–3 供主波使用，4–7 供脚步使用，各自循环，不互相覆盖。Shader 共读取 8 槽；脚步使用 24×24×6 方向采样，主波使用 48×48×6，沿用同一首碰撞面纹理布局。局部脚步的角采样精度较低，薄小物体和边界可能存在误差。
+脚步调用 `EmitFootstepFrom`，起点为胶囊底部上方 0.12m，默认 3m 范围、8m/s、0.3s 余像、0.4–3m 距离衰减、指数 2、强度 0.6。波槽 0–3 供主波使用，4–7 供脚步使用，各自循环，不互相覆盖。8–11 供怪物危险波使用。Shader 共读取 24 槽；脚步使用 24×24×6 方向采样，主波使用 48×48×6，沿用同一首碰撞面纹理布局。局部脚步的角采样精度较低，薄小物体和边界可能存在误差。
 
 脚步的音效素材暂空，可选 AudioSource + Clips 轮流播放，或从 `onStep` / `Stepped` 收到世界坐标后接音效池。普通 AudioSource 随玩家移动，若希望尾音固定在脚步位置，使用已有 `ImpactSoundPool.PlayAt`。脚步开关在组件 `Emission Enabled` 和按键 6；按键 5 只控制主动探测波。BlackBox 原始场景与共享 Player prefab 未增加脚步行为。
 
@@ -200,3 +200,17 @@ public void Reveal(Vector3 origin)
 本次验证：脚步行为 16 项、衰减与实际画面 19 项、共享角色控制 16 项、显影开关 10 项全部通过，C# 编译无错误或警告。截图检查包括脚步专用槽的近处显影、3m 外全黑和余像消失。
 
 像素测试报告输出在 `/tmp/Sound2-*.json`；脚步与共享角色测试直接返回结构化结果，不会成为游戏运行代码。
+
+
+## 怪物与玩法听觉
+
+`GameplayNoise` 将玩法听觉与音频 Clip、显影范围解耦。脚步和有效球碰撞分别发布 Footstep/Impact 事件；`PatrolMonster` 在范围和墙体检查通过后前往事件的固定位置，搜索后恢复巡视。`RuntimePatrolNavigation` 为地图静态碰撞体构建共享 NavMesh。组件参数与使用方法见 [MonsterGameplay.md](MonsterGameplay.md)。
+
+`MonsterScanEmitter` 根据玩家距离调整周期，向同一 SonarPulseField 的 8–11 槽发红波。全局数组为 `_SonarSceneOrigins`、`_SonarSceneParameters`、`_SonarSceneDistanceFalloffs`，总长度 24。Shader 的同一次采样输出普通/危险两份网格，调用相同点位、疏密、半径和遮挡规则；所有白点绘制后，仅清除红点实际覆盖区域，再以 Max 绘制红点，保证交叠时红色优先且抗锯齿不泛白。原靠近显影、准星避让和样式开关继续生效。
+
+
+## 场景奖励、危险物与密度配置
+
+SonarObjectEmitter 新增 Pulse Kind、Emission Origin、Density Settings 和 Emitted 事件，旧白色物体保持默认 Main 类型。金币和闪电都组合这个正式组件：CoinPickup 负责浮动/自转、短暂本体显现和钱包交易；BallLightning 负责独立导航、状态配置、伤害及怪物避让信息。PlayerWallet、PlayerVitality 和 PlayerStatusHUD 分别处理经济、生命和展示，后续商店/奖励通过钱包接口调用，不直接修改显示计数。详见 [WorldObjects.md](WorldObjects.md)。
+
+SonarDensitySettings 经 `_SonarDensityFalloffs` 保存每次发射的密度起止距离与指数，原亮度配置继续经 `_SonarSceneDistanceFalloffs` 发布。当前波场全局数组长度 24，新增金币/闪电槽与原三组隔离；彩色网格保存面/边的亮度及各自调色板编号，统一圆点绘制按黄、蓝、红顺序合成，保留危险红色优先级。

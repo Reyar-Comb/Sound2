@@ -12,13 +12,15 @@ public sealed class PlayerSubtitles : MonoBehaviour
     public TMP_Text SubtitleText => subtitle;
     public TMP_Text FloorText => floorLabel;
     public int PendingCount => queue.Count;
-    public string CurrentText => current != null ? current.text : "";
+    public string CurrentText => urgent != null ? urgent.text : current != null ? current.text : "";
 
     readonly Queue<SubtitleCue> queue = new();
     PlayerController controller;
     Canvas canvas;
     TextMeshProUGUI subtitle, floorLabel;
     SubtitleCue current;
+    SubtitleCue urgent;
+    float urgentElapsed;
     float elapsed;
 
     void Awake()
@@ -61,6 +63,13 @@ public sealed class PlayerSubtitles : MonoBehaviour
         queue.Enqueue(new SubtitleCue(cue.text, Mathf.Max(.1f, cue.duration)));
     }
     public void Show(string text, float duration = 4) => Enqueue(new SubtitleCue(text, duration));
+    // Interaction feedback takes priority without discarding the unfinished floor guidance.
+    public void ShowImmediate(string text, float duration = 2)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+        urgent = new SubtitleCue(text, Mathf.Max(.1f, duration));
+        urgentElapsed = 0;
+    }
     public void Replace(IEnumerable<SubtitleCue> cues)
     {
         Clear();
@@ -68,7 +77,7 @@ public sealed class PlayerSubtitles : MonoBehaviour
     }
     public void Clear()
     {
-        queue.Clear(); current = null; elapsed = 0;
+        queue.Clear(); current = urgent = null; elapsed = urgentElapsed = 0;
         if (subtitle != null) { subtitle.text = ""; subtitle.color = new Color(1, 1, 1, 0); }
     }
     void Update()
@@ -77,16 +86,23 @@ public sealed class PlayerSubtitles : MonoBehaviour
         bool visible = controller != null && controller.isActiveAndEnabled && !controller.InputSuspended;
         canvas.enabled = visible;
         if (!visible || Time.timeScale <= 0) return;
-        if (current == null && queue.Count > 0)
+        if (urgent == null && current == null && queue.Count > 0)
         {
             current = queue.Dequeue(); elapsed = 0; subtitle.text = current.text;
         }
-        if (current == null) return;
-        elapsed += Time.deltaTime;
-        float fade = Mathf.Max(.01f, fadeTime), end = current.duration + fade * 2;
-        float alpha = Mathf.SmoothStep(0, 1, Mathf.Min(elapsed / fade, (end - elapsed) / fade));
+        var cue = urgent ?? current;
+        if (cue == null) return;
+        subtitle.text = cue.text;
+        if (urgent != null) urgentElapsed += Time.deltaTime; else elapsed += Time.deltaTime;
+        float activeElapsed = urgent != null ? urgentElapsed : elapsed;
+        float fade = Mathf.Max(.01f, fadeTime), end = cue.duration + fade * 2;
+        float alpha = Mathf.SmoothStep(0, 1, Mathf.Min(activeElapsed / fade, (end - activeElapsed) / fade));
         subtitle.color = new Color(1, 1, 1, alpha);
-        if (elapsed >= end) { current = null; subtitle.text = ""; }
+        if (activeElapsed >= end)
+        {
+            if (urgent != null) urgent = null; else current = null;
+            subtitle.text = "";
+        }
     }
     void OnDisable() { if (canvas != null) canvas.enabled = false; }
     void OnDestroy() { if (canvas != null) Destroy(canvas.gameObject); }

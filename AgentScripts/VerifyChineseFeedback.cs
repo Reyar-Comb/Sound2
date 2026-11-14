@@ -1,0 +1,8 @@
+using System;using System.Linq;using System.Threading.Tasks;using UnityEngine;
+public static class VerifyChineseFeedback {
+ public static async Task<object> Main(){var sub=UnityEngine.Object.FindAnyObjectByType<PlayerSubtitles>();sub.GetComponent<PlayerController>().SetInputCaptured(true);sub.fadeTime=.05f;
+ sub.Replace(new[]{new SubtitleCue("楼层引导甲",.3f),new SubtitleCue("楼层引导乙",.2f)});await Task.Delay(80);sub.ShowImmediate("即时操作反馈",.2f);await Task.Delay(80);if(sub.CurrentText!="即时操作反馈")throw new Exception("Feedback did not interrupt guidance");await Task.Delay(300);if(sub.CurrentText!="楼层引导甲")throw new Exception("Interrupted guidance was lost");await Task.Delay(650);if(sub.CurrentText!=""||sub.PendingCount!=0)throw new Exception("Guidance queue did not resume and finish");
+ var setup=UnityEngine.Object.FindAnyObjectByType<BaiYuTestScene>();var profile=setup.map.profile;var messages=profile.overrides.SelectMany(x=>x.entrySubtitles).Select(x=>x.text).Append(profile.defaultEntryText).ToArray();if(messages.Any(x=>!x.Any(c=>c>='\u4e00'&&c<='\u9fff')))throw new Exception("English-only narrative remains");
+ string text=string.Concat(messages)+"鼠标左键投掷拾取收集资源切换闪电状态球状闪电已激活球状闪电已平静已收集资源金币生命资源生命值耗尽";var font=GameUiTheme.Current.textFont;var missing=text.Distinct().Where(c=>!char.IsWhiteSpace(c)&&!font.HasCharacter(c,true,true)).ToArray();if(missing.Length>0)throw new Exception("Missing Chinese glyphs: "+new string(missing));
+ return new{passed=true,narrativeMessages=messages.Length,missingGlyphs=missing.Length,checks=new[]{"Immediate interaction feedback","Floor guidance resumes after feedback","Chinese floor captions","Chinese glyph coverage"}};}
+}

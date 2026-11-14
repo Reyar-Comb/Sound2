@@ -131,13 +131,35 @@ public static class VerifyInteraction
             InputSystem.QueueStateEvent(mouse, new MouseState());
             await Tick();
             pickup.throwSpeed = pickup.throwUpwardSpeed = 0;
-            item.pickupCooldown = 5;
+            item.pickupCooldown = .4f;
             InputSystem.QueueStateEvent(mouse, new MouseState().WithButton(MouseButton.Left));
             await Tick();
             Check(pickup.HeldItem == null && !item.CanPickUp, "Mouse throw did not preserve pickup cooldown.");
             InputSystem.QueueStateEvent(mouse, new MouseState());
             await Tick();
             Check(interaction.FocusedTarget != item, "Cooldown item advertised interaction.");
+            // Keep the same physical object and repeat actual mouse presses; a first
+            // pickup alone does not detect stale held/rigidbody state after release.
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                await Tick(500);
+                Check(interaction.FocusedTarget == item, "Released item did not regain focus.");
+                mouse.MakeCurrent();
+                InputSystem.QueueStateEvent(mouse, new MouseState().WithButton(MouseButton.Left));
+                await Tick();
+                Check(pickup.HeldItem == item && item.gameObject.activeInHierarchy
+                    && Vector3.Distance(body.position, item.transform.position) < .002f,
+                    "Repeated mouse pickup lost the item or its physics pose.");
+                InputSystem.QueueStateEvent(mouse, new MouseState());
+                await Tick();
+                InputSystem.QueueStateEvent(mouse, new MouseState().WithButton(MouseButton.Left));
+                await Tick();
+                Check(pickup.HeldItem == null && !body.isKinematic && item.GetComponent<Collider>().enabled,
+                    "Repeated mouse pickup could not be thrown.");
+                InputSystem.QueueStateEvent(mouse, new MouseState());
+                await Tick();
+            }
+            checks.Add("same-object repeated mouse pickup/throw (three cycles)");
             itemObject.SetActive(false);
             nearerObject.SetActive(false);
             checks.Add("exact-target mouse pickup + throw + cooldown");

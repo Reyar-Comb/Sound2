@@ -14,6 +14,7 @@ public sealed class PickupItem : InteractableObject
     public Vector3 heldEulerAngles;
 
     public bool IsHeld => holder != null;
+    public override string InteractionHint => "拾取";
     public PlayerPickup Holder => holder;
     public bool CanPickUp => isActiveAndEnabled && !IsHeld && Time.time >= pickupAllowedAt;
     public override bool CanInteract(PlayerInteraction player) => base.CanInteract(player) && CanPickUp
@@ -51,13 +52,23 @@ public sealed class PickupItem : InteractableObject
     {
         if (!CanPickUp || picker == null || anchor == null || colliders.Length == 0) return false;
         RestoreIgnoredCollisions(true);
+        Physics.SyncTransforms();
         CollisionRadius = .05f;
         for (int i = 0; i < colliders.Length; i++)
         {
             colliderEnabled[i] = colliders[i].enabled;
-            if (colliderEnabled[i])
+            if (!colliderEnabled[i]) continue;
+            // A moving/interpolated body's physics bounds can lag its rendered transform.
+            // Derive spheres from their shape, not the diagonal of a stale world AABB.
+            if (colliders[i] is SphereCollider sphere)
+            {
+                var scale = sphere.transform.lossyScale;
+                float radius = sphere.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
                 CollisionRadius = Mathf.Max(CollisionRadius,
-                    Vector3.Distance(transform.position, colliders[i].bounds.center) + colliders[i].bounds.extents.magnitude);
+                    Vector3.Distance(transform.position, sphere.transform.TransformPoint(sphere.center)) + radius);
+            }
+            else CollisionRadius = Mathf.Max(CollisionRadius,
+                Vector3.Distance(transform.position, colliders[i].bounds.center) + colliders[i].bounds.extents.magnitude);
         }
         originalParent = transform.parent;
         previousGravity = body.useGravity;
@@ -77,15 +88,27 @@ public sealed class PickupItem : InteractableObject
         transform.SetParent(anchor, true);
         transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.Euler(heldEulerAngles);
+        body.position = transform.position;
+        body.rotation = transform.rotation;
+        Physics.SyncTransforms();
         return true;
     }
 
-    public void Release(Vector3 position, Vector3 velocity)
+    public void SetHeldPose(Vector3 position, Quaternion rotation)
+    {
+        if (!IsHeld) return;
+        transform.SetPositionAndRotation(position, rotation);
+        body.position = position;
+        body.rotation = rotation;
+    }
+
+    public void Release(Vector3 position, Vector3 velocity,float cooldown=-1)
     {
         if (!IsHeld) return;
         var playerColliders = holder.GetComponentsInChildren<Collider>();
+        var releaseParent = ReleaseParent();
         holder = null;
-        transform.SetParent(originalParent, true);
+        transform.SetParent(releaseParent, true);
         transform.position = position;
         body.position = position;
         body.rotation = transform.rotation;
@@ -105,10 +128,20 @@ public sealed class PickupItem : InteractableObject
                 ignoredPairs.Add((colliders[i], playerCollider));
             }
         }
-        pickupAllowedAt = Time.time + pickupCooldown;
+        pickupAllowedAt = Time.time + (cooldown<0?pickupCooldown:cooldown);
         body.linearVelocity = velocity;
         body.angularVelocity = Vector3.zero;
         body.WakeUp();
+    }
+
+    Transform ReleaseParent()
+    {
+        var progress = holder.GetComponent<PlayerFloorProgression>();
+        var current = progress != null && progress.Map != null ? progress.Map.FindFloor(progress.CurrentFloor) : null;
+        var previous = originalParent != null ? originalParent.GetComponentInParent<Sound2.LevelEditing.SeededFloor>() : null;
+        if (current != null && (originalParent == null || !originalParent.gameObject.activeInHierarchy || previous != current))
+            return current.transform;
+        return originalParent != null && originalParent.gameObject.activeInHierarchy ? originalParent : null;
     }
 
     void FixedUpdate() => RestoreIgnoredCollisions(false);

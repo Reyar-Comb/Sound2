@@ -66,8 +66,19 @@ public sealed class PlayerController : MonoBehaviour
 
     public void SetInputCaptured(bool captured)
     {
+        if(SonicSpaceStartMenu.BlocksGameplay)captured=false;
         InputSuspended = !captured;
         ApplyCursorCapture(captured && isActiveAndEnabled);
+    }
+
+    public void Teleport(Vector3 position)
+    {
+        bool wasEnabled = characterController.enabled;
+        characterController.enabled = false;
+        transform.position = position;
+        fallSpeed = 0;
+        characterController.enabled = wasEnabled;
+        Physics.SyncTransforms();
     }
 
     private static void ApplyCursorCapture(bool captured)

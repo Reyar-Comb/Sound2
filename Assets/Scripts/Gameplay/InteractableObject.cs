@@ -8,6 +8,8 @@ public class InteractableObject : MonoBehaviour
     [Tooltip("Optional world-space point for aiming and the interaction ring. Defaults to this transform.")]
     public Transform interactionAnchor;
     public bool interactionEnabled = true;
+    public string interactionHint = "交互";
+    public virtual string InteractionHint => interactionHint;
     public UnityEvent<PlayerInteraction> onInteract = new();
 
     public Vector3 InteractionPosition => interactionAnchor != null ? interactionAnchor.position : transform.position;

@@ -9,6 +9,11 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     [Tooltip("Legacy player reference; existing scenes keep working.")]
     public SphericalSonar sonar;
     public SonarPulseField pulseField;
+    public SonarPulseKind pulseKind = SonarPulseKind.Main;
+    [Tooltip("Optional moving visual centre; defaults to this transform.")]
+    public Transform emissionOrigin;
+    public SonarDensitySettings densitySettings = new SonarDensitySettings();
+    public event System.Action Emitted;
     [Tooltip("Set to None when another component triggers EmitNow().")]
     public Key toggleKey = Key.C;
     public bool automatic = true;
@@ -79,6 +84,7 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
 
     void Update()
     {
+        if(SonicSpaceStartMenu.BlocksGameplay)return;
         if (Keyboard.current != null && toggleKey != Key.None && Keyboard.current[toggleKey].wasPressedThisFrame)
         {
             automatic = !automatic;
@@ -91,6 +97,8 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
         }
     }
 
+    public void RestartSchedule(float delay = 0) => nextEmission = Time.time + Mathf.Max(0,delay);
+
     [ContextMenu("Emit sonar now (Play mode)")]
     public void EmitNow() => EmitWithRange(range);
 
@@ -99,14 +107,16 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     {
         if (!Application.isPlaying || !isActiveAndEnabled || pulseField == null || source == null) return false;
         pulseRange = Mathf.Max(1, pulseRange);
-        if (!pulseField.EmitFrom(transform.position, pulseRange, waveSpeed, afterglow, distanceSettings)) return false;
+        Vector3 origin = emissionOrigin != null ? emissionOrigin.position : transform.position;
+        if (!pulseField.EmitFrom(origin,pulseRange,waveSpeed,afterglow,pulseKind,distanceSettings,densitySettings)) return false;
         emitter.settings.maxDistance = Mathf.Max(1, soundRange) * pulseRange / Mathf.Max(1, range);
         emitter.volume = volume;
         emitter.Apply();
         if (playSound) cue.Play();
-        LastOrigin = transform.position;
+        LastOrigin = origin;
         LastEmissionRange = pulseRange;
         Emissions++;
+        Emitted?.Invoke();
         return true;
     }
 }

@@ -98,13 +98,14 @@ public static class VerifySeededMap
             Check(changes==3 && progression.Difficulty>1 && sonar.range<initialRange,"Floor events/numerical changes failed.");
             Check(map.Floors.Count()==3 && map.FindFloor(0)==null,"Old floor streaming cleanup failed.");
 
-            var item=map.FindFloor(3).GetComponentInChildren<MapResource>();
+            var item=map.FindFloor(3).GetComponentInChildren<MapResource>().GetComponent<PickupItem>();
             item.transform.position=camera.transform.position+camera.transform.forward*1.4f;
             Physics.SyncTransforms();
             await Tick(400);
             var interaction=player.GetComponent<PlayerInteraction>();
             Check(interaction.FocusedTarget==item && interaction.TryInteractFocused(),"Generated resource cannot be clicked.");
-            Check(progression.CollectedResources==1 && !item.TryInteract(interaction),"Resource was not collected exactly once.");
+            Check(player.GetComponent<PlayerPickup>().HeldItem==item && item.gameObject.activeInHierarchy && !item.TryInteract(interaction),"Generated prop was not held exactly once.");
+            player.GetComponent<PlayerPickup>().TryPlace();
             var second=map.FindFloor(3).GetComponentsInChildren<MapResource>().First();
             second.transform.position=camera.transform.position+camera.transform.forward*1.4f;
             Physics.SyncTransforms(); sonar.dotRadius=2.25f; await Tick(400);

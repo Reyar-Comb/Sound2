@@ -112,6 +112,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
 
     void Update()
     {
+        if(SonicSpaceStartMenu.BlocksGameplay)return;
         var style = GetComponent<BlackBoxProximitySource>();
         if (style.IsStyleEnabled(BlackBoxProximitySource.PointStyle.Face) != facePoints)
             style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Face, facePoints);

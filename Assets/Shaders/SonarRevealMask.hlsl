@@ -1,22 +1,32 @@
 // Pulse arrival, distance attenuation and per-source face density. Contour detection,
 // ordered point placement, dot sizing and drawing stay in BlackBoxScreenPoints.shader.
 float _SonarActive, _SonarMaskSize;
-float4 _SonarPulseOrigins[8], _SonarPulseParameters[8];
-float4 _SonarPulseDistanceFalloffs[8]; // start metres, end metres, power (0 = disabled), strength
+float4 _SonarSceneOrigins[24], _SonarSceneParameters[24];
+float4 _SonarDensityFalloffs[24];
+float4 _SonarSceneDistanceFalloffs[24]; // start metres, end metres, power (0 = disabled), strength
 TEXTURE2D_ARRAY(_SonarBlockingPlanes);
 
-// x: contour reveal; y: face reveal after the existing ordered density selection.
-float2 SonarVisibility(float3 positionWS, float3 normalWS, float orderedRank)
+// Shared travel/afterglow envelope, also used by each coin's miniature surface wave.
+float PulseAfterglow(float age,float duration)
 {
-    float2 brightness = 0;
-    [unroll] for (int i = 0; i < 8; i++)
+    if(age<0 || age>=duration)return 0;
+    float fade=1-age/max(.0001,duration);
+    return fade*fade;
+}
+
+// Each channel uses the same lattice. Priority is applied later, independently for faces and edges.
+struct PulseReveals { float2 white, danger, coin, lightning; };
+PulseReveals SonarVisibility(float3 positionWS, float3 normalWS, float orderedRank)
+{
+    PulseReveals brightness; brightness.white=0; brightness.danger=0; brightness.coin=0; brightness.lightning=0;
+    [loop] for (int i = 0; i < 24; i++)
     {
-        float4 settings = _SonarPulseParameters[i];
+        float4 settings = _SonarSceneParameters[i];
         if (settings.w < .5) continue;
-        float3 delta = positionWS - _SonarPulseOrigins[i].xyz;
+        float3 delta = positionWS - _SonarSceneOrigins[i].xyz;
         float distance = length(delta);
         if (distance > settings.x || distance < .0001) continue;
-        float4 attenuation = _SonarPulseDistanceFalloffs[i];
+        float4 attenuation = _SonarSceneDistanceFalloffs[i];
         float distanceGain = attenuation.w;
         if (attenuation.z > 0)
         {
@@ -24,7 +34,14 @@ float2 SonarVisibility(float3 positionWS, float3 normalWS, float orderedRank)
             if (distance >= attenuation.y) continue;
             distanceGain *= pow(saturate(1 - smoothstep(attenuation.x, attenuation.y, distance)), attenuation.z);
         }
-        float age = _PointAnimationTime - _SonarPulseOrigins[i].w - distance / settings.y;
+        float4 thinning = _SonarDensityFalloffs[i];
+        float densityGain = 1;
+        if (thinning.w>.5)
+        {
+            if (distance>=thinning.y) continue;
+            densityGain=pow(saturate(1-smoothstep(thinning.x,thinning.y,distance)),thinning.z);
+        }
+        float age = _PointAnimationTime - _SonarSceneOrigins[i].w - distance / settings.y;
         if (age < 0 || age >= settings.z) continue;
         float3 magnitude = abs(delta);
         int face;
@@ -38,15 +55,19 @@ float2 SonarVisibility(float3 positionWS, float3 normalWS, float orderedRank)
         int2 cell = clamp((int2)((uv * .5 + .5) * _SonarMaskSize), 0, (int)_SonarMaskSize - 1);
         float4 plane = LOAD_TEXTURE2D_ARRAY(_SonarBlockingPlanes, cell, i * 6 + face);
         if (dot(plane.xyz, plane.xyz) > .5 && dot(plane.xyz, delta) < plane.w - .06) continue;
-        float fade = 1 - age / settings.z;
-        float reveal = distanceGain * fade * fade;
+        float reveal = distanceGain * PulseAfterglow(age,settings.z);
         // Reuse the complete core/ring/distance density rule around this pulse's fixed origin.
         float reach = attenuation.z > 0 ? min(settings.x, attenuation.y) : settings.x;
+        if (thinning.w>.5) reach=min(reach,thinning.y);
         float referenceRange = max(.001, min(_RevealDistance, _DistanceBands.w));
         float patternScale = max(.001, reach / referenceRange);
-        float density = FaceDensityAt(positionWS, normalWS, _SonarPulseOrigins[i].xyz, patternScale, true)
-            * saturate(_FaceDensityScale);
-        brightness = max(brightness, float2(reveal, orderedRank < density ? reveal : 0));
+        float density = FaceDensityAt(positionWS, normalWS, _SonarSceneOrigins[i].xyz, patternScale, true)
+            * saturate(_FaceDensityScale) * densityGain;
+        float2 visibility = float2(orderedRank < densityGain ? reveal : 0, orderedRank < density ? reveal : 0);
+        if (i>=20) brightness.lightning=max(brightness.lightning,visibility);
+        else if (i>=12) brightness.coin=max(brightness.coin,visibility);
+        else if (i>=8) brightness.danger=max(brightness.danger,visibility);
+        else brightness.white=max(brightness.white,visibility);
     }
     return brightness;
 }

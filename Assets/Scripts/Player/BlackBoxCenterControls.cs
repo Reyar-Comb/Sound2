@@ -41,6 +41,7 @@ public sealed class BlackBoxCenterControls : MonoBehaviour
 
     private void OnStyleShortcut(InputAction.CallbackContext context)
     {
+        if(SonicSpaceStartMenu.BlocksGameplay)return;
         for (int i = 0; i < styleShortcuts.Length; i++)
             if (context.action == styleShortcuts[i].action)
             {
@@ -71,15 +72,16 @@ public sealed class BlackBoxCenterControls : MonoBehaviour
 
     public void SetMenuOpen(bool open)
     {
+        if(SonicSpaceStartMenu.BlocksGameplay)open=false;
         menuOpen = open;
-        if (player != null) player.InputSuspended = open;
+        if (player != null) player.InputSuspended = open || SonicSpaceStartMenu.BlocksGameplay;
         if (panel != null) { panel.alpha = open ? 1 : 0; panel.interactable = open; panel.blocksRaycasts = open; }
         if (uiInputModule != null) uiInputModule.enabled = open;
         if (EventSystem.current != null)
             EventSystem.current.SetSelectedGameObject(open && styleToggles.Length > 0 ? styleToggles[0].gameObject : null);
         if (hint != null) { hint.text = open ? menuHint : movementHint; hint.gameObject.SetActive(open); }
-        Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible = open;
+        Cursor.lockState = open || SonicSpaceStartMenu.BlocksGameplay ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = open || SonicSpaceStartMenu.BlocksGameplay;
     }
 
     private void OnDisable()
