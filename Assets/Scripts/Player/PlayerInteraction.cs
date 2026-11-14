@@ -51,7 +51,8 @@ public sealed class PlayerInteraction : MonoBehaviour
         pickup = GetComponent<PlayerPickup>();
         if (viewCamera == null) viewCamera = GetComponentInChildren<Camera>();
         var go = new GameObject("InteractionHUD", typeof(RectTransform), typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler));
-        go.transform.SetParent(transform, false);
+        // Keep the overlay independent of player movement and rotation.
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, gameObject.scene);
         hud = go.GetComponent<Canvas>();
         hud.renderMode = RenderMode.ScreenSpaceOverlay;
         hud.sortingOrder = 20;
@@ -62,6 +63,9 @@ public sealed class PlayerInteraction : MonoBehaviour
         scaler.matchWidthOrHeight = 1;
         ring = CreateGraphic("InteractionRing");
         dot = CreateGraphic("CrosshairDot");
+        var dotRect = dot.rectTransform;
+        dotRect.anchorMin = dotRect.anchorMax = dotRect.pivot = new Vector2(.5f, .5f);
+        dotRect.anchoredPosition = Vector2.zero;
         ring.gameObject.SetActive(false);
         var label = new GameObject("InteractionPrompt", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
         label.transform.SetParent(hud.transform, false);
@@ -93,7 +97,6 @@ public sealed class PlayerInteraction : MonoBehaviour
             ClearFocus();
             return;
         }
-        Place(dot, viewCamera.pixelRect.center);
         dot.SetShape(crosshairRadius, crosshairRadius * 2, 1);
         RefreshFocus();
         UpdateRing();

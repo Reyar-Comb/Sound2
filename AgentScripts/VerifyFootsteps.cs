@@ -36,6 +36,7 @@ public static class VerifyFootsteps
         float yaw = Read<float>(player, "yaw");
         bool suspended = player.InputSuspended, auto = sonar.automatic, emission = foot.emissionEnabled;
         bool grounded = foot.requireGrounded;
+        bool gravity = player.UsesGravity;
         float stepDistance = foot.stepDistance, minimumInterval = foot.minimumInterval, range = foot.range;
         var distanceSettings = foot.distanceSettings;
         var objects = UnityEngine.Object.FindObjectsByType<SonarObjectEmitter>();
@@ -65,6 +66,7 @@ public static class VerifyFootsteps
             player.SetInputCaptured(true);
             foot.emissionEnabled = true;
             foot.requireGrounded = false;
+            Write(player, "useGravity", false); // Isolate free-movement stride tests from jump/landing physics.
             // Exercise known boundary values independently of the user's live Inspector tuning.
             foot.stepDistance = 1.5f; foot.minimumInterval = .18f; foot.range = 3;
             foot.distanceSettings = new SonarDistanceSettings { enabled = true,
@@ -172,6 +174,7 @@ public static class VerifyFootsteps
             Physics.SyncTransforms();
             foot.emissionEnabled = emission;
             foot.requireGrounded = grounded;
+            Write(player, "useGravity", gravity);
             foot.stepDistance = stepDistance; foot.minimumInterval = minimumInterval; foot.range = range;
             foot.distanceSettings = distanceSettings;
             foot.ResetStride();

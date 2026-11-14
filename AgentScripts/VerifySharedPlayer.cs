@@ -87,6 +87,9 @@ public static class VerifySharedPlayer
         float initialYaw = Read<float>(player, "yaw");
         float initialPitch = Read<float>(player, "pitch");
         bool initialSuspended = player.InputSuspended;
+        bool initialGravity = player.UsesGravity;
+        var cameraMotion = player.GetComponent<PlayerCameraMotion>();
+        bool initialCameraMotion = cameraMotion != null && cameraMotion.enabled;
         bool initialControllerEnabled = controller.enabled;
         bool initialAutoSonar = sonar.automatic;
         var initialAutoEmitters = emitters.Select(emitter => emitter.automatic).ToArray();
@@ -104,6 +107,13 @@ public static class VerifySharedPlayer
 
         try
         {
+            Write(player, "useGravity", false); // This regression suite exercises the optional free-flight mode.
+            if (cameraMotion != null) cameraMotion.enabled = false;
+            camera.transform.localPosition = initialCameraPosition; // Isolate controller offsets from visual head bob.
+            controller.enabled = false;
+            player.transform.position = new Vector3(1000, 10, 1000); // Keep movement probes clear of scene walls/ceilings.
+            controller.enabled = initialControllerEnabled;
+            Physics.SyncTransforms();
             // Play-mode objects can lose their editor prefab handle. Verify the actual saved instance link instead.
             string prefabGuid = AssetDatabase.AssetPathToGUID("Assets/Prefabs/Player.prefab");
             string sceneText = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(
@@ -121,8 +131,9 @@ public static class VerifySharedPlayer
                 "Exactly one active camera, AudioListener, and SteamAudioListener");
             check(!UnityEngine.Object.FindObjectsByType<BouncePlaytest>().Any(item => item.gameObject.scene == scene && item.isActiveAndEnabled),
                 "Legacy audio settings adapter does not run its old movement or input code");
-            check(emitters.Length > 0 && emitters.All(emitter => emitter.sonar == sonar && emitter.pulseField == sonar.PulseField),
-                "Object sound sources reference the migrated sonar and its shared pulse field");
+            check(emitters.Length > 0 && emitters.All(emitter => emitter.pulseField == sonar.PulseField
+                && (emitter.sonar == null || emitter.sonar == sonar)),
+                "Object sound sources use the shared pulse field; optional legacy sonar references remain valid");
             check(player.isActiveAndEnabled && controller.enabled && actions.All(reference => reference.action.enabled),
                 "Shared player controller and project-wide Move, Look, Vertical actions are enabled");
 
@@ -162,11 +173,11 @@ public static class VerifySharedPlayer
                 && Mathf.Abs(Mathf.DeltaAngle(0, camera.transform.localEulerAngles.y)) < .001f,
                 "Mouse look rotates root yaw and camera pitch without pitching the collider or duplicating camera yaw");
 
-            int emissionsBeforeSpace = sonar.Emissions;
+            float nextEmissionBeforeSpace = Read<float>(sonar, "nextEmission");
             float heightBefore = player.transform.position.y;
             await Keys(keyboard, Key.Space);
             await Keys(keyboard);
-            check(player.transform.position.y > heightBefore + .05f && sonar.Emissions == emissionsBeforeSpace,
+            check(player.transform.position.y > heightBefore + .05f && Read<float>(sonar, "nextEmission") == nextEmissionBeforeSpace,
                 "Space ascends through the shared Vertical action without firing sonar");
             heightBefore = player.transform.position.y;
             await Keys(keyboard, Key.LeftShift);
@@ -180,12 +191,14 @@ public static class VerifySharedPlayer
                 if (DateTime.UtcNow > cooldownDeadline) throw new TimeoutException("Sonar emission cooldown did not expire.");
                 await Tick(100);
             }
-            int emissionsBeforeEnter = sonar.Emissions;
+            float nextEmissionBeforeEnter = Read<float>(sonar, "nextEmission");
             await Keys(keyboard, Key.Enter);
             await Keys(keyboard);
-            check(sonar.Emissions == emissionsBeforeEnter + 1
-                && Vector3.Distance(sonar.LastOrigin, camera.transform.position) < .001f,
-                "Enter fires exactly one sonar pulse from the player's camera position");
+            // Field totals and LastOrigin also include unrelated object/footstep pulses.
+            var mainOrigins = Read<Vector4[]>(sonar.PulseField, "origins").Take(SonarPulseField.MainPulseCapacity);
+            check(Read<float>(sonar, "nextEmission") > nextEmissionBeforeEnter
+                && mainOrigins.Any(p => Vector3.Distance(new Vector3(p.x, p.y, p.z), camera.transform.position) < .001f),
+                "Enter fires a main sonar pulse from the player's camera position");
 
             await Keys(keyboard, Key.Escape);
             await Keys(keyboard);
@@ -229,6 +242,8 @@ public static class VerifySharedPlayer
                 Physics.SyncTransforms();
             });
             cleanup("restore collider", () => controller.enabled = initialControllerEnabled);
+            cleanup("restore gravity", () => Write(player, "useGravity", initialGravity));
+            cleanup("restore camera motion", () => { if (cameraMotion != null) cameraMotion.enabled = initialCameraMotion; });
             cleanup("restore automatic emissions", () =>
             {
                 sonar.automatic = initialAutoSonar;

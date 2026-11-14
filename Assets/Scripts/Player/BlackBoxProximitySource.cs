@@ -29,7 +29,8 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
     }
 
     [Header("Reveal modes")]
-    [SerializeField] private bool proximityRendering = true;
+    [SerializeField, Tooltip("Explicit opt-in for continuous nearby surface reveal. Off by default; sonar pulses remain independent.")]
+    private bool proximityRendering;
     [SerializeField] private bool sonarRendering = true;
     public bool ProximityRendering => proximityRendering;
     public bool SonarRendering => sonarRendering;
@@ -59,7 +60,7 @@ public sealed class BlackBoxProximitySource : MonoBehaviour
         activeSource = null;
         Shader.SetGlobalFloat(ActiveId, 0f);
         Shader.SetGlobalVector(StylesId, Vector4.one);
-        Shader.SetGlobalVector(RevealModesId, new Vector4(1, 1, 0, 0));
+        Shader.SetGlobalVector(RevealModesId, new Vector4(0, 1, 0, 0));
     }
 
     private void OnEnable() => PublishPosition();

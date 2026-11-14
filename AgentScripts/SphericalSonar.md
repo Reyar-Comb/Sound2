@@ -52,13 +52,13 @@ Player/Main Camera 的 Spherical Sonar 当前场景参数：Range 40 m、Wave Sp
 
 ## 移动脚步波
 
-SonarHall 的 `Player` 根物体已经添加 `Footstep Emitter`，不修改共享 Player prefab。按 6 或面板的 `Footstep pulses` 可切换。它读取角色实际水平位移，每行进 1.5m 触发一步，最快间隔 0.18s。停下、原地转头、顶墙、释放输入和纯升降不触发；单帧大幅传送会重置步距。
+共享 `Player` prefab 根物体包含 `Footstep Emitter`，所有玩家场景默认启用；旧版房间控制器也接入同一组件。按 6 或面板的 `Footstep pulses` 可切换整步触发。它读取角色实际水平位移，默认每行进 1.5m 触发一步，最快间隔 0.18s，各场景已调过的步距保留。停下、原地转头、顶墙、释放输入和纯升降不触发；单帧大幅传送会重置步距。
 
 默认脚步波从胶囊底部上方 0.12m 发出：Range 3m、Wave Speed 8m/s、Afterglow 0.3s；Distance Settings 启用，0.4m 开始衰减，3m 完全消失，指数 2，强度 0.6。希望更局部时减小 Fade End Distance；希望近处更亮时增加 Pulse Strength；希望消退更快时减小 Afterglow。每一步有独立固定原点，玩家走远后旧波不会跟随。
 
-当前角色支持自由升降，`Require Grounded` 默认关闭；以后换成贴地行走控制时打开，可屏蔽空中脚步。距离按水平路径累计，所以斜向移动也按实际路程触发。脚步专用 4 个波槽，不覆盖主动探测或方块波；采样更稀疏，极薄物体和边界仍可能有遮挡误差。
+公共 Player 默认使用重力和 Jump 输入跳跃，重力模式自动禁止空中脚步；关闭 Use Gravity 可保留自由升降调试。距离按水平路径累计，所以斜向移动也按实际路程触发。脚步专用 4 个波槽，不覆盖主动探测或方块波；采样更稀疏，极薄物体和边界仍可能有遮挡误差。
 
-音频素材后续接入：在同一组件填入 `Audio Source` 和 `Clips`，每步轮流 `PlayOneShot`；`Volume` 调整音量。未指定素材时只显示脚步波。需要世界固定位置的音效和空间反射时，可用 `On Step (Vector3)` 事件或 C# `Stepped` 事件接已有空间音效池；传入位置与声波原点一致。
+音频素材暂留空，不使用任何兜底。显式填写 `Audio Source` 和 `Clips` 后，普通脚步轮流 `PlayOneShot`；`Volume` 调整音量，`Sound Enabled` 独立控制音效。落地复用脚步波槽，`Landing Multiplier` 默认 2，扩大显影与 AI 听觉范围；音频只使用显式 `Landing Clip`，按两倍脚步音量（封顶 1）播放。缺少录音或音源时只保留声波和事件。可用 `On Step` / `Stepped`、`On Land` / `Landed` 接已有空间音效池。
 
 体验脚步局部探索时，关闭 `Proximity Rendering`（3），开启 `Sonar Rendering`（4），关闭主动自动发射（F）和方块自动发射（C），按 R 清波后开始走动。独立的靠近显影仍可同时开启，但它不会受脚步距离配置限制。
 

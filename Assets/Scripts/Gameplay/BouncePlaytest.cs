@@ -59,6 +59,7 @@ public class BouncePlaytest : MonoBehaviour
     int visibleLayers;
     float yaw, pitch, nextShot;
     bool captured;
+    public bool InputCaptured => captured;
     [SerializeField] bool hud;
     string directionLabel = "";
     Coroutine directionTest;

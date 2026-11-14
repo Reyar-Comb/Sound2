@@ -31,7 +31,7 @@ public static class ConfigureBaiYuTest
             if (floor==0)
             {
                 rule.entrySubtitles.Add(new SubtitleCue("WASD 移动，鼠标转向；瞄准物品左键拿起，持物时左键抛出、右键放下。",5));
-                rule.entrySubtitles.Add(new SubtitleCue("普通球、棱晶、金币和方块均可拿起；左键抛出，右键轻放。",5));
+                rule.entrySubtitles.Add(new SubtitleCue("普通球、棱晶和方块均可拿起；左键抛出，右键轻放。",5));
                 rule.entrySubtitles.Add(new SubtitleCue("红色点阵提示怪物，蓝色提示闪电；循着低鸣找到竖井，进入下一层。",5));
             }
             profile.overrides.Add(rule);
@@ -39,11 +39,11 @@ public static class ConfigureBaiYuTest
         AssetDatabase.CreateAsset(profile,"Assets/Resources/BaiYuTestFloorProgression.asset");
         map.profile = profile;
         var sonar = player.GetComponentInChildren<SphericalSonar>();
-        sonar.proximityRendering = true; sonar.sonarRendering = true;
+        sonar.SetRevealModes(false, true);
         var camera = sonar.GetComponent<Camera>();
         camera.transform.localRotation = Quaternion.identity;
         camera.gameObject.AddComponent<SteamAudio.SteamAudioListener>();
-        player.gameObject.AddComponent<FootstepEmitter>();
+        if (player.GetComponent<FootstepEmitter>() == null) player.gameObject.AddComponent<FootstepEmitter>();
         player.gameObject.AddComponent<PlayerVitality>();
         player.gameObject.AddComponent<PlayerStatusHUD>();
         player.GetComponent<PlayerFloorProgression>().profile = profile;

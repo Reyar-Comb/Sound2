@@ -13,14 +13,20 @@ public sealed class PlayerController : MonoBehaviour
     [SerializeField, Min(0f)] private float ascendSpeed = 3f;
     [SerializeField, Min(0f)] private float descendSpeed = 3f;
     [SerializeField, Range(0f, 89f)] private float maxPitch = 89f;
-    [SerializeField] private bool useGravity;
+    [SerializeField] private bool useGravity = true;
     [SerializeField, Min(0f)] private float gravity = 20f;
     [SerializeField, Min(0f)] private float terminalFallSpeed = 40f;
+    [SerializeField, Min(0f)] private float jumpHeight = 1.2f;
+    [SerializeField, Min(0f), Tooltip("Ignore tiny ground-contact changes when reporting a landing.")]
+    private float minimumLandingSpeed = 2.5f;
 
     private CharacterController characterController;
     private float yaw;
     private float pitch;
     private float fallSpeed;
+    private float airborneTime;
+    private InputAction jumpAction;
+    public event System.Action<float> Landed;
     public bool InputSuspended { get; set; }
     public Transform ViewTransform => cameraTransform;
     public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);
@@ -35,6 +41,14 @@ public sealed class PlayerController : MonoBehaviour
             || verticalAction == null || verticalAction.action == null || cameraTransform == null)
         {
             Debug.LogError("Assign Move, Look, Vertical and Camera Transform references.", this);
+            enabled = false;
+            return;
+        }
+
+        jumpAction = moveAction.action.actionMap.FindAction("Jump");
+        if (jumpAction == null)
+        {
+            Debug.LogError("The player input map must contain the Jump action.", this);
             enabled = false;
             return;
         }
@@ -77,6 +91,7 @@ public sealed class PlayerController : MonoBehaviour
         characterController.enabled = false;
         transform.position = position;
         fallSpeed = 0;
+        airborneTime = 0;
         characterController.enabled = wasEnabled;
         Physics.SyncTransforms();
     }
@@ -89,7 +104,7 @@ public sealed class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if (InputSuspended) return;
+        if (InputSuspended || !characterController.enabled) return;
         Vector2 look = lookAction.action.ReadValue<Vector2>();
         yaw = Mathf.Repeat(yaw + look.x, 360f);
         pitch = Mathf.Clamp(pitch + look.y, -maxPitch, maxPitch);
@@ -101,13 +116,33 @@ public sealed class PlayerController : MonoBehaviour
         float verticalInput = verticalAction.action.ReadValue<float>();
         float verticalSpeed = verticalInput > 0 ? ascendSpeed : descendSpeed;
         Vector3 velocity = direction * moveSpeed + Vector3.up * (verticalInput * verticalSpeed);
+        bool wasGrounded = characterController.isGrounded;
         if (useGravity)
         {
-            if (characterController.isGrounded && fallSpeed < 0) fallSpeed = -2f;
+            if (wasGrounded)
+            {
+                if (fallSpeed < 0) fallSpeed = -2f;
+                if (jumpAction.WasPressedThisFrame() && gravity > 0 && jumpHeight > 0)
+                    fallSpeed = Mathf.Sqrt(2 * gravity * jumpHeight);
+            }
             fallSpeed = Mathf.Max(fallSpeed - gravity * Time.deltaTime, -terminalFallSpeed);
             velocity.y = fallSpeed;
         }
         var collisions = characterController.Move(velocity * Time.deltaTime);
-        if (useGravity && (collisions & CollisionFlags.Above) != 0) fallSpeed = Mathf.Min(fallSpeed, 0);
+        if (useGravity)
+        {
+            bool grounded = (collisions & CollisionFlags.Below) != 0;
+            if (grounded)
+            {
+                float impactSpeed = Mathf.Max(0, -velocity.y);
+                if (!wasGrounded && airborneTime >= .08f && impactSpeed >= minimumLandingSpeed)
+                    Landed?.Invoke(impactSpeed);
+                airborneTime = 0;
+                fallSpeed = -2f;
+            }
+            else airborneTime += Time.deltaTime;
+            if ((collisions & CollisionFlags.Above) != 0) fallSpeed = Mathf.Min(fallSpeed, 0);
+        }
+        else airborneTime = 0;
     }
 }

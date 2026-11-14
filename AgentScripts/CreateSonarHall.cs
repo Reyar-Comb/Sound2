@@ -29,12 +29,14 @@ public static class CreateSonarHall
         camera.cullingMask=-1;
         camera.nearClipPlane=.03f;
         camera.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>().renderPostProcessing=false;
-        var style = camera.gameObject.AddComponent<BlackBoxProximitySource>();
+        var style = camera.GetComponent<BlackBoxProximitySource>();
+        if (style == null) style = camera.gameObject.AddComponent<BlackBoxProximitySource>();
         style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Face, true);
         style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Edge, true);
         style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Stars, false);
         style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Twinkle, false);
-        var sonar=camera.gameObject.AddComponent<SphericalSonar>();
+        var sonar=camera.GetComponent<SphericalSonar>();
+        if (sonar == null) sonar=camera.gameObject.AddComponent<SphericalSonar>();
         sonar.renderingSettings=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/SonarDots.mat");
         camera.transform.position=new Vector3(0,1.6f,0);
         camera.transform.rotation=Quaternion.Euler(0,65,0);
@@ -114,9 +116,10 @@ public static class CreateSonarHall
         if (previousListener != null)
             EditorUtility.CopySerialized(previousListener, camera.gameObject.AddComponent<SteamAudio.SteamAudioListener>());
 
-        var sonar = camera.gameObject.AddComponent<SphericalSonar>();
+        var sonar = camera.GetComponent<SphericalSonar>();
+        if (sonar == null) sonar = camera.gameObject.AddComponent<SphericalSonar>();
         EditorUtility.CopySerialized(previousSonar, sonar);
-        player.AddComponent<FootstepEmitter>();
+        if (player.GetComponent<FootstepEmitter>() == null) player.AddComponent<FootstepEmitter>();
         var style = camera.GetComponent<BlackBoxProximitySource>();
         EditorUtility.CopySerialized(previousCamera.GetComponent<BlackBoxProximitySource>(), style);
         style.TrackingPoint = camera.transform;

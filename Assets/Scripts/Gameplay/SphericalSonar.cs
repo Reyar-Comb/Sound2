@@ -4,7 +4,7 @@ using UnityEngine.Serialization;
 
 /// <summary>Feeds spherical arrival/fade and blocking data to the existing BlackBox renderer.
 /// This component does not generate or draw any points, surfaces or lines.</summary>
-[RequireComponent(typeof(Camera), typeof(BlackBoxProximitySource))]
+[DisallowMultipleComponent, RequireComponent(typeof(Camera), typeof(BlackBoxProximitySource))]
 public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiver
 {
     [Header("Spherical pulse")]
@@ -14,6 +14,8 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
     [Min(.1f)] public float emissionInterval = .8f;
     public LayerMask obstacleLayers = Physics.DefaultRaycastLayers;
     public bool automatic;
+    [Tooltip("Allow left-click to emit an active scan. Cursor capture still works when disabled.")]
+    public bool leftClickScanEnabled = false;
     public bool emissionSound = true;
     [Header("Pulse distance attenuation")]
     public SonarDistanceSettings distanceSettings = new SonarDistanceSettings();
@@ -144,7 +146,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         if (m.leftButton.wasPressedThisFrame && (InputCaptured || !overHud))
         {
             if (!InputCaptured) Capture(true);
-            Emit();
+            if (leftClickScanEnabled) Emit();
         }
     }
 
@@ -189,8 +191,12 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         if (GameUiTheme.Current != null && GameUiTheme.Current.legacyFont != null) GUI.skin.font = GameUiTheme.Current.legacyFont;
         GUILayout.BeginArea(HudRect, GUI.skin.box);
         GUILayout.Label("SPHERICAL SONAR  |  BlackBox dots");
-        GUILayout.Label("Click / Enter: pulse   WASD: move   Mouse: look");
-        GUILayout.Label("Space / Shift: up / down   Esc / Tab: release cursor");
+        GUILayout.Label(leftClickScanEnabled
+            ? "Click / Enter: pulse   WASD: move   Mouse: look"
+            : "Enter: pulse   WASD: move   Mouse: look");
+        GUILayout.Label(player != null && player.UsesGravity
+            ? "Space: jump   Esc / Tab: release cursor"
+            : "Space / Shift: up / down   Esc / Tab: release cursor");
         GUILayout.Label("1: faces   2: edges   C: cube   F: auto   R: clear   F1: HUD");
         GUILayout.BeginHorizontal();
         bool proximity = GUILayout.Toggle(proximityRendering, "3  Proximity reveal");
