@@ -59,6 +59,7 @@ public class BouncePlaytest : MonoBehaviour
     int visibleLayers;
     float yaw, pitch, nextShot;
     bool captured;
+    [SerializeField] bool hud;
     string directionLabel = "";
     Coroutine directionTest;
     AudioClip sineClip;
@@ -68,7 +69,7 @@ public class BouncePlaytest : MonoBehaviour
 
     bool PointerOverPanel()
     {
-        if (captured || Mouse.current == null) return false;
+        if (!hud || captured || Mouse.current == null) return false;
         var point = Mouse.current.position.ReadValue();
         return ControlPanel.Contains(new Vector2(point.x, Screen.height - point.y));
     }
@@ -93,13 +94,13 @@ public class BouncePlaytest : MonoBehaviour
 
     void Update()
     {
-        PlayerUiPointMask.SetLegacyPanel(this, ControlPanel, true);
         balls.RemoveAll(ball => ball == null);
         RefreshAudioSettings();
         var keyboard = Keyboard.current;
         var mouse = Mouse.current;
         if (keyboard != null)
         {
+            if (keyboard.f1Key.wasPressedThisFrame) hud = !hud;
             if (keyboard.digit1Key.wasPressedThisFrame) SetSwitch(1, !ringShot);
             if (keyboard.digit2Key.wasPressedThisFrame) SetSwitch(2, !bounceCountOnly);
             if (keyboard.digit3Key.wasPressedThisFrame) SetSwitch(3, !enhancedAttenuation);
@@ -132,6 +133,7 @@ public class BouncePlaytest : MonoBehaviour
                 if (keyboard.spaceKey.wasPressedThisFrame) Fire();
             }
         }
+        PlayerUiPointMask.SetLegacyPanel(this, ControlPanel, hud);
         if (mouse == null) return;
         if (mouse.leftButton.wasPressedThisFrame && !PointerOverPanel())
         {
@@ -401,6 +403,7 @@ public class BouncePlaytest : MonoBehaviour
 
     void OnGUI()
     {
+        if (!hud) return;
         var previousFont = GUI.skin.font;
         if (GameUiTheme.Current != null && GameUiTheme.Current.legacyFont != null) GUI.skin.font = GameUiTheme.Current.legacyFont;
         GUI.enabled = !captured;

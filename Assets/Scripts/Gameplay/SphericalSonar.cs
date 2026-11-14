@@ -86,7 +86,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
     SonarCueSource cue;
     bool ownsCue;
     float nextEmission;
-    [SerializeField] bool hud = true;
+    [SerializeField] bool hud;
     static readonly Rect HudRect = new Rect(16, 16, 480, 305);
     bool InputCaptured => player != null && player.isActiveAndEnabled && !player.InputSuspended;
 
@@ -112,7 +112,6 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
 
     void Update()
     {
-        PlayerUiPointMask.SetLegacyPanel(this, HudRect, hud);
         var style = GetComponent<BlackBoxProximitySource>();
         if (style.IsStyleEnabled(BlackBoxProximitySource.PointStyle.Face) != facePoints)
             style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Face, facePoints);
@@ -136,6 +135,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
             if (k.rKey.wasPressedThisFrame) ClearPulses();
             if (k.enterKey.wasPressedThisFrame) Emit();
         }
+        PlayerUiPointMask.SetLegacyPanel(this, HudRect, hud);
         if (automatic && Time.time >= nextEmission) Emit();
         if (m == null) return;
         var mousePosition = m.position.ReadValue();

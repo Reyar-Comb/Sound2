@@ -73,11 +73,11 @@ public sealed class BlackBoxCenterControls : MonoBehaviour
     {
         menuOpen = open;
         if (player != null) player.InputSuspended = open;
-        if (panel != null) { panel.interactable = open; panel.blocksRaycasts = open; }
+        if (panel != null) { panel.alpha = open ? 1 : 0; panel.interactable = open; panel.blocksRaycasts = open; }
         if (uiInputModule != null) uiInputModule.enabled = open;
         if (EventSystem.current != null)
             EventSystem.current.SetSelectedGameObject(open && styleToggles.Length > 0 ? styleToggles[0].gameObject : null);
-        if (hint != null) hint.text = open ? menuHint : movementHint;
+        if (hint != null) { hint.text = open ? menuHint : movementHint; hint.gameObject.SetActive(open); }
         Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = open;
     }
