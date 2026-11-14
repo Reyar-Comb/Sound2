@@ -42,14 +42,15 @@ Shader "Sound2/Elevator White Ink"
                 return max(min(d.x, d.y), min(max(d.x, d.y), d.z));
             }
 
-            float CabinWallInk(float3 point, float3 normal)
+            // "point" is an HLSL primitive keyword; keep position identifiers distinct.
+            float CabinWallInk(float3 cabinPoint, float3 normal)
             {
-                if (abs(normal.y) > .5 || point.y < 0 || point.y > 3.1 ||
-                    dot(normal, float3(point.x, 0, point.z)) >= 0) return 0;
+                if (abs(normal.y) > .5 || cabinPoint.y < 0 || cabinPoint.y > 3.1 ||
+                    dot(normal, float3(cabinPoint.x, 0, cabinPoint.z)) >= 0) return 0;
 
-                float along = abs(normal.x) > .5 ? point.z : point.x;
+                float along = abs(normal.x) > .5 ? cabinPoint.z : cabinPoint.x;
                 float side = abs(normal.x) > .5 ? normal.x : normal.z + 3;
-                float2 tile = float2(along, point.y) * 4;
+                float2 tile = float2(along, cabinPoint.y) * 4;
                 float2 cell = floor(tile);
                 float seed = frac(sin(dot(float3(cell, side), float3(12.9898, 78.233, 37.719))) * 43758.5453);
                 float phase = frac(_Time.y / lerp(4, 9, seed) + seed * 17);
@@ -57,7 +58,7 @@ Shader "Sound2/Elevator White Ink"
                 star *= smoothstep(0, .3, phase) * (1 - smoothstep(.65, 1, phase));
 
                 // Bands stay at fixed elevations as the cabin moves past them.
-                float band = frac((point.y + _CabinMotion.x) / 1.35 + .09 * sin(along * 2 + side));
+                float band = frac((cabinPoint.y + _CabinMotion.x) / 1.35 + .09 * sin(along * 2 + side));
                 float wave = (1 - smoothstep(.06, .24, abs(band - .5))) * _CabinMotion.y;
                 return max(star * .78, wave);
             }
@@ -84,19 +85,19 @@ Shader "Sound2/Elevator White Ink"
                 {
                     float2 id = cell + float2(x, y);
                     float2 delta = id * pitch - screen;
-                    float3 point = input.cabin + dx * delta.x + dy * delta.y;
-                    float inner = ShellEdge(point, float3(-2, 0, -2.8), float3(2, 3.1, 2.725), width);
-                    float outer = ShellEdge(point, float3(-2.2, -.2, -3), float3(2.2, 3.3, 3), width);
+                    float3 cabinPoint = input.cabin + dx * delta.x + dy * delta.y;
+                    float inner = ShellEdge(cabinPoint, float3(-2, 0, -2.8), float3(2, 3.1, 2.725), width);
+                    float outer = ShellEdge(cabinPoint, float3(-2.2, -.2, -3), float3(2.2, 3.3, 3), width);
                     // Inner doorway opening. The front and rear jamb faces share the same opening.
-                    float3 door = abs(float3(abs(point.x) - 1.3, point.y - 2.7,
-                        abs(point.z - 2.85) - .125)) / width;
-                    float jamb = point.y <= 2.7 + width.y ? max(door.x, door.z) : 1e4;
-                    float lintel = abs(point.x) <= 1.3 + width.x ? max(door.y, door.z) : 1e4;
+                    float3 door = abs(float3(abs(cabinPoint.x) - 1.3, cabinPoint.y - 2.7,
+                        abs(cabinPoint.z - 2.85) - .125)) / width;
+                    float jamb = cabinPoint.y <= 2.7 + width.y ? max(door.x, door.z) : 1e4;
+                    float lintel = abs(cabinPoint.x) <= 1.3 + width.x ? max(door.y, door.z) : 1e4;
                     float edge = step(min(min(inner, outer), min(jamb, lintel)), 1) * step(.5, _CabinEdges);
                     float dotInk = 1 - smoothstep(radius - aa, radius + aa, length(delta));
                     if (_CabinEdges >= .5 && dissolve < 1)
                     {
-                        float mark = max(edge, CabinWallInk(point, input.normal));
+                        float mark = max(edge, CabinWallInk(cabinPoint, input.normal));
                         if (_RespawnPaper > 0)
                         {
                             float rank = frac(sin(dot(id, float2(41.63, 71.19))) * 32719.43);

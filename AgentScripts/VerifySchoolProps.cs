@@ -37,8 +37,8 @@ public static class VerifySchoolProps
         string source = "Assets/Scenes/__SchoolSource_" + id + ".unity", destination = "Assets/Scenes/__SchoolExport_" + id + ".unity";
         try
         {
-            var all = PropCatalog.All(); Check(all.Count == 53 && all.Distinct().Count() == 53, "Catalog contains 53 distinct props");
-            int[] counts = { 11, 5, 4, 2, 1, 2, 3, 25 };
+            var all = PropCatalog.All(); Check(all.Count == 55 && all.Distinct().Count() == 55, "Catalog contains 55 distinct props");
+            int[] counts = { 11, 5, 4, 4, 1, 2, 3, 25 };
             for (int i = 0; i < counts.Length; i++) Check(all.Count(p => PropCatalog.Category(p) == PropCatalog.Categories[i]) == counts[i], PropCatalog.Categories[i] + " category count " + counts[i]);
             scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive); SceneManager.SetActiveScene(scene);
             var layout = new GameObject("School verification", typeof(LevelLayout)).GetComponent<LevelLayout>();
@@ -86,7 +86,7 @@ public static class VerifySchoolProps
             Click(ui.Q<Button>("prop-card-SchoolSpeaker")); Check(chosen == Prefab("SchoolSpeaker"), "Filtered card invokes selection callback with correct prefab");
             search.value = "购物车"; Check(ui.Query<Button>(className: "prop-card").ToList().Count == 0, "Empty search result is scoped to category");
             Click(ui.Q<Button>("prop-category-全部")); Check(ui.Query<Button>(className: "prop-card").ToList().Count == 1, "All restores cross-category search");
-            search.value = ""; Check(ui.Query<Button>(className: "prop-card").ToList().Count == 53 && ui.Query<Label>(className: "prop-group-title").ToList().Count == 8, "All shows 53 cards in eight groups");
+            search.value = ""; Check(ui.Query<Button>(className: "prop-card").ToList().Count == 55 && ui.Query<Label>(className: "prop-group-title").ToList().Count == 8, "All shows 55 cards in eight groups");
             return new { passed = true, count = checks.Count, checks };
         }
         finally

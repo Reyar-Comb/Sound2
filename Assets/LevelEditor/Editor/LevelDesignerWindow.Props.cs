@@ -141,6 +141,8 @@ namespace Sound2.LevelEditing.Editor
                 ("width", "宽度（米）"), ("depth", "深度（米）"), ("height", "高度（米）"),
                 ("topThickness", "桌面厚度（米）"), ("legThickness", "桌腿粗细（米）"), ("legInset", "桌腿内缩（米）"));
             DrawPropDimensions(area, instance.GetComponent<ResizableBar>(), "吧台尺寸", ("length", "长度（米）"));
+            DrawPropDimensions(area, instance.GetComponent<ResizableWardCurtain>(), "病房隔帘尺寸（保持褶皱尺度）", ("length", "长度（米）"));
+            DrawRingTableSettings(area, instance.GetComponent<DrapedRingTable>());
             area.SetEnabled(!Application.isPlaying);
             return true;
         }

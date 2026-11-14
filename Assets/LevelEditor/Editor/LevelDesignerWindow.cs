@@ -58,6 +58,7 @@ namespace Sound2.LevelEditing.Editor
         }
         void OnDisable()
         {
+            EndRingStroke();
             SceneView.duringSceneGui -= SceneGUI;
             Undo.undoRedoPerformed -= OnUndo;
             Selection.selectionChanged -= OnSelection;
@@ -436,6 +437,7 @@ namespace Sound2.LevelEditing.Editor
             if (plane.Raycast(ray, out float distance)) hover = Snap(layout.Local(ray.GetPoint(distance)));
             Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
             DrawOutlines();
+            if (RingTableSceneGUI(view, ray, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
             if (PartitionSceneGUI(view, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
             if (tool == Tool.Prop || tool == Tool.RepositionProp)
             {

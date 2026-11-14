@@ -33,10 +33,11 @@ namespace Sound2.LevelEditing
             }
         }
         Renderer[] panels;
-        readonly MaterialPropertyBlock effects = new();
+        MaterialPropertyBlock effects;
 
         public void SetPaperEffect(string property, float value)
         {
+            effects ??= new MaterialPropertyBlock();
             panels ??= GetComponentsInChildren<Renderer>(true);
             foreach (var panel in panels)
             {
@@ -48,6 +49,7 @@ namespace Sound2.LevelEditing
 
         public void SetTravelInk(float height, float strength)
         {
+            effects ??= new MaterialPropertyBlock();
             panels ??= GetComponentsInChildren<Renderer>(true);
             foreach (var panel in panels)
             {

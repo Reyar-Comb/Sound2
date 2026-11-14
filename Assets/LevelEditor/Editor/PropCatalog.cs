@@ -59,7 +59,9 @@ namespace Sound2.LevelEditing.Editor
             ("SchoolDesk", "课桌"),
             ("SchoolChair", "课椅"),
             ("SchoolChalkBox", "粉笔盒"),
-            ("SchoolSpeaker", "广播")
+            ("SchoolSpeaker", "广播"),
+            ("DrapedRingTable", "桌布圆环桌"),
+            ("RestaurantStage", "弧形舞台")
         }.ToDictionary(e=>e.id,e=>e.label);
         public static readonly IReadOnlyList<string> Categories = System.Array.AsReadOnly(new[]
             { "家", "学校", "超市", "餐厅", "图书馆", "雪林", "医院", "通用" });
@@ -68,7 +70,7 @@ namespace Sound2.LevelEditing.Editor
             ("家", new[] { "PickupAlarmClock", "Refrigerator", "Stove", "Television", "GameConsole", "WallCabinet", "Bed", "Sofa", "Bedside", "Wardrobe", "Washer" }),
             ("学校", new[] { "SchoolBlackboard", "SchoolDesk", "SchoolChair", "SchoolChalkBox", "SchoolSpeaker" }),
             ("超市", new[] { "ShoppingCart", "Shelf", "Checkout", "ProduceBin" }),
-            ("餐厅", new[] { "ServiceBell", "BarCounter" }),
+            ("餐厅", new[] { "ServiceBell", "BarCounter", "DrapedRingTable", "RestaurantStage" }),
             ("图书馆", new[] { "LibraryBookshelf" }),
             ("雪林", new[] { "Pine", "SnowRock" }),
             ("医院", new[] { "HeartRateMonitor", "HospitalBed", "WardCurtain" })

@@ -46,6 +46,7 @@ public static class RebuildFurniture
                     case "Bench":Bench();break;case "Pillar":Pillar();break;
                 }
                 Bake(kind);
+                if(kind=="WardCurtain")ConfigureCurtainLength();
                 var prop=root.GetComponent<LevelProp>();prop.surfaceAnchor=Vector3.zero;prop.surface=PropSurface.Floor;
                 prop.gameplayMaterial=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/PureBlack.mat");
                 PrefabUtility.SaveAsPrefabAsset(root,path);
@@ -126,6 +127,18 @@ public static class RebuildFurniture
         foreach(int s in new[]{-1,1}){Rod(metal,new(s*1.25f,.07f,0),new(s*1.25f,2.32f,0),.04f);Rod(metal,new(s*1.25f,.07f,-.36f),new(s*1.25f,.07f,.36f),.055f);foreach(int z in new[]{-1,1})Ball(dark,new(s*1.25f,.055f,z*.3f),Vector3.one*.10f);}
         Rod(metal,new(-1.25f,2.32f,0),new(1.25f,2.32f,0),.04f);
         var v=new List<Vector3>();var t=new List<int>();for(int i=0;i<40;i++){float x=-1.18f+i*.059f,x2=x+.059f,z=Mathf.Sin(i*Mathf.PI*.5f)*.055f,z2=Mathf.Sin((i+1)*Mathf.PI*.5f)*.055f;int n=v.Count;v.AddRange(new[]{new Vector3(x,.35f,z),new Vector3(x,2.23f,z),new Vector3(x2,2.23f,z2),new Vector3(x2,.35f,z2)});v.AddRange(new[]{v[n],v[n+1],v[n+2],v[n+3]});t.AddRange(new[]{n,n+1,n+2,n,n+2,n+3,n+6,n+5,n+4,n+7,n+6,n+4});}Custom(blue,v,t);for(int i=0;i<12;i++)Rod(metal,new(-1.1f+i*.2f,2.22f,0),new(-1.1f+i*.2f,2.32f,0),.018f);Collide(new(0,1.3f,0),new(2.5f,2.05f,.16f));
+    }
+    static void ConfigureCurtainLength()
+    {
+        var rod=GameObject.CreatePrimitive(PrimitiveType.Cylinder);var wheel=GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        try
+        {
+            var curtain=root.GetComponent<ResizableWardCurtain>()??root.AddComponent<ResizableWardCurtain>();
+            var model=root.transform.Find("Model").GetComponent<MeshFilter>();
+            curtain.Configure(model,rod.GetComponent<MeshFilter>().sharedMesh,wheel.GetComponent<MeshFilter>().sharedMesh,root.GetComponent<BoxCollider>());
+            curtain.UseStoredMesh(PropMeshAssets.Store(Folder,"WardCurtain",Object.Instantiate(model.sharedMesh)));
+        }
+        finally{Object.DestroyImmediate(rod);Object.DestroyImmediate(wheel);}
     }
     static void Bedside(){Feet(.24f,.19f,.10f,wood);Soft(wood,new(0,.4f,0),new(.6f,.6f,.5f));Soft(stone,new(0,.74f,0),new(.65f,.08f,.55f));for(int i=0;i<2;i++){Soft(wood,new(0,.28f+i*.29f,-.265f),new(.54f,.26f,.035f),.012f);Rod(metal,new(-.1f,.3f+i*.29f,-.30f),new(.1f,.3f+i*.29f,-.30f),.023f);}Collide(new(0,.39f,0),new(.65f,.78f,.55f));}
     static void Wardrobe(){Soft(wood,new(0,1.2f,0),new(2,2.4f,.65f));Soft(dark,new(0,.08f,0),new(1.9f,.16f,.6f));foreach(int s in new[]{-1,1}){Soft(wood,new(s*.48f,1.24f,-.35f),new(.94f,2.24f,.045f),.016f);Box(fabric,new(s*.48f,1.4f,-.378f),new(.77f,1.78f,.009f));Rod(metal,new(s*.09f,1.08f,-.4f),new(s*.09f,1.38f,-.4f),.025f);}Soft(wood,new(0,2.4f,0),new(2.08f,.07f,.70f));Collide(new(0,1.22f,0),new(2.08f,2.44f,.70f));}

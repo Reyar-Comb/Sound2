@@ -101,6 +101,8 @@ namespace Sound2.LevelEditing.Editor
                 if (!AssetDatabase.Contains(source)) Object.DestroyImmediate(source);
             }
             EditorUtility.SetDirty(layout);
+            RingTableMeshPersistence.Persist(layout);
+            WardCurtainMeshPersistence.Persist(layout);
             AssetDatabase.SaveAssetIfDirty(AssetDatabase.LoadMainAssetAtPath(layout.geometryAsset));
         }
 
