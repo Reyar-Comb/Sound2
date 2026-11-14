@@ -244,7 +244,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                 float occupied=faceDensity>0 || edgeRegion>0?1:0;
                 result=float4(face*visibility,edge*visibility,0,occupied);
             }
-            if(_BlackBoxRevealModes.y>.5 && _SonarActive>.5 && surface)
+            if(((_BlackBoxRevealModes.y>.5 && _SonarActive>.5) || _AudioSonarActive>.5) && surface)
             {
                 // Same points and contours, gated by pulse arrival and fade.
                 float sonarRank=OrderedRank(cell);
@@ -421,7 +421,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             float2 screenCenter=(float2(cell)+.5)*pitch;
             float distanceToPlayer=distance(p,_BlackBoxPlayerPosition.xyz);
             float brightness=_BlackBoxRevealModes.x>.5?1-smoothstep(_RevealDistance*.8,_RevealDistance,distanceToPlayer):0;
-            if(_BlackBoxRevealModes.y>.5 && _SonarActive>.5)
+            if(((_BlackBoxRevealModes.y>.5 && _SonarActive>.5) || _AudioSonarActive>.5))
             {
                 PulseReveals pulse=SonarVisibility(p,normal,OrderedRank(cell));
                 brightness=max(brightness,max(max(pulse.white.x,pulse.coin.x),max(pulse.danger.x,pulse.lightning.x)));

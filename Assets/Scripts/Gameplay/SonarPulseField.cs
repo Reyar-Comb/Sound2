@@ -191,11 +191,31 @@ public sealed class SonarPulseField : MonoBehaviour
             : footstep ? SelectSlot(FootstepPulseOffset, FootstepPulseCapacity, ref footstepIndex)
             : SelectSlot(0, MainPulseCapacity, ref pulseIndex);
         int sampleSize = bank != 0 ? FootstepMaskSize : MaskSize;
-        int blockSize = MaskSize / sampleSize;
         int hitCount = 0;
         float effectiveRange = falloff.z > 0 ? Mathf.Min(pulseRange, Mathf.Max(.01f, falloff.y)) : pulseRange;
         if (densityFalloff.w>.5f) effectiveRange=Mathf.Min(effectiveRange,densityFalloff.y);
         SampleRays(origin, effectiveRange, bank == 0 ? mainDirections : localDirections);
+        hitCount = EncodePlanes(origin, sampleSize, blockers, slot * 6);
+        origins[slot] = new Vector4(LastOrigin.x, LastOrigin.y, LastOrigin.z, Time.time);
+        parameters[slot] = new Vector4(pulseRange, pulseSpeed, pulseAfterglow, 1);
+        float fadeEnd = Mathf.Clamp(falloff.y, .01f, pulseRange);
+        distanceFalloffs[slot] = new Vector4(Mathf.Clamp(falloff.x, 0, fadeEnd - .001f), fadeEnd,
+            Mathf.Clamp(falloff.z, 0, 8), Mathf.Clamp01(falloff.w));
+        densityFalloffs[slot] = densityFalloff;
+        using (publishMarker.Auto()) Publish();
+        Emissions++;
+        if (footstep) FootstepEmissions++;
+        if (danger) DangerEmissions++;
+        LastRayCount = 6 * sampleSize * sampleSize;
+        LastHitCount = hitCount;
+        LastSamplingMilliseconds = (float)((System.Diagnostics.Stopwatch.GetTimestamp() - start)
+            * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
+        return true;
+    }
+
+    int EncodePlanes(Vector3 origin, int sampleSize, Texture2DArray target, int firstSlice)
+    {
+        int blockSize = MaskSize / sampleSize, hitCount = 0;
         int rayIndex = 0;
         for (int face = 0; face < 6; face++)
         {
@@ -224,23 +244,21 @@ public sealed class SonarPulseField : MonoBehaviour
                 // Upload only this wave's six faces, not the entire expanded pulse pool.
                 blockerUpload.SetPixels(planes);
                 blockerUpload.Apply(false);
-                Graphics.CopyTexture(blockerUpload, 0, 0, blockers, slot * 6 + face, 0);
+                Graphics.CopyTexture(blockerUpload, 0, 0, target, firstSlice + face, 0);
             }
         }
-        origins[slot] = new Vector4(LastOrigin.x, LastOrigin.y, LastOrigin.z, Time.time);
-        parameters[slot] = new Vector4(pulseRange, pulseSpeed, pulseAfterglow, 1);
-        float fadeEnd = Mathf.Clamp(falloff.y, .01f, pulseRange);
-        distanceFalloffs[slot] = new Vector4(Mathf.Clamp(falloff.x, 0, fadeEnd - .001f), fadeEnd,
-            Mathf.Clamp(falloff.z, 0, 8), Mathf.Clamp01(falloff.w));
-        densityFalloffs[slot] = densityFalloff;
-        using (publishMarker.Auto()) Publish();
-        Emissions++;
-        if (footstep) FootstepEmissions++;
-        if (danger) DangerEmissions++;
-        LastRayCount = 6 * sampleSize * sampleSize;
-        LastHitCount = hitCount;
-        LastSamplingMilliseconds = (float)((System.Diagnostics.Stopwatch.GetTimestamp() - start)
-            * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
+        return hitCount;
+    }
+
+    /// <summary>One snapshot for an audio-driven source; does not consume or publish a manual pulse.</summary>
+    public bool CaptureBlockingPlanes(Vector3 origin, float range, Texture2DArray target, int firstSlice, bool highQuality = false)
+    {
+        if (!isActiveAndEnabled || blockers == null || target == null || target.width != MaskSize
+            || target.height != MaskSize || firstSlice < 0 || firstSlice + 6 > target.depth) return false;
+        using (syncMarker.Auto()) Physics.SyncTransforms();
+        int size = highQuality ? MaskSize : FootstepMaskSize;
+        SampleRays(origin, Mathf.Max(.01f, range), highQuality ? mainDirections : localDirections);
+        EncodePlanes(origin, size, target, firstSlice);
         return true;
     }
 

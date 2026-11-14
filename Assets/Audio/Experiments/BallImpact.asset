@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07ae86a58e5fb1d45be69005c23145b2, type: 3}
+  m_Name: BallImpact
+  m_EditorClassIdentifier: Assembly-CSharp::AudioReactiveClip
+  clip: {fileID: 0}
+  analysisRate: 60
+  fftSize: 2048
+  data: 
+  frameCount: 0
+  bakedRate: 0
+  bakedSamples: 0
+  bakedFrequency: 0
+  bakedChannels: 0
+  bakedFft: 0
+  bakedRequestedRate: 0
+  sourceHash: 

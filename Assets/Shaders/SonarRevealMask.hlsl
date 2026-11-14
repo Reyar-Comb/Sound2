@@ -19,11 +19,14 @@ float PulseAfterglow(float age,float duration)
     return fade*fade;
 }
 
+#include "AudioReactiveSonar.hlsl"
+
 // Each channel uses the same lattice. Priority is applied later, independently for faces and edges.
 struct PulseReveals { float2 white, danger, coin, lightning; };
 PulseReveals SonarVisibility(float3 positionWS, float3 normalWS, float orderedRank)
 {
     PulseReveals brightness; brightness.white=0; brightness.danger=0; brightness.coin=0; brightness.lightning=0;
+    if(_SonarActive>.5 && _BlackBoxRevealModes.y>.5)
     [loop] for (int i = 0; i < SONAR_PULSE_COUNT; i++)
     {
         float4 settings = _SonarPulseParameters[i];
@@ -76,5 +79,6 @@ PulseReveals SonarVisibility(float3 positionWS, float3 normalWS, float orderedRa
         else if (i>=SONAR_DANGER_OFFSET) brightness.danger=max(brightness.danger,visibility);
         else brightness.white=max(brightness.white,visibility);
     }
+    brightness.white=max(brightness.white,AudioReactiveVisibility(positionWS,normalWS,orderedRank));
     return brightness;
 }

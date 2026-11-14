@@ -241,3 +241,10 @@ SonarDensitySettings 经 `_SonarPulseDensityFalloffs` 保存每次发射的密�
 `SonarPulseField.batchRaycasts` 默认开启，使用持久缓冲和 `RaycastCommand.ScheduleBatch`，保持原有48/24角网格、首次命中平面、范围/层/Trigger/背面规则以及同帧发布。暂时关闭此开关可对照同步路径，不影响音频组件。
 
 任务在发射返回前完成，不增加一帧延迟；缓冲在停用时释放并在重新启用时重建。`Sonar.*` ProfilerMarker 分别覆盖准备、查询、编码、上传和发布。回归入口为 `AgentScripts/VerifyBatchedSonar.cs` 和 `AgentScripts/VerifyConcurrentSonar.cs`。实测与边界见 [AlarmClockProfiling.md](AlarmClockProfiling.md) 第二轮。
+
+
+## 可选音频驱动实验
+
+新增独立的 `AudioReactiveSonarEmitter` / `AudioReactiveSonarField` 和离线 `AudioReactiveClip` 数据，不替换原有52个手动波槽。纯峰值包络（无FFT）通过现有点阵采样路径叠加；每次播放只采一份遮挡，循环期间不重复采样。
+
+`audiotest` 场景复用球和收音机模型。B切换球的新旧碰撞波；V开关收音机连续播放。资源中选择 Clip 后通过 Inspector 的 Bake peak envelope 烘焙（已接入的用户录音保留）。完整接入步骤、参数与第一版边界见 [AudioReactiveSonar.md](AudioReactiveSonar.md)。
