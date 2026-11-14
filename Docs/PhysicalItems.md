@@ -87,6 +87,8 @@ PlayerPickup 的持物惯性由四元数指数追随和 SmoothDamp 位置平滑�
 
 ### 家具与日用品
 
+病房隔帘 `WardCurtain` 支持无拉伸改长度：选中关卡内实例，在“病房隔帘尺寸（保持褶皱尺度）→ 长度（米）”修改，Inspector 的 `ResizableWardCurtain` 也提供同一参数。默认 2.5m，支持 0.5–50m；按固定 0.059m 网格步长增减褶皱，末段裁齐，保持褶皱深度、帘高、管径与轮子大小。吊环按固定间距增减，两端支架平移，碰撞同步调整；各实例独立，支持撤销、保存和场景/关卡 Prefab 导出。原预制体和网格 GUID 保留。`ConfigureResizableWardCurtain` 更新原资源，`RebuildFurniture` 也保留可调结构；`VerifyWardCurtainLength.Edit` 通过 41 项检查，报告及 1.2/2.5/5.3m 对照图位于 `Logs/WardCurtainLength`。
+
 以下预制体位于 `Assets/Prefabs`，可在地图编辑器的道具下拉列表中直接放置。根节点位于底部，统一通过 LevelProp 在编辑模式显示预览材质、在运行模式使用黑色点云材质。
 
 | 道具 | Prefab | 拾取 / 破坏 |
