@@ -1,5 +1,21 @@
 # 怪物巡视、红色扫描与听声调查
 
+## 红色巡逻怪的三层音效
+
+`PatrolMonster` 自动使用 `Assets/Resources/MonsterAudio.asset`；可在个别红怪上手动添加 `MonsterAudioEmitter` 并指定不同 Profile。蓝色球状闪电和静态红色藤蔓区域不接入。声音跟着同一个怪物位置移动，每层有独立的 3D 播放通道，互相叠加：
+
+| 音效 | 触发 | 满量距离 → 静音距离 | 默认音量 |
+| --- | --- | --- | --- |
+| crawl | 实际水平移动；停下渐隐，转头不触发 | 1.5 → 12 m | 0.35 |
+| hum | 进入距离，不要求移动 | 1.2 → 7 m | 0.42 |
+| shout | 很近时叠加，不会替换 hum | 0.65 → 2.5 m | 0.28 |
+
+调 Profile 中各层的 `Volume`、`Full Distance`、`Range`。三层共用淡入/淡出和声源高度配置；`crawl` 默认速度阈值为 0.12 m/s，速度回落至该值的 60% 以下才判定停止，防止临界抖动。用颗粒噪声循环表达持续移动，不按每个脚步重复打断录音。离开范围或淡到无声会暂停循环，回来从原位置继续；禁用怪物或卸载楼层则停止。
+
+复用 `SpatialAudioEmitter` 的 HRTF；默认不开实时遮挡或反射，不新增声波或射线，也不发布会让怪物听见自己的 `GameplayNoise`。`Replace Scan Sound` 默认替换旧的扫描提示音，关闭可恢复旧 ping；红色扫描和藤蔓不受影响。录音文件保持原样。
+
+试听场景：`Assets/Scenes/TeammateSonarHall.unity`。Unity CLI Play Mode 检查入口：`AgentScripts/VerifyMonsterAudio.cs`。
+
 ## 体验入口
 
 打开 `Assets/Scenes/TeammateSonarHall.unity` 并进入 Play。场景中的 `Patrolling Monster (invisible)` 从东侧通道出发，沿 `Monster Patrol Route` 下的五个节点巡视。它没有 Renderer，不会直接露出模型或被玩家声波扫描成实体轮廓。玩家通过怪物发出的红色环境点阵及脚边、邻近墙面蔓延的红色藤蔓判断危险位置。

@@ -185,7 +185,9 @@ public void Reveal(Vector3 origin)
 
 脚步调用 `EmitFootstepFrom`，起点为胶囊底部上方 0.12m，默认 3m 范围、8m/s、0.3s 余像、0.4–3m 距离衰减、指数 2、强度 0.6。波槽 0–31 供主波使用，32–35 供脚步使用，各组独立，不互相覆盖。36–39 供怪物危险波使用。Shader 共读取 52 槽；脚步使用 24×24×6 方向采样，主波使用 48×48×6，沿用同一首碰撞面纹理布局。局部脚步的角采样精度较低，薄小物体和边界可能存在误差。
 
-音频素材按用户要求暂留空：只播放显式指定的 `Audio Source` 和 `Clips`，不合成脚步音、不补建 AudioSource、不使用替代素材。`Sound Enabled` 和 `Volume` 控制已绑定音效；没有素材时仍发出声波和 AI 听觉事件。`Emission Enabled`（Sonar 场景按键 6）控制脚步和落地反馈，按键 5 只控制主动探测波。若需固定世界位置与空间反射，可从 `onStep` / `Stepped` 或 `onLand` / `Landed` 接入已有音效池。
+共享 `Player.prefab` 的 `FootstepEmitter` 已绑定独立子物体 `Footstep Audio` 和 `Assets/Audio/Footstep/step1.wav` 至 `step4.wav`。录音预加载，按 `Clips` 列表顺序轮换，每步一次 `PlayOneShot`，与脚底声波在同一个步伐事件中发出；墙面仍在波到达时才显影。这是同帧触发，不是 DSP 级对齐。默认本地玩家音源不做 3D 衰减，不影响脚底波纹或怪物听觉；如需 3D 混音可替换 `Audio Source`。原始 WAV 不改动。
+
+在玩家实例或预制体上调整 `Clips`、`Sound Enabled`、`Volume`、`Step Distance`、`Minimum Interval`；不要把录音填到子物体的单一 Clip 槽。没有素材时仍发出声波和 AI 听觉事件，不合成替代声音。`audiotest` 继承启用状态；Sonar 场景按 **6** 切换整套脚步与落地反馈。旧 `BouncePlaytest` 场景不是 `Player.prefab` 实例，其独立音源配置不变。
 
 ### 跳跃与落地
 
@@ -223,6 +225,12 @@ public void Reveal(Vector3 origin)
 
 
 ## 怪物与玩法听觉
+
+### 玩家死亡音效
+
+在玩家实例或共享 `Player.prefab` 的 **PlayerDamageFeedback → 死亡音效** 配置。`death.wav` 和 `ear.wav` 都只播一次，不循环；开始时间各自以死亡红色藤蔓开始为零点。默认死亡声 0 秒、音量 0.85，耳鸣 1.2 秒、音量 0.6。复活期间耳鸣随白屏渐退而淡出；录音先播完则不补播，流程结束或取消时两条音轨都停止。受伤未死亡时不播放，也不会触发 AI 听觉或声波。
+
+耳鸣触发时，环境声在 **环境声渐弱时间**（默认 0.6 秒）内降到零。即使耳鸣先播完，环境声也保持静音，直到白屏完全退去；之后在 **环境声恢复时间**（默认 0.6 秒）内渐强到原音量。死亡和耳鸣两条音轨不受这段临时衰减影响，仍保留死亡前的总音量比例。取消流程或禁用组件时立即还原环境音量，避免留下全局静音。
 
 `GameplayNoise` 将玩法听觉与音频 Clip、显影范围解耦。脚步和有效球碰撞分别发布 Footstep/Impact 事件；`PatrolMonster` 在范围和墙体检查通过后前往事件的固定位置，搜索后恢复巡视。`RuntimePatrolNavigation` 为地图静态碰撞体构建共享 NavMesh。组件参数与使用方法见 [MonsterGameplay.md](MonsterGameplay.md)。
 

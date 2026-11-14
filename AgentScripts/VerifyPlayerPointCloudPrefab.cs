@@ -83,7 +83,10 @@ public static class VerifyPlayerPointCloudPrefab
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.D)); await Tick(800);
             InputSystem.QueueStateEvent(keyboard, new KeyboardState()); await Tick(60);
             check(foot.Steps > steps && field.FootstepEmissions > 0, "Direct prefab footsteps emit into the same field");
-            check(foot.audioSource == null && foot.landingClip == null, "No footstep audio fallback was introduced");
+            check(foot.audioSource != null && foot.audioSource.transform.IsChildOf(root.transform)
+                && foot.audioSource.isPlaying && foot.clips.Select(c => c.name).SequenceEqual(new[] { "step1", "step2", "step3", "step4" }),
+                "Direct prefab instance plays the four explicitly bound recordings");
+            check(foot.landingClip == null, "Landing stays unassigned without falling back to a step recording");
             return new { passed = true, checks };
         }
         finally

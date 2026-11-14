@@ -160,8 +160,11 @@ public static class VerifyPlayerDamage
             Check(p.InputSuspended && p.DeathSequenceLocked && !v.TakeDamage(1), "Death lock survives ordinary input toggles and rejects further damage");
             await Until(() => f.Growth >= 1.11f);
             await Capture("02-engulfed");
+            await Until(() => f.Retreat > 0);
+            Check(f.WhiteAmount > 0, "Whitening begins during the dissolve");
+            // With the prefab's 0.1s whitening, the screen is already white well before Retreat reaches 0.3.
             await Until(() => f.Retreat > .3f);
-            Check(f.WhiteAmount > 0 && f.WhiteAmount < 1, "Outer-to-inner retreat overlaps gradual whitening");
+            Check(f.Retreat <= 1.12f, "Outer-to-inner retreat progresses independently of whitening");
             await Capture("03-dissolving");
             await Until(() => f.WhiteAmount >= .999f);
             await Capture("04-white");

@@ -46,6 +46,9 @@ public static class VerifyJumpLanding
         bool duplicateStep = false;
         Action<Vector3> stepped = _ => { if (Time.frameCount == impactFrame) duplicateStep = true; };
         AudioSource testSource = null; AudioClip testClip = null;
+        var originalSource = foot.audioSource;
+        var originalClips = foot.clips;
+        var originalLanding = foot.landingClip;
         try
         {
             check(player.UsesGravity && actions.FindAction("Player/Jump").enabled, "Shared Player enables gravity and uses the existing Jump input");
@@ -63,12 +66,14 @@ public static class VerifyJumpLanding
             GameplayNoise.Emitted += heard; foot.Landed += landed; foot.Stepped += stepped;
             await keys(Array.Empty<Key>(), 400);
             check(capsule.isGrounded && foot.Landings == 0, "Initial ground settling is silent");
-            int sources = player.GetComponents<AudioSource>().Length;
+            // Exercise the intentionally unconfigured path independently of prefab defaults.
+            foot.audioSource = null; foot.clips = Array.Empty<AudioClip>(); foot.landingClip = null;
+            int sources = player.GetComponentsInChildren<AudioSource>().Length;
             int before = foot.Steps;
             await keys(new[] { Key.W }, 700);
             await keys(Array.Empty<Key>(), 80);
             check(foot.Steps > before && noises.Any(n => n.kind == GameplayNoiseKind.Footstep), "Grounded walking still emits footsteps and hearing events");
-            check(foot.audioSource == null && player.GetComponents<AudioSource>().Length == sources,
+            check(foot.audioSource == null && player.GetComponentsInChildren<AudioSource>().Length == sources,
                 "Unassigned walking audio does not create a fallback AudioSource");
             float groundY = player.transform.position.y;
             before = foot.Steps;
@@ -85,10 +90,11 @@ public static class VerifyJumpLanding
             check(Mathf.Approximately(impact.range, foot.hearingRange * foot.landingMultiplier), "Landing uses a stronger Impact hearing event (2x footstep range)");
             var parameters = Read<Vector4[]>(sonar.PulseField, "parameters");
             var falloffs = Read<Vector4[]>(sonar.PulseField, "distanceFalloffs");
-            check(Enumerable.Range(4, 4).Any(i => Mathf.Approximately(parameters[i].x, foot.range * foot.landingMultiplier)
+            check(Enumerable.Range(SonarPulseField.FootstepPulseOffset, SonarPulseField.FootstepPulseCapacity)
+                .Any(i => Mathf.Approximately(parameters[i].x, foot.range * foot.landingMultiplier)
                 && Mathf.Approximately(falloffs[i].y, foot.distanceSettings.fadeEndDistance * foot.landingMultiplier)
                 && falloffs[i].w > foot.distanceSettings.pulseStrength), "Landing expands and brightens the existing footstep pulse bank");
-            check(foot.audioSource == null && player.GetComponents<AudioSource>().Length == sources,
+            check(foot.audioSource == null && player.GetComponentsInChildren<AudioSource>().Length == sources,
                 "Unassigned landing audio stays silent without generating audio");
             await keys(Array.Empty<Key>(), 80);
             player.SetInputCaptured(false);
@@ -147,7 +153,7 @@ public static class VerifyJumpLanding
         finally
         {
             GameplayNoise.Emitted -= heard; foot.Landed -= landed; foot.Stepped -= stepped;
-            foot.audioSource = null; foot.clips = Array.Empty<AudioClip>(); foot.landingClip = null;
+            foot.audioSource = originalSource; foot.clips = originalClips; foot.landingClip = originalLanding;
             if (testSource != null) UnityEngine.Object.Destroy(testSource);
             if (testClip != null) UnityEngine.Object.Destroy(testClip);
             if (ceiling != null) UnityEngine.Object.Destroy(ceiling);

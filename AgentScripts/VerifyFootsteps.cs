@@ -94,9 +94,11 @@ public static class VerifyFootsteps
             check(Mathf.Abs(foot.LastOrigin.y - basePosition.y - foot.originHeight) < .001f,
                 "Pulse origin is near the capsule base rather than camera height");
             before = foot.Steps;
-            var fixedOrigin = field.LastOrigin;
+            var fixedOrigin = foot.LastOrigin;
+            var footstepEmissions = field.FootstepEmissions;
             await Tick(400);
-            check(foot.Steps == before && field.LastOrigin == fixedOrigin, "Stopping ends emissions and keeps the last wave origin fixed");
+            check(foot.Steps == before && field.FootstepEmissions == footstepEmissions && foot.LastOrigin == fixedOrigin,
+                "Stopping ends footstep emissions and keeps their last origin fixed");
             await keys(new[] {Key.Space});
             await Tick(250);
             await keys(new Key[0]);
@@ -153,9 +155,10 @@ public static class VerifyFootsteps
             for(int i = 0; i < 7; i++)
                 field.EmitFootstepFrom(new Vector3(1000 + i, 10, 1000), foot.range, foot.waveSpeed, foot.afterglow, foot.distanceSettings);
             bool mainUnchanged = true, footConfigured = true;
-            for(int i = 0; i < 4; i++) mainUnchanged &= origins[i] == savedOrigins[i] && parameters[i] == savedParameters[i];
-            for(int i = 4; i < 8; i++) footConfigured &= parameters[i].w == 1 && falloffs[i].y == 3 && falloffs[i].z == 2 && falloffs[i].w == .6f;
-            check(mainUnchanged, "More than four footsteps never overwrite the four main pulse slots");
+            for(int i = 0; i < SonarPulseField.MainPulseCapacity; i++) mainUnchanged &= origins[i] == savedOrigins[i] && parameters[i] == savedParameters[i];
+            for(int i = SonarPulseField.FootstepPulseOffset; i < SonarPulseField.DangerPulseOffset; i++)
+                footConfigured &= parameters[i].w == 1 && falloffs[i].y == 3 && falloffs[i].z == 2 && falloffs[i].w == .6f;
+            check(mainUnchanged, "More than four footsteps never overwrite main pulse slots");
             check(footConfigured, "All four footstep slots retain their own 3m falloff and strength");
         } catch(Exception e) { failures.Add(e.ToString()); }
         finally {

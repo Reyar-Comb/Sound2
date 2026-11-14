@@ -51,6 +51,7 @@ public sealed class PatrolMonster : MonoBehaviour
         path = new NavMeshPath();
         agent = GetComponent<NavMeshAgent>();
         agent.enabled = false;
+        MonsterAudioEmitter.AttachTo(this);
         // The actor contributes neither a visible mesh nor camera depth for sonar to reveal.
         foreach (var renderer in GetComponentsInChildren<Renderer>()) renderer.enabled = false;
     }

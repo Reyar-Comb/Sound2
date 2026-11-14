@@ -32,7 +32,7 @@ public sealed class FootstepEmitter : MonoBehaviour
     public bool soundEnabled = true;
     [Tooltip("Explicit audio output. No sound is played if this or the clip is unassigned.")]
     public AudioSource audioSource;
-    [Tooltip("Assigned recordings only; no generated audio or fallback clip.")]
+    [Tooltip("Single-step recordings played in list order, one per footstep pulse. Empty slots are skipped.")]
     public AudioClip[] clips;
     [Range(0, 1)] public float volume = .4f;
     [Header("Landing (shared footstep pulse channel)")]

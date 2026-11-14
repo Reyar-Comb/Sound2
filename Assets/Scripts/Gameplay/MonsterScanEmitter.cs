@@ -33,11 +33,17 @@ public sealed class MonsterScanEmitter : MonoBehaviour
     float phase, startsAt;
     SpatialAudioEmitter spatial;
     SonarCueSource cue;
+    MonsterAudioEmitter layers;
     void OnEnable() { phase = 1; startsAt = Time.time + firstDelay; }
     void Start()
     {
         if (player == null) { var p = FindAnyObjectByType<PlayerController>(); if (p != null) player = p.transform; }
         if (pulseField == null) pulseField = FindAnyObjectByType<SonarPulseField>();
+        layers = GetComponent<MonsterAudioEmitter>();
+    }
+    void EnsureCue()
+    {
+        if (cue != null) return;
         spatial = GetComponent<SpatialAudioEmitter>();
         if (spatial == null) spatial = gameObject.AddComponent<SpatialAudioEmitter>();
         spatial.settings.reflections = false;
@@ -66,7 +72,8 @@ public sealed class MonsterScanEmitter : MonoBehaviour
         if (pulseField == null) return false;
         LastOrigin = transform.TransformPoint(localOrigin);
         if (!pulseField.EmitDangerFrom(LastOrigin,range,waveSpeed,afterglow,distanceSettings,densitySettings)) return false;
-        if (playSound && cue != null) { spatial.volume = volume; spatial.Apply(); cue.Play(); }
+        if (playSound && (layers == null || !layers.ReplacesScanSound))
+        { EnsureCue(); spatial.volume = volume; cue.Play(); }
         Scans++; return true;
     }
 }

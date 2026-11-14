@@ -241,8 +241,8 @@ MonoBehaviour:
     waveSpeed: 7
     afterglow: 0.06
     gain: 1
-    peakFloor: 0.05
-    peakCeiling: 0.8
+    peakFloor: 0.025
+    peakCeiling: 0.473
     responseExponent: 1.8
     highQualityOcclusion: 0
     distance:
@@ -1505,6 +1505,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 416137931599503426, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: obstacleLayers.m_Bits
+      value: 307
+      objectReference: {fileID: 0}
     - target: {fileID: 2359752701424357332, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: proximityRendering
       value: 1
@@ -1553,6 +1557,10 @@ PrefabInstance:
       propertyPath: proximityRendering
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: obstacleLayers.m_Bits
+      value: 307
+      objectReference: {fileID: 0}
     - target: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_Name
       value: Player
@@ -1564,10 +1572,6 @@ PrefabInstance:
     - target: {fileID: 4955884709853427845, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_LocalRotation.x
       value: 0.21643962
-      objectReference: {fileID: 0}
-    - target: {fileID: 8316862017151493178, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      propertyPath: emissionEnabled
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

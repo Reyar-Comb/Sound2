@@ -18,6 +18,21 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
     [Range(120, 1800), InspectorName("死亡铺满藤蔓数量")] public int deathVineCount = 1000;
     [Range(0, .8f), InspectorName("消退阶段渐白延迟比例")] public float whiteningDelay = 0;
     [Min(.01f), InspectorName("背景变白时间（秒）")] public float whiteningSeconds = .1f;
+
+    [Header("死亡音效（均只播放一次）")]
+    [InspectorName("死亡录音")] public AudioClip deathClip;
+    [Range(0, 1), InspectorName("死亡音量")] public float deathVolume = .85f;
+    [Min(0), InspectorName("死亡音效开始（秒）"), Tooltip("从死亡红色藤蔓开始算，0 为立即播放。")]
+    public float deathAudioDelay;
+    [InspectorName("耳鸣录音")] public AudioClip tinnitusClip;
+    [Range(0, 1), InspectorName("耳鸣音量")] public float tinnitusVolume = .6f;
+    [Min(0), InspectorName("耳鸣开始（秒）"), Tooltip("从死亡红色藤蔓开始算，不是从死亡录音结束算。")]
+    public float tinnitusDelay = 1.2f;
+    [Min(0), InspectorName("环境声渐弱时间（秒）"), Tooltip("从耳鸣触发到环境声完全静音。")]
+    public float worldFadeOutSeconds = .6f;
+    [Min(0), InspectorName("环境声恢复时间（秒）"), Tooltip("白屏完全退去后，环境声恢复到死亡前音量的时间。")]
+    public float worldFadeInSeconds = .6f;
+
     public bool SequenceActive { get; private set; }
     public float WhiteAmount { get; private set; }
     public float Growth { get; private set; }
@@ -35,6 +50,14 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
     float vineClock, nextSpawn, nextRaster;
     bool vinesRunning;
     int deathRoots;
+    AudioSource deathSource, tinnitusSource;
+    double deathAudioStart;
+    float tinnitusFade;
+    bool deathAudioActive, deathPlayed, tinnitusPlayed;
+    static PlayerDamageFeedback worldAudioOwner;
+    float originalWorldVolume, cueMasterVolume, worldVolumeAtRecovery;
+    double worldFadeStartedAt;
+    bool recoveringWorldAudio, wakeComplete;
 
     void Awake()
     {
@@ -69,6 +92,8 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
 
     void LateUpdate()
     {
+        UpdateDeathAudio();
+        UpdateWorldAudio();
         if (material == null) return;
         if (SequenceActive)
         {
@@ -90,8 +115,17 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         StartVines();
         SequenceActive = true;
         deathRoots = 0;
+        StopDeathAudio();
+        RestoreWorldAudio();
+        deathAudioStart = Time.unscaledTimeAsDouble;
+        deathAudioActive = isActiveAndEnabled;
+        deathPlayed = tinnitusPlayed = false;
+        tinnitusFade = 1;
+        wakeComplete = false;
+        cueMasterVolume = worldAudioOwner != null ? worldAudioOwner.originalWorldVolume : AudioListener.volume;
         // Fresh branches grow throughout the advancing death front, without converging on one centre.
         ShowEngulf(0);
+        UpdateDeathAudio(); // Zero delay plays on the same frame as the red overlay starts.
     }
     public void ShowEngulf(float progress)
     {
@@ -108,7 +142,87 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
         float white = Mathf.SmoothStep(0, 1, elapsed / Mathf.Max(.01f, whiteningSeconds));
         SetVisual(1.12f, Mathf.SmoothStep(0, 1, t) * 1.12f, white, 1, 1);
     }
-    public void ShowWake(float progress) => SetVisual(0, 1.12f, 1 - Mathf.Clamp01(progress), 0, 0);
+    public void ShowWake(float progress)
+    {
+        tinnitusFade = 1 - Mathf.Clamp01(progress);
+        wakeComplete = tinnitusFade <= 0;
+        SetVisual(0, 1.12f, tinnitusFade, 0, 0);
+    }
+
+    void UpdateDeathAudio()
+    {
+        if (!deathAudioActive) return;
+        double elapsed = Time.unscaledTimeAsDouble - deathAudioStart;
+        if (!deathPlayed && elapsed >= Mathf.Max(0, deathAudioDelay))
+        {
+            deathPlayed = true;
+            PlayDeathClip(ref deathSource, deathClip, deathVolume);
+        }
+        if (!tinnitusPlayed && elapsed >= Mathf.Max(0, tinnitusDelay))
+        {
+            tinnitusPlayed = true;
+            if (tinnitusFade > 0 && tinnitusClip != null)
+            {
+                PlayDeathClip(ref tinnitusSource, tinnitusClip, tinnitusVolume * tinnitusFade);
+                BeginWorldFadeOut();
+            }
+        }
+        if (deathSource != null) deathSource.volume = cueMasterVolume * Mathf.Clamp01(deathVolume);
+        if (tinnitusSource != null) tinnitusSource.volume = cueMasterVolume * Mathf.Clamp01(tinnitusVolume) * tinnitusFade;
+    }
+
+    void PlayDeathClip(ref AudioSource source, AudioClip clip, float volume)
+    {
+        if (clip == null) return;
+        if (source == null)
+        {
+            source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.spatialBlend = 0; // Player feedback, independent of world/monster audio.
+            source.ignoreListenerVolume = true; // Ignore the temporary duck, but keep the saved master level.
+            source.bypassReverbZones = true;
+        }
+        source.loop = false;
+        source.volume = cueMasterVolume * Mathf.Clamp01(volume);
+        source.clip = clip;
+        source.Play();
+    }
+
+    void StopDeathAudio()
+    {
+        deathAudioActive = false;
+        if (deathSource != null) deathSource.Stop();
+        if (tinnitusSource != null) tinnitusSource.Stop();
+    }
+
+    void BeginWorldFadeOut()
+    {
+        // There is one listener volume, even when a test temporarily instantiates a second player.
+        if (worldAudioOwner != null) return;
+        worldAudioOwner = this;
+        originalWorldVolume = AudioListener.volume;
+        worldFadeStartedAt = Time.unscaledTimeAsDouble;
+        recoveringWorldAudio = false;
+    }
+
+    void UpdateWorldAudio()
+    {
+        if (worldAudioOwner != this) return;
+        float seconds = recoveringWorldAudio ? worldFadeInSeconds : worldFadeOutSeconds;
+        float t = seconds <= 0 ? 1 : Mathf.Clamp01((float)(Time.unscaledTimeAsDouble - worldFadeStartedAt) / seconds);
+        AudioListener.volume = recoveringWorldAudio
+            ? Mathf.SmoothStep(worldVolumeAtRecovery, originalWorldVolume, t)
+            : Mathf.SmoothStep(originalWorldVolume, 0, t);
+        if (recoveringWorldAudio && t >= 1) RestoreWorldAudio();
+    }
+
+    void RestoreWorldAudio()
+    {
+        if (worldAudioOwner != this) return;
+        AudioListener.volume = originalWorldVolume;
+        worldAudioOwner = null;
+        recoveringWorldAudio = false;
+    }
     void SetVisual(float growth, float retreat, float white, float backdrop, float opacity)
     {
         Growth = growth; Retreat = retreat; WhiteAmount = white;
@@ -121,16 +235,27 @@ public sealed class PlayerDamageFeedback : MonoBehaviour
     }
     public void Clear()
     {
+        StopDeathAudio();
+        if (worldAudioOwner == this && SequenceActive && wakeComplete && isActiveAndEnabled)
+        {
+            recoveringWorldAudio = true;
+            worldVolumeAtRecovery = AudioListener.volume;
+            worldFadeStartedAt = Time.unscaledTimeAsDouble;
+            UpdateWorldAudio();
+        }
+        else RestoreWorldAudio();
         SequenceActive = false; Growth = Retreat = WhiteAmount = 0;
         ResetVines();
         if (canvas != null) canvas.enabled = false;
     }
-    void OnDisable() { if (canvas != null) canvas.enabled = false; }
+    void OnDisable() { StopDeathAudio(); RestoreWorldAudio(); if (canvas != null) canvas.enabled = false; }
     void OnDestroy()
     {
         if (canvas != null) Destroy(canvas.gameObject);
         if (material != null) Destroy(material);
         if (branches != null) Destroy(branches);
+        if (deathSource != null) Destroy(deathSource);
+        if (tinnitusSource != null) Destroy(tinnitusSource);
     }
 
     void ResetVines()

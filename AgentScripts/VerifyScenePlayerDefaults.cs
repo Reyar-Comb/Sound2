@@ -149,12 +149,14 @@ public static class VerifyScenePlayerDefaults
                 check(walked >= 2, name + ": real W movement triggers steps (" + walked + ")");
                 if (style != null) check(foot.pulseField != null && foot.pulseField.FootstepEmissions >= 2,
                     name + ": footsteps reveal through the shared pulse field");
-                check(foot.audioSource == null && audioStarts == 0,
-                    name + ": unassigned audio stays silent without creating a fallback source");
+                bool configured = foot.audioSource != null && foot.clips != null && foot.clips.Any(c => c != null);
+                check(configured ? audioStarts == walked : audioStarts == 0,
+                    name + ": explicit audio follows step events; unassigned audio stays silent");
                 before = foot.Steps;
                 await Tick(250);
                 check(foot.Steps == before, name + ": idle does not emit footsteps");
                 foot.soundEnabled = false;
+                if (foot.audioSource != null) foot.audioSource.Stop();
                 audioStarts = 0;
                 await keys(new[] { Key.W }, 650);
                 await keys(Array.Empty<Key>(), 80);
