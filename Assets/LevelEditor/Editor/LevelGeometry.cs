@@ -158,6 +158,21 @@ namespace Sound2.LevelEditing.Editor
                 foreach (var doorway in layout.doorways)
                     ring = Difference(ring, new Paths64 { Path(RoomOutline(new LevelRoom { center=doorway.center, size=doorway.size },4)) });
                 meshes.Add("Walls", Extrude(ring, 0, layout.wallHeight, "Walls"));
+                for (int r = 0; r < layout.rooms.Count; r++)
+                {
+                    var room = layout.rooms[r];
+                    for (int p = 0; p < room.partitions.Count; p++)
+                    {
+                        var partition = room.partitions[p];
+                        if (partition.thickness < .05f || partition.height < .1f || Vector2.Distance(partition.start, partition.end) < .05f)
+                            throw new InvalidOperationException(room.name + " 的隔板长度、厚度或高度过小。");
+                        var strip = Offset(new Paths64 { Path(new[] { room.PartitionPoint(partition.start), room.PartitionPoint(partition.end) }) }, partition.thickness * .5f, EndType.Butt);
+                        var interior = new Paths64 { Path(RoomOutline(room, layout.circleSegments)) };
+                        if (Area(Difference(strip, interior)) > .001) throw new InvalidOperationException(room.name + " 的隔板必须位于房间内部。");
+                        string key = "Partition_" + r + "_" + p;
+                        meshes.Add(key, Extrude(strip, 0, Mathf.Min(layout.wallHeight, partition.height), key));
+                    }
+                }
                 if (lintels.Count > 0 && layout.wallHeight > 2.6f)
                     meshes.Add("DoorLintels", Extrude(Union(lintels), 2.6f, layout.wallHeight, "DoorLintels"));
                 // Cover the whole room/corridor union, including above floor pits. The pits themselves stay open below.

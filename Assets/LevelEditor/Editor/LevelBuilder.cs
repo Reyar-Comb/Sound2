@@ -102,6 +102,32 @@ namespace Sound2.LevelEditing.Editor
             AssetDatabase.SaveAssetIfDirty(AssetDatabase.LoadMainAssetAtPath(layout.geometryAsset));
         }
 
+        public static void ExportPrefab(LevelLayout source, string path, bool rebuild = true)
+        {
+            if (rebuild) Rebuild(source);
+            var scene = EditorSceneManager.NewPreviewScene();
+            try
+            {
+                var copy = Object.Instantiate(source.gameObject);
+                SceneManager.MoveGameObjectToScene(copy, scene);
+                copy.name = source.name;
+                copy.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+                RestorePropPrefabLinks(source.transform.Find("Props"), copy.transform.Find("Props"));
+                var layout = copy.GetComponent<LevelLayout>();
+                // Persist owns and destroys transient meshes; the scene must retain its preview meshes.
+                foreach (var filter in layout.generatedRoot.GetComponentsInChildren<MeshFilter>(true))
+                    if (filter.sharedMesh != null && !AssetDatabase.Contains(filter.sharedMesh))
+                    {
+                        filter.sharedMesh = Object.Instantiate(filter.sharedMesh);
+                        filter.sharedMesh.name = filter.gameObject.name;
+                        filter.GetComponent<MeshCollider>().sharedMesh = filter.sharedMesh;
+                    }
+                Persist(layout, path);
+                PrefabUtility.SaveAsPrefabAsset(copy, path);
+            }
+            finally { EditorSceneManager.ClosePreviewScene(scene); }
+        }
+
         public static void Export(LevelLayout source, string path, bool includePlayer)
         {
             Rebuild(source);

@@ -23,7 +23,6 @@ namespace Sound2.LevelEditing.Editor
         [SerializeField] bool endConnection;
         [SerializeField] bool includePlayer = true;
         [SerializeField] bool seededMode;
-        [SerializeField] bool architecturalMode;
         [SerializeField] int previewFloor;
         [SerializeField] LevelMap seededMap;
         [SerializeField] bool geometryExpanded = true;
@@ -37,8 +36,12 @@ namespace Sound2.LevelEditing.Editor
         public static void Open() => GetWindow<LevelDesignerWindow>("关卡编辑器");
         public void Bind(LevelLayout target)
         {
+            if (target != null && EditorUtility.IsPersistent(target))
+            {
+                var stage = PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(target));
+                target = stage.prefabContentsRoot.GetComponent<LevelLayout>();
+            }
             seededMode = false;
-            architecturalMode = target != null && target.GetComponentInParent<EightFloorAdventure>()?.generationMode == AdventureGenerationMode.Architectural;
             if (tool == Tool.RepositionProp) tool = Tool.Select;
             layout = target; selectedProp = null; selected = -1; kind = Kind.None; pending.Clear(); hasError = false;
             status = layout == null ? "新建布局，或选择已有 LevelLayout。" : $"已载入：{layout.rooms.Count} 房间 · {layout.corridors.Count} 走廊 · {layout.pits.Count} 竖井。";
@@ -79,6 +82,7 @@ namespace Sound2.LevelEditing.Editor
             var map = Selection.activeGameObject.GetComponentInParent<LevelMap>();
             if (map != null) { seededMap = map; seededMode = true; Refresh(); return; }
             var target = Selection.activeGameObject.GetComponentInParent<LevelLayout>();
+            if (target != null && EditorUtility.IsPersistent(target)) return;
             if (target != null && target != layout) Bind(target);
             if (target != null) SelectPropFromHierarchy();
         }
@@ -95,18 +99,24 @@ namespace Sound2.LevelEditing.Editor
         {
             if (rootVisualElement.Q("header") == null) return;
             var header = rootVisualElement.Q("header"); header.Clear();
-            var mode = new PopupField<string>("生成模式", new List<string> { "手工布局", "种子程序化", "建筑平面 · 八层探险" }, seededMode ? 1 : architecturalMode ? 2 : 0);
-            mode.RegisterValueChangedCallback(e => { seededMode = mode.index == 1; architecturalMode = mode.index == 2; if (tool == Tool.RepositionProp) tool = Tool.Select; Refresh(); }); header.Add(mode);
+            var mode = new PopupField<string>("生成模式", new List<string> { "独立关卡", "种子程序化" }, seededMode ? 1 : 0);
+            mode.RegisterValueChangedCallback(e => { seededMode = mode.index == 1; if (tool == Tool.RepositionProp) tool = Tool.Select; Refresh(); }); header.Add(mode);
             rootVisualElement.Q("workspace").SetEnabled(!seededMode);
             rootVisualElement.Q<Foldout>("settings-foldout").text = seededMode ? "程序化设置" : "工具与生成设置";
             if (seededMode) { DrawSeededMode(); return; }
-            DrawAdventureHeader(header);
             var target = new ObjectField("编辑布局") { objectType = typeof(LevelLayout), allowSceneObjects = true, value = layout };
             target.RegisterValueChangedCallback(e => Bind((LevelLayout)e.newValue)); header.Add(target);
             var row = Row(header);
             Button(row, "新建独立场景", CreateLayout);
             Button(row, "俯视 / 框选全部", Frame);
-            Button(row, "3D 检查", () => { if (SceneView.lastActiveSceneView != null) SceneView.lastActiveSceneView.rotation = Quaternion.Euler(45, -30, 0); });
+            Button(row, "3D 检查", () =>
+            {
+                var view = SceneView.lastActiveSceneView ?? GetWindow<SceneView>();
+                view.in2DMode = false;
+                view.orthographic = false;
+                view.rotation = Quaternion.Euler(45, -30, 0);
+                view.Repaint();
+            });
             var tools = rootVisualElement.Q("tools"); tools.Clear();
             string[] names = { "选择 / 编辑", "矩形房间", "圆柱房间", "直线走廊", "曲线走廊", "方形竖井", "连接端点", "放置道具" };
             for (int i = 0; i < names.Length; i++)
@@ -127,7 +137,7 @@ namespace Sound2.LevelEditing.Editor
                 Tool.Curve => "依次点击曲线经过的控制点，Enter 完成；Backspace 撤回一点，Esc 取消。",
                 Tool.Connect => "先从对象列表选中走廊，选择起点/终点，再点击房间边缘。连接点会跟随房间移动和缩放。",
                 Tool.Pit => "点击地面放置竖井。橙色轮廓是实际开口；管壁必须完整位于关卡内部。",
-                Tool.Prop => "从下拉列表选择道具，在 Scene 点击放置。放置墙面道具时请切到 3D 检查。Esc 退出放置。",
+                Tool.Prop => "打开道具浏览器，选择预览卡片后在 Scene 点击放置。墙面道具请切到 3D 检查。Esc 退出放置。",
                 Tool.RepositionProp => "重新吸附：在 Scene 指向新表面，左键确认移动原道具；Esc 取消。贴墙请切到 3D 检查。",
                 Tool.Rectangle or Tool.Circle => "点击 Scene 放置房间中心，切换选择工具后拖动中心与尺寸手柄。",
                 _ => "点击对象标记选择；拖动控制点调整形状。Ctrl+Z 撤销，Ctrl+Y 重做。"
@@ -137,6 +147,7 @@ namespace Sound2.LevelEditing.Editor
             Button(footer, "重新生成", () => { TryRebuild(); Refresh(); }).SetEnabled(layout != null);
             Button(footer, "保存当前场景", Save).SetEnabled(layout != null);
             Button(footer, "导出 .unity 场景", Export).AddToClassList("primary");
+            Button(footer, "导出关卡 Prefab", ExportLevelPrefab).SetEnabled(layout != null && !Application.isPlaying);
             UpdateStatus();
         }
 
@@ -248,6 +259,18 @@ namespace Sound2.LevelEditing.Editor
                 if (r.shape == RoomShape.Circle) Float(area, "直径", r.size.x, v => Change(() => r.size = Vector2.one * Mathf.Max(.5f, v)));
                 else Vector(area, "宽 / 长", r.size, v => r.size = Vector2.Max(Vector2.one * .5f, v));
                 Float(area, "旋转角度", r.rotation, v => Change(() => r.rotation = v));
+                var partitions = new Foldout { text = "房间隔板", value = true }; area.Add(partitions);
+                for (int i = 0; i < r.partitions.Count; i++)
+                {
+                    int index = i; var p = r.partitions[i];
+                    var fold = new Foldout { text = "隔板 " + (i + 1), value = true }; partitions.Add(fold);
+                    Vector(fold, "起点（房间内）", p.start, v => p.start = v);
+                    Vector(fold, "终点（房间内）", p.end, v => p.end = v);
+                    Float(fold, "高度", p.height, v => Change(() => p.height = Mathf.Clamp(v, .1f, layout.wallHeight)));
+                    Float(fold, "厚度", p.thickness, v => Change(() => p.thickness = Mathf.Max(.05f, v)));
+                    Button(fold, "删除隔板", () => { Change(() => r.partitions.RemoveAt(index)); Refresh(); });
+                }
+                Button(partitions, "添加隔板", () => { Change(() => r.partitions.Add(new RoomPartition { start = Vector2.left * r.size.x * .3f, end = Vector2.right * r.size.x * .3f, height = layout.wallHeight })); Refresh(); });
             }
             else if (kind == Kind.Corridor && selected < layout.corridors.Count)
             {
@@ -328,12 +351,17 @@ namespace Sound2.LevelEditing.Editor
         void Save()
         {
             if (layout == null || !TryRebuild()) return;
+            var stage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (stage != null && stage.scene == layout.gameObject.scene)
+            {
+                LevelBuilder.Persist(layout, stage.assetPath);
+                PrefabUtility.SaveAsPrefabAsset(stage.prefabContentsRoot, stage.assetPath);
+                status = "已保存独立关卡 Prefab。"; UpdateStatus(); return;
+            }
             if (EditorSceneManager.SaveScene(layout.gameObject.scene)) { status = "已保存场景及可编辑布局。"; UpdateStatus(); }
         }
         void Export()
         {
-            var adventure = layout != null ? layout.GetComponentInParent<EightFloorAdventure>() : null;
-            if (adventure != null) { ExportAdventure(adventure); return; }
             if (layout == null || !TryRebuild()) return;
             string path = EditorUtility.SaveFilePanelInProject("导出可编辑关卡", "NewLevel", "unity", "保存参数化布局、网格、碰撞与可选玩家。", "Assets/Scenes");
             if (string.IsNullOrEmpty(path)) return;
@@ -362,6 +390,15 @@ namespace Sound2.LevelEditing.Editor
                 else if (kind == Kind.Pit && selected < layout.pits.Count) layout.pits.RemoveAt(selected);
             });
             selected = -1; kind = Kind.None; Refresh();
+        }
+
+        void ExportLevelPrefab()
+        {
+            if (layout == null || !TryRebuild()) return;
+            string path = EditorUtility.SaveFilePanelInProject("导出独立关卡", layout.name, "prefab", "只包含本关模型、道具和电梯入口；连接关系由大场景保存。");
+            if (string.IsNullOrEmpty(path)) return;
+            LevelBuilder.ExportPrefab(layout, path);
+            status = "已导出独立关卡：" + path; UpdateStatus();
         }
 
         void Frame()
@@ -427,6 +464,7 @@ namespace Sound2.LevelEditing.Editor
                 var r = layout.rooms[i];
                 Outline(LevelGeometry.RoomOutline(r, layout.circleSegments), kind == Kind.Room && selected == i ? Color.yellow : new Color(.55f, .85f, 1));
                 Marker(r.center, r.name, Kind.Room, i);
+                foreach (var p in r.partitions) Line(new List<Vector2> { r.PartitionPoint(p.start), r.PartitionPoint(p.end) }, new Color(1, .7f, .3f));
             }
             for (int i = 0; i < layout.corridors.Count; i++)
             {
@@ -485,7 +523,13 @@ namespace Sound2.LevelEditing.Editor
                     var edgeZ = Drag(r.center + r.Rotate(Vector2.up * r.size.y * .5f), Color.green);
                     size.y = Mathf.Max(.5f, 2 * Vector2.Dot(edgeZ - r.center, r.Rotate(Vector2.up)));
                 }
-                apply = () => { r.center = center; r.size = size; };
+                var starts = new List<Vector2>(); var ends = new List<Vector2>();
+                foreach (var p in r.partitions)
+                {
+                    starts.Add(r.PartitionLocal(Drag(r.PartitionPoint(p.start), new Color(1,.7f,.3f))));
+                    ends.Add(r.PartitionLocal(Drag(r.PartitionPoint(p.end), new Color(1,.7f,.3f))));
+                }
+                apply = () => { r.center = center; r.size = size; for(int i=0;i<r.partitions.Count;i++){r.partitions[i].start=starts[i];r.partitions[i].end=ends[i];} };
             }
             else if (kind == Kind.Corridor && selected < layout.corridors.Count)
             {

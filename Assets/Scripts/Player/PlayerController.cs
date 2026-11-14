@@ -99,6 +99,12 @@ public sealed class PlayerController : MonoBehaviour
         Physics.SyncTransforms();
     }
 
+    public void RotateTransport(float degrees)
+    {
+        yaw = Mathf.Repeat(yaw + degrees, 360);
+        transform.rotation = Quaternion.Euler(0, yaw, 0);
+    }
+
     private static void ApplyCursorCapture(bool captured)
     {
         Cursor.lockState = captured ? CursorLockMode.Locked : CursorLockMode.None;
