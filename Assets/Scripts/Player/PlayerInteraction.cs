@@ -103,21 +103,21 @@ public sealed class PlayerInteraction : MonoBehaviour
         dot.SetShape(crosshairRadius, crosshairRadius * 2, 1);
         RefreshFocus();
         UpdateRing();
-        prompt.text = pickup.HeldItem != null ? "左键：抛出    右键：放下"
-            : FocusedTarget != null ? "鼠标左键：" + FocusHint() : "";
+        prompt.text = FocusedTarget != null ? "鼠标左键：" + FocusHint()
+            : pickup.HeldItem != null ? "左键：抛出    右键：放下" : "";
         prompt.rectTransform.anchoredPosition = dot.rectTransform.anchoredPosition + Vector2.down * 42;
         prompt.gameObject.SetActive(prompt.text.Length > 0);
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
+        if (!controller.TransportLocked && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
             && !Mouse.current.rightButton.wasPressedThisFrame)
         {
-            if (pickup.HeldItem != null) pickup.TryThrow();
+            if (pickup.HeldItem != null && (FocusedTarget == null || !FocusedTarget.AllowWhileHolding)) pickup.TryThrow();
             else TryInteractFocused();
         }
     }
 
     public void RefreshFocus()
     {
-        if (!HudVisible || !pickup.isActiveAndEnabled || pickup.HeldItem != null || !pickup.TryGetRange(out var center, out float radius))
+        if (!HudVisible || !pickup.isActiveAndEnabled || !pickup.TryGetRange(out var center, out float radius))
         {
             FocusedTarget = null;
             return;
@@ -131,6 +131,7 @@ public sealed class PlayerInteraction : MonoBehaviour
         {
             var target = ResolveTarget(candidates[i]);
             if (target == null || target.transform.IsChildOf(transform) || !target.CanInteract(this)) continue;
+            if (pickup.HeldItem != null && !target.AllowWhileHolding) continue;
             Vector3 viewport = viewCamera.WorldToViewportPoint(target.InteractionPosition);
             if (viewport.z <= viewCamera.nearClipPlane || viewport.x <= 0 || viewport.x >= 1 || viewport.y <= 0 || viewport.y >= 1) continue;
             float angle = Vector3.Angle(viewCamera.transform.forward, target.InteractionPosition - viewCamera.transform.position);
@@ -190,12 +191,13 @@ public sealed class PlayerInteraction : MonoBehaviour
     {
         RefreshFocus(); // Revalidate distance, availability and occlusion at the moment of the click.
         if (FocusedTarget == null || shownTarget != FocusedTarget || progress <= .05f) return false;
-        // This path is for an empty-handed click only; throwing is handled above and never dispatches actions.
-        if (pickup.HeldItem != null) return false;
+        // Only explicit hands-free actions (elevator controls) may override a held-item throw.
+        if (pickup.HeldItem != null && !FocusedTarget.AllowWhileHolding) return false;
         FocusedTarget.GetComponents(clickHandlers);
         bool interacted = false;
         foreach (var handler in clickHandlers)
-            if (handler != null && !(handler is PickupItem) && handler.CanInteract(this))
+            if (handler != null && !(handler is PickupItem) && handler.CanInteract(this)
+                && (pickup.HeldItem == null || handler.AllowWhileHolding))
                 interacted |= handler.TryInteract(this);
         foreach (var handler in clickHandlers)
             if (handler is PickupItem item && item != null && item.CanInteract(this))

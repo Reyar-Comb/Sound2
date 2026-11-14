@@ -49,9 +49,17 @@ namespace Sound2.LevelEditing.Editor
                 ("Television", "电视"), ("Radio", "收音机"), ("TapeRecorder", "录音机"),
                 ("ServiceBell", "餐铃"), ("GameConsole", "游戏机"), ("HeartRateMonitor", "心率仪"), ("Ring", "戒指"),
                 ("WallMural", "壁画"), ("WallMirror", "镜子"), ("WallFlowerBasket", "花篮"),
-                ("WallCabinet", "橱柜"), ("BarCounter", "吧台") })
+                ("WallCabinet", "橱柜"), ("BarCounter", "吧台"),
+                ("AdventureBed", "床"), ("AdventureSofa", "沙发"), ("AdventureCounter", "工作台"),
+                ("AdventureShelf", "超市货架"), ("AdventureCheckout", "收银台"),
+                ("AdventureHospitalBed", "病床"), ("AdventureWardCurtain", "病房隔帘"),
+                ("AdventureBedside", "床头柜"), ("AdventureWardrobe", "衣柜"),
+                ("AdventureSink", "洗手池"), ("AdventureToilet", "马桶"),
+                ("AdventureWasher", "洗衣机"), ("AdventureProduceBin", "果蔬陈列台"),
+                ("AdventurePine", "雪松"), ("AdventureSnowRock", "雪石"),
+                ("AdventureBench", "长椅"), ("AdventurePillar", "竞技场立柱") })
             {
-                var asset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/" + entry.Item1 + ".prefab");
+                var asset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/" + (entry.Item1.StartsWith("Adventure") ? "Adventure/" : "") + entry.Item1 + ".prefab");
                 if (asset == null) continue;
                 prefabs.Add(asset); names.Add(asset, entry.Item2);
             }

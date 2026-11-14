@@ -9,6 +9,7 @@ public class InteractableObject : MonoBehaviour
     public bool interactionEnabled = true;
     public string interactionHint = "交互";
     public virtual string InteractionHint => interactionHint;
+    public virtual bool AllowWhileHolding => false;
     public UnityEvent<PlayerInteraction> onInteract = new();
 
     public Vector3 InteractionPosition => interactionAnchor != null ? interactionAnchor.position : transform.position;

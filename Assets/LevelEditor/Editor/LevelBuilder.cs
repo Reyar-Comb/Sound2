@@ -84,7 +84,14 @@ namespace Sound2.LevelEditing.Editor
                     stored = Object.Instantiate(source); stored.name = source.name;
                     AssetDatabase.AddObjectToAsset(stored, layout.geometryAsset);
                 }
-                else EditorUtility.CopySerialized(source, stored);
+                else
+                {
+                    // CopySerialized updates CPU mesh data but can leave the previous GPU buffers alive.
+                    // Write the generated channels through Mesh setters so preview and runtime agree immediately.
+                    stored.Clear(); stored.indexFormat = source.indexFormat;
+                    stored.vertices = source.vertices; stored.triangles = source.triangles;
+                    stored.normals = source.normals; stored.uv = source.uv; stored.bounds = source.bounds;
+                }
                 EditorUtility.SetDirty(stored);
                 filter.sharedMesh = stored;
                 filter.GetComponent<MeshCollider>().sharedMesh = null;

@@ -16,6 +16,7 @@ public sealed class PlayerFloorProgression : MonoBehaviour
     public FloorRule CurrentRule { get; private set; }
     public float Difficulty => CurrentRule != null ? CurrentRule.difficulty : 1;
     public LevelMap Map { get; private set; }
+    public EightFloorAdventure Adventure { get; private set; }
     PlayerSubtitles subtitles;
     PlayerController controller;
     SphericalSonar sonar;
@@ -30,14 +31,19 @@ public sealed class PlayerFloorProgression : MonoBehaviour
         foreach (var map in FindObjectsByType<LevelMap>())
             if (map.gameObject.scene == gameObject.scene) { Map = map; break; }
         if (Map != null && Map.profile != null) profile = Map.profile;
+        foreach (var adventure in FindObjectsByType<EightFloorAdventure>())
+            if (adventure.gameObject.scene == gameObject.scene && adventure.player == this) { Adventure = adventure; break; }
+        if (Adventure != null) { Map = null; profile = Adventure.profile; }
         if (profile == null) profile = Resources.Load<FloorProgressionProfile>("FloorProgression");
         previousPosition = transform.position;
-        ApplyFloor(0);
+        ApplyFloor(Adventure != null ? 1 : 0);
+        if (Adventure != null) Adventure.EnterFloor(1);
     }
 
     void LateUpdate()
     {
         Vector3 position = transform.position;
+        if (Adventure != null) { previousPosition = position; return; }
         if (AwaitingLanding && Map != null && controller != null)
         {
             var floor = Map.FindFloor(CurrentFloor);
@@ -71,11 +77,26 @@ public sealed class PlayerFloorProgression : MonoBehaviour
 
     public bool TryDescend(FloorShaftTransition shaft)
     {
+        if (Adventure != null) return false;
         if (AwaitingLanding || shaft == null || !shaft.isActiveAndEnabled || shaft.Map != Map || shaft.sourceFloor != CurrentFloor
             || shaft.destinationFloor != CurrentFloor + 1 || !shaft.HasDestination) return false;
         if (Map != null) Map.AdvanceTo(CurrentFloor + 1);
         AwaitingLanding = Map != null;
         ApplyFloor(CurrentFloor + 1);
+        return true;
+    }
+
+    public bool TryAscend(OneWayElevator elevator)
+    {
+        if (Adventure == null || elevator == null || elevator.adventure != Adventure
+            || elevator.State != OneWayElevator.LiftState.Ascending
+            || elevator.sourceFloor != CurrentFloor || elevator.destinationFloor != CurrentFloor + 1
+            || elevator.destinationFloor > 8 || elevator.cabin.localPosition.y < elevator.rise - .01f
+            || !elevator.Contains(transform.position)) return false;
+        AwaitingLanding = false;
+        ApplyFloor(elevator.destinationFloor);
+        Adventure.EnterFloor(CurrentFloor);
+        previousPosition = transform.position;
         return true;
     }
 

@@ -23,6 +23,7 @@ namespace Sound2.LevelEditing.Editor
         [SerializeField] bool endConnection;
         [SerializeField] bool includePlayer = true;
         [SerializeField] bool seededMode;
+        [SerializeField] bool architecturalMode;
         [SerializeField] int previewFloor;
         [SerializeField] LevelMap seededMap;
         [SerializeField] bool geometryExpanded = true;
@@ -36,6 +37,8 @@ namespace Sound2.LevelEditing.Editor
         public static void Open() => GetWindow<LevelDesignerWindow>("关卡编辑器");
         public void Bind(LevelLayout target)
         {
+            seededMode = false;
+            architecturalMode = target != null && target.GetComponentInParent<EightFloorAdventure>()?.generationMode == AdventureGenerationMode.Architectural;
             if (tool == Tool.RepositionProp) tool = Tool.Select;
             layout = target; selectedProp = null; selected = -1; kind = Kind.None; pending.Clear(); hasError = false;
             status = layout == null ? "新建布局，或选择已有 LevelLayout。" : $"已载入：{layout.rooms.Count} 房间 · {layout.corridors.Count} 走廊 · {layout.pits.Count} 竖井。";
@@ -92,11 +95,12 @@ namespace Sound2.LevelEditing.Editor
         {
             if (rootVisualElement.Q("header") == null) return;
             var header = rootVisualElement.Q("header"); header.Clear();
-            var mode = new PopupField<string>("生成模式", new List<string> { "手工布局", "种子程序化" }, seededMode ? 1 : 0);
-            mode.RegisterValueChangedCallback(e => { seededMode = mode.index == 1; if (tool == Tool.RepositionProp) tool = Tool.Select; Refresh(); }); header.Add(mode);
+            var mode = new PopupField<string>("生成模式", new List<string> { "手工布局", "种子程序化", "建筑平面 · 八层探险" }, seededMode ? 1 : architecturalMode ? 2 : 0);
+            mode.RegisterValueChangedCallback(e => { seededMode = mode.index == 1; architecturalMode = mode.index == 2; if (tool == Tool.RepositionProp) tool = Tool.Select; Refresh(); }); header.Add(mode);
             rootVisualElement.Q("workspace").SetEnabled(!seededMode);
             rootVisualElement.Q<Foldout>("settings-foldout").text = seededMode ? "程序化设置" : "工具与生成设置";
             if (seededMode) { DrawSeededMode(); return; }
+            DrawAdventureHeader(header);
             var target = new ObjectField("编辑布局") { objectType = typeof(LevelLayout), allowSceneObjects = true, value = layout };
             target.RegisterValueChangedCallback(e => Bind((LevelLayout)e.newValue)); header.Add(target);
             var row = Row(header);
@@ -146,6 +150,8 @@ namespace Sound2.LevelEditing.Editor
             Toggle(area, "导出时加入重力玩家", includePlayer, v => includePlayer = v);
             if (layout == null) return;
             var fold = new Foldout { text = "生成设置", value = false }; area.Add(fold);
+            Toggle(fold, "露天（不启用顶面）", layout.openSky, v => Change(() => layout.openSky = v));
+            Toggle(fold, "保留房间隔墙", layout.architecturalPartitions, v => Change(() => layout.architecturalPartitions = v));
             Float(fold, "墙高", layout.wallHeight, v => Change(() => layout.wallHeight = Mathf.Max(.1f, v)));
             Float(fold, "墙厚", layout.wallThickness, v => Change(() => layout.wallThickness = Mathf.Max(.05f, v)));
             Float(fold, "地板厚度", layout.floorThickness, v => Change(() => layout.floorThickness = Mathf.Max(.05f, v)));
@@ -236,6 +242,8 @@ namespace Sound2.LevelEditing.Editor
             {
                 var r = layout.rooms[selected];
                 Text(area, "名称", r.name, v => r.name = v);
+                var use = new EnumField("房间用途", r.use); use.RegisterValueChangedCallback(e => Change(() => r.use = (RoomUse)e.newValue)); area.Add(use);
+                Toggle(area, "开放分区（无隔墙）", r.openPlan, v => Change(() => r.openPlan = v));
                 Vector(area, "中心 X / Z", r.center, v => r.center = v);
                 if (r.shape == RoomShape.Circle) Float(area, "直径", r.size.x, v => Change(() => r.size = Vector2.one * Mathf.Max(.5f, v)));
                 else Vector(area, "宽 / 长", r.size, v => r.size = Vector2.Max(Vector2.one * .5f, v));
@@ -245,6 +253,7 @@ namespace Sound2.LevelEditing.Editor
             {
                 var c = layout.corridors[selected];
                 Text(area, "名称", c.name, v => c.name = v);
+                Toggle(area, "共墙门洞", c.doorOnly, v => Change(() => c.doorOnly = v));
                 Toggle(area, "平滑曲线", c.curved, v => Change(() => c.curved = v));
                 Float(area, "净通行宽度", c.width, v => Change(() => c.width = Mathf.Max(.3f, v)));
                 for (int i = 0; i < c.points.Count; i++)
@@ -323,6 +332,8 @@ namespace Sound2.LevelEditing.Editor
         }
         void Export()
         {
+            var adventure = layout != null ? layout.GetComponentInParent<EightFloorAdventure>() : null;
+            if (adventure != null) { ExportAdventure(adventure); return; }
             if (layout == null || !TryRebuild()) return;
             string path = EditorUtility.SaveFilePanelInProject("导出可编辑关卡", "NewLevel", "unity", "保存参数化布局、网格、碰撞与可选玩家。", "Assets/Scenes");
             if (string.IsNullOrEmpty(path)) return;

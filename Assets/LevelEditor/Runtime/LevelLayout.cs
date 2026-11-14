@@ -5,6 +5,7 @@ using UnityEngine;
 namespace Sound2.LevelEditing
 {
     public enum RoomShape { Rectangle, Circle }
+    public enum RoomUse { Hall, Living, Bedroom, Kitchen, Utility, Bathroom, Study, Classroom, Office, Shelves, Reading, CartBay, Checkout, Produce, ColdStore, Dining, Ward, Clinic, Treatment, Arena, Chase }
 
     [Serializable]
     public sealed class LevelRoom
@@ -12,6 +13,8 @@ namespace Sound2.LevelEditing
         public string id = Guid.NewGuid().ToString("N");
         public string name = "房间";
         public RoomShape shape;
+        public RoomUse use;
+        public bool openPlan;
         public Vector2 center;
         public Vector2 size = new Vector2(10, 10);
         public float rotation;
@@ -78,6 +81,7 @@ namespace Sound2.LevelEditing
     {
         public string name = "走廊";
         public bool curved;
+        public bool doorOnly;
         public float width = 3;
         public List<Vector2> points = new List<Vector2>();
         public RoomConnection start = new RoomConnection();
@@ -94,15 +98,25 @@ namespace Sound2.LevelEditing
         public float rotation;
     }
 
+    [Serializable]
+    public sealed class LevelDoorway
+    {
+        public Vector2 center;
+        public Vector2 size = new(2.6f, .8f);
+    }
+
     [DefaultExecutionOrder(-200), DisallowMultipleComponent]
     public sealed class LevelLayout : MonoBehaviour
     {
         public List<LevelRoom> rooms = new List<LevelRoom>();
         public List<LevelCorridor> corridors = new List<LevelCorridor>();
         public List<LevelPit> pits = new List<LevelPit>();
+        public List<LevelDoorway> doorways = new();
         [Min(.1f)] public float wallHeight = 3.2f;
         [Min(.05f)] public float wallThickness = .2f;
         [Min(.05f)] public float floorThickness = .25f;
+        public bool openSky;
+        public bool architecturalPartitions;
         [Range(4, 64)] public int curveSamples = 16;
         [Range(16, 128)] public int circleSegments = 64;
         public Material floorMaterial;
@@ -122,11 +136,13 @@ namespace Sound2.LevelEditing
             foreach (var renderer in generatedRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
                 var preview = renderer.name == "Floor" ? floorMaterial
-                    : renderer.name == "Walls" || renderer.name == "Ceiling" ? wallMaterial : pitMaterial;
+                    : renderer.name == "Walls" || renderer.name == "Ceiling" || renderer.name == "DoorLintels" ? wallMaterial : pitMaterial;
                 renderer.sharedMaterial = gameplay ? gameplayMaterial : preview;
             }
             var ceiling = generatedRoot.transform.Find("Ceiling");
-            if (ceiling != null) ceiling.gameObject.SetActive(gameplay);
+            if (ceiling != null) ceiling.gameObject.SetActive(gameplay && !openSky);
+            var lintels = generatedRoot.transform.Find("DoorLintels");
+            if (lintels != null) lintels.gameObject.SetActive(gameplay);
         }
 
         public LevelRoom FindRoom(string id) => rooms.Find(r => r.id == id);

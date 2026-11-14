@@ -53,6 +53,7 @@ namespace Sound2.LevelEditing.Editor
             Vector2 startNormal = Vector2.zero, endNormal = Vector2.zero;
             if (startRoom != null) startRoom.Edge(corridor.start.edge, out startNormal);
             if (endRoom != null) endRoom.Edge(corridor.end.edge, out endNormal);
+            if (corridor.doorOnly) return new List<Vector2> { control[0] - startNormal, control[control.Count - 1] - endNormal };
             var points = new List<Vector2>();
             if (extendIntoRooms && startRoom != null) points.Add(control[0] - startNormal * corridor.width);
             // A short normal-aligned throat ensures a full-width doorway, even on round rooms.
@@ -85,6 +86,7 @@ namespace Sound2.LevelEditing.Editor
             foreach (var room in layout.rooms) all.Add(Path(RoomOutline(room, layout.circleSegments)));
             foreach (var corridor in layout.corridors)
             {
+                if (corridor.doorOnly) continue;
                 if (corridor.points.Count < 2) throw new InvalidOperationException(corridor.name + " 至少需要两个控制点。");
                 var line = Path(CorridorPath(layout, corridor, true));
                 all.AddRange(Offset(new Paths64 { line }, corridor.width * .5f, EndType.Butt));
@@ -112,7 +114,12 @@ namespace Sound2.LevelEditing.Editor
             foreach (var r in layout.rooms)
                 if (r.size.x < .5f || r.size.y < .5f) throw new InvalidOperationException("房间尺寸至少为 0.5 米。");
             foreach (var c in layout.corridors)
+            {
                 if (c.width < .3f) throw new InvalidOperationException("走廊宽度至少为 0.3 米。");
+                if(c.doorOnly && (layout.FindRoom(c.start.roomId)==null || layout.FindRoom(c.end.roomId)==null ||
+                    Vector2.Distance(Endpoint(layout,c,false),Endpoint(layout,c,true))>.02f))
+                    throw new InvalidOperationException(c.name+" 的共墙门洞不再对齐。请将两侧房间贴合，或取消共墙门洞以使用走廊连接。");
+            }
             var footprint = Footprint(layout);
             Validate(layout, footprint);
             var holes = new Paths64();
@@ -122,7 +129,37 @@ namespace Sound2.LevelEditing.Editor
             {
                 meshes.Add("Floor", Extrude(Difference(footprint, Union(holes)), -layout.floorThickness, 0, "Floor"));
                 var ring = Difference(Offset(footprint, layout.wallThickness), footprint);
+                var lintels = new Paths64();
+                if (layout.architecturalPartitions)
+                {
+                    var partitions = new Paths64();
+                    foreach (var room in layout.rooms)
+                    {
+                        if (room.openPlan) continue;
+                        var outline = new Paths64 { Path(RoomOutline(room, layout.circleSegments)) };
+                        partitions.AddRange(Difference(Offset(outline, layout.wallThickness * .5f), Offset(outline, -layout.wallThickness * .5f)));
+                    }
+                    ring.AddRange(partitions); ring = Union(ring);
+                    foreach (var corridor in layout.corridors)
+                    {
+                        // Every attached endpoint opens its room partition, including elevator vestibules.
+                        foreach (var connection in new[] { corridor.start, corridor.end })
+                        {
+                            var room = layout.FindRoom(connection.roomId); if (room == null) continue;
+                            var point = room.Edge(connection.edge, out var normal);
+                            var cut = new LevelRoom { center = point, size = new Vector2(layout.wallThickness + .4f, corridor.width),
+                                rotation = Mathf.Atan2(normal.y, normal.x) * Mathf.Rad2Deg };
+                            var opening = new Paths64 { Path(RoomOutline(cut, 4)) };
+                            lintels.AddRange(Clipper.Intersect(ring, opening, FillRule.NonZero));
+                            ring = Difference(ring, opening);
+                        }
+                    }
+                }
+                foreach (var doorway in layout.doorways)
+                    ring = Difference(ring, new Paths64 { Path(RoomOutline(new LevelRoom { center=doorway.center, size=doorway.size },4)) });
                 meshes.Add("Walls", Extrude(ring, 0, layout.wallHeight, "Walls"));
+                if (lintels.Count > 0 && layout.wallHeight > 2.6f)
+                    meshes.Add("DoorLintels", Extrude(Union(lintels), 2.6f, layout.wallHeight, "DoorLintels"));
                 // Cover the whole room/corridor union, including above floor pits. The pits themselves stay open below.
                 meshes.Add("Ceiling", Extrude(Offset(footprint, layout.wallThickness), layout.wallHeight,
                     layout.wallHeight + layout.floorThickness, "Ceiling"));

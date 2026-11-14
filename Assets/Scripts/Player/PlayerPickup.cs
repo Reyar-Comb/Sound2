@@ -40,7 +40,7 @@ public sealed class PlayerPickup : MonoBehaviour
 
     void Update()
     {
-        if (controller != null && (controller.InputSuspended || !controller.enabled)) return;
+        if (controller != null && (controller.InputSuspended || controller.TransportLocked || !controller.enabled)) return;
         if(Mouse.current!=null && Mouse.current.rightButton.wasPressedThisFrame)
         {
             if(HeldItem!=null && !TryPlace())GetComponent<PlayerSubtitles>()?.ShowImmediate("空间不足，无法放下",1.2f);

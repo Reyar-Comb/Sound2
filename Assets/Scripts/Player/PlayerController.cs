@@ -29,6 +29,7 @@ public sealed class PlayerController : MonoBehaviour
     private Vector3 pushVelocity;
     public event System.Action<float> Landed;
     public bool InputSuspended { get; set; }
+    public bool TransportLocked { get; set; }
     public Transform ViewTransform => cameraTransform;
     public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);
     public bool UsesGravity => useGravity;
@@ -113,6 +114,7 @@ public sealed class PlayerController : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
 
+        if (TransportLocked) return;
         Vector2 move = Vector2.ClampMagnitude(moveAction.action.ReadValue<Vector2>(), 1f);
         Vector3 direction = transform.right * move.x + transform.forward * move.y;
         float verticalInput = verticalAction.action.ReadValue<float>();

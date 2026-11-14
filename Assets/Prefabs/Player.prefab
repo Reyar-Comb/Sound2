@@ -194,7 +194,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1f7ee8584e42364badbc47e5044fae7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPickup
-  interactionKey: 19
   pickupRange: {fileID: 7013227933552537013}
   viewTransform: {fileID: 4955884709853427845}
   holdPoint: {fileID: 3740263063271446874}
@@ -307,14 +306,14 @@ MonoBehaviour:
   minimumSpeed: 0.05
   requireGrounded: 0
   teleportDistance: 2
-  range: 3
+  range: 8
   waveSpeed: 8
   afterglow: 0.3
   originHeight: 0.12
   distanceSettings:
     enabled: 1
     fadeStartDistance: 0.4
-    fadeEndDistance: 3
+    fadeEndDistance: 8
     falloffPower: 2
     pulseStrength: 0.6
   hearingRange: 6
@@ -609,6 +608,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967291
   automatic: 0
+  leftClickScanEnabled: 0
   emissionSound: 1
   distanceSettings:
     enabled: 0

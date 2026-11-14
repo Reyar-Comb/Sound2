@@ -190,6 +190,11 @@ public sealed class PickupItem : InteractableObject
     Transform ReleaseParent()
     {
         var progress = holder.GetComponent<PlayerFloorProgression>();
+        if (progress != null && progress.Adventure != null)
+        {
+            var destination = progress.Adventure.FindFloor(progress.CurrentFloor);
+            if (destination != null) return destination.transform.Find("Props") ?? destination.transform;
+        }
         var current = progress != null && progress.Map != null ? progress.Map.FindFloor(progress.CurrentFloor) : null;
         var previous = originalParent != null ? originalParent.GetComponentInParent<Sound2.LevelEditing.SeededFloor>() : null;
         if (current != null && (originalParent == null || !originalParent.gameObject.activeInHierarchy || previous != current))
