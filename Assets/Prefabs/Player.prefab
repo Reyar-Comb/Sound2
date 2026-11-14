@@ -105,6 +105,7 @@ GameObject:
   - component: {fileID: 4908591070415843194}
   - component: {fileID: 116377712960675080}
   - component: {fileID: 872924278679620629}
+  - component: {fileID: 1730712013822685606}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -258,6 +259,31 @@ MonoBehaviour:
   onResourcesChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1730712013822685606
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4599028716362026551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37959c461c6d6cb48afb5c87c97b9cce, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCameraMotion
+  intensity: 1
+  idleHeight: 0.006
+  idlePeriod: 5.5
+  walkHeight: 0.022
+  walkSway: 0.009
+  walkPitch: 0.12
+  walkRoll: 0.18
+  stepDistance: 1.5
+  fullMotionSpeed: 4
+  blendTime: 0.22
+  smoothingTime: 0.12
+  minimumMoveSpeed: 0.05
+  teleportDistance: 2
 --- !u!1 &6482992948592475382
 GameObject:
   m_ObjectHideFlags: 0
