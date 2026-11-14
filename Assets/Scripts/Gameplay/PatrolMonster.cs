@@ -42,6 +42,7 @@ public sealed class PatrolMonster : MonoBehaviour
 
     void Awake()
     {
+        if (GetComponent<MonsterVines>() == null) gameObject.AddComponent<MonsterVines>();
         path = new NavMeshPath();
         agent = GetComponent<NavMeshAgent>();
         agent.enabled = false;

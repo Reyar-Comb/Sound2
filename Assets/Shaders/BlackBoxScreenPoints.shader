@@ -439,6 +439,34 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             o.positionCS=float4(snapped*2-1+o.offset*scale*_PointViewport.zw*2,0,1);
             o.brightness=brightness;return o;
         }
+        float4 _VinePoints[768];
+        CloudVaryings VineVert(uint vertexID:SV_VertexID,uint pointID:SV_InstanceID)
+        {
+            CloudVaryings o;o.positionCS=float4(2,2,0,1);o.offset=0;o.brightness=0;
+            if(_BlackBoxPlayerActive<.5)return o;
+            float4 samplePoint=_VinePoints[pointID];float3 p=samplePoint.xyz;
+            float4 center=mul(_StarViewProjection,float4(p,1));if(center.w<=.0001)return o;
+            float2 uv=center.xy/center.w*.5+.5;
+            #if UNITY_UV_STARTS_AT_TOP
+                uv.y=1-uv.y;
+            #endif
+            if(any(uv<0)||any(uv>=1))return o;
+            float3 wall;
+            if(WorldAtPixel((int2)(uv*_PointViewport.xy),wall)
+                && distance(_WorldSpaceCameraPos,p)>distance(_WorldSpaceCameraPos,wall)+.06)return o;
+            float pitch=max(1,_ScreenDotSpacing),scale=_PointViewport.y/720;
+            float2 screenCenter=(floor(uv*_PointViewport.xy/(pitch*scale))+.5)*pitch;
+            float extent=clamp(_ScreenDotRadius,0,pitch*.75)+.70710678/scale;
+            float visibility=samplePoint.w*CrosshairPointVisibility(screenCenter,extent)*PlayerUiVisibility(screenCenter*scale,extent);
+            float2 snapped=screenCenter*scale*_PointViewport.zw;
+            #if UNITY_UV_STARTS_AT_TOP
+                snapped.y=1-snapped.y;
+            #endif
+            float2 corners[6]={float2(-1,-1),float2(-1,1),float2(1,1),float2(-1,-1),float2(1,1),float2(1,-1)};
+            o.offset=corners[vertexID]*extent;
+            o.positionCS=float4(snapped*2-1+o.offset*scale*_PointViewport.zw*2,0,1);
+            o.brightness=visibility;return o;
+        }
         float CloudCircle(CloudVaryings i)
         {
             float radius=clamp(_ScreenDotRadius,0,max(1,_ScreenDotSpacing)*.75),aa=.70710678*720/_PointViewport.y;
@@ -446,6 +474,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         }
         half4 ClearCloud(CloudVaryings i):SV_Target {clip(i.brightness*CloudCircle(i)-.000001);return 0;}
         half4 DrawCloud(CloudVaryings i):SV_Target {float v=i.brightness*CloudCircle(i);return half4(0,0,v,0);}
+        half4 DrawVines(CloudVaryings i):SV_Target {float v=i.brightness*CloudCircle(i);return half4(v,0,0,0);}
         ENDHLSL
         Pass
         {
@@ -541,6 +570,24 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             HLSLPROGRAM
             #pragma vertex CloudVert
             #pragma fragment DrawCloud
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "ClearVineDots"
+            Blend Off ColorMask RGB
+            HLSLPROGRAM
+            #pragma vertex VineVert
+            #pragma fragment ClearCloud
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "SurfaceVineDots"
+            Blend One One BlendOp Max
+            HLSLPROGRAM
+            #pragma vertex VineVert
+            #pragma fragment DrawVines
             ENDHLSL
         }
     }

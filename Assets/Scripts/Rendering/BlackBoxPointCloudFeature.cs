@@ -93,6 +93,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             public Vector4[] coinWaves;
             public Vector4 cloudCenter,cloudParameters;
             public int pointCount;
+            public Vector4[] vinePoints;
         }
 
         public override void RecordRenderGraph(RenderGraph graph, ContextContainer frameData)
@@ -120,6 +121,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                 foreach (var group in dangerGroups) RecordDanger(graph, resources, group, false, palette);
             }
             RecordLightningClouds(graph,resources,camera,faceMaterial!=null?faceMaterial:material,sharedDotRadius,uiCount,uiRects,uiOptions);
+            RecordVines(graph,resources,camera,faceMaterial!=null?faceMaterial:material,sharedDotRadius,uiCount,uiRects,uiOptions);
         }
 
         static void RecordLightningClouds(RenderGraph graph,UniversalResourceData resources,UniversalCameraData camera,
@@ -154,6 +156,42 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     properties.SetVectorArray("_PlayerUiRects",d.uiRects);properties.SetVectorArray("_PlayerUiOptions",d.uiOptions);
                     context.cmd.DrawProcedural(Matrix4x4.identity,d.material,d.index,MeshTopology.Triangles,6,d.pointCount,properties);
                 });
+            }
+        }
+
+        static void RecordVines(RenderGraph graph,UniversalResourceData resources,UniversalCameraData camera,
+            Material material,float radius,int uiCount,Vector4[] uiRects,Vector4[] uiOptions)
+        {
+            var interaction=camera.camera.GetComponentInParent<PlayerInteraction>();
+            var clearZone=interaction!=null && interaction.viewCamera==camera.camera?interaction.PointClearZone:Vector4.zero;
+            var planes=GeometryUtility.CalculateFrustumPlanes(camera.camera);
+            foreach(var vines in MonsterVines.Instances)
+            {
+                if(vines==null || !vines.isActiveAndEnabled || (camera.camera.cullingMask & (1<<vines.gameObject.layer))==0
+                    || !GeometryUtility.TestPlanesAABB(planes,new Bounds(vines.transform.position,Vector3.one*10)))continue;
+                var snapshot=new Vector4[MonsterVines.Capacity];int count=vines.Collect(snapshot);if(count==0)continue;
+                for(int phase=0;phase<2;phase++)
+                {
+                    using var builder=graph.AddRasterRenderPass<Data>(phase==0?"Clear vine dots":"Monster surface vines",out var data);
+                    data.material=material;data.depth=resources.cameraDepthTexture;data.index=10+phase;
+                    data.vinePoints=snapshot;data.pointCount=count;
+                    int width=camera.cameraTargetDescriptor.width,height=camera.cameraTargetDescriptor.height;
+                    data.viewport=new Vector4(width,height,1f/width,1f/height);
+                    data.starViewProjection=GL.GetGPUProjectionMatrix(camera.GetProjectionMatrix(),!resources.isActiveTargetBackBuffer)*camera.GetViewMatrix();
+                    data.sharedDotRadius=radius>=0?radius:material.GetFloat("_ScreenDotRadius");
+                    data.crosshairClearZone=clearZone;data.uiCount=uiCount;data.uiRects=uiRects;data.uiOptions=uiOptions;
+                    builder.UseTexture(resources.cameraDepthTexture,AccessFlags.Read);
+                    builder.SetRenderAttachment(resources.activeColorTexture,0,AccessFlags.ReadWrite);
+                    builder.SetRenderFunc(static (Data d,RasterGraphContext context)=>{
+                        var properties=new MaterialPropertyBlock();
+                        properties.SetTexture("_PointDepth",(RTHandle)d.depth);properties.SetVectorArray("_VinePoints",d.vinePoints);
+                        properties.SetVector("_PointViewport",d.viewport);properties.SetMatrix("_StarViewProjection",d.starViewProjection);
+                        properties.SetFloat("_ScreenDotRadius",d.sharedDotRadius);
+                        properties.SetVector("_CrosshairClearZone",d.crosshairClearZone);properties.SetInt("_PlayerUiCount",d.uiCount);
+                        properties.SetVectorArray("_PlayerUiRects",d.uiRects);properties.SetVectorArray("_PlayerUiOptions",d.uiOptions);
+                        context.cmd.DrawProcedural(Matrix4x4.identity,d.material,d.index,MeshTopology.Triangles,6,d.pointCount,properties);
+                    });
+                }
             }
         }
 

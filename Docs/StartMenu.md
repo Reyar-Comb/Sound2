@@ -20,6 +20,7 @@ SonicSpaceStartMenu：Room Size 默认 10m，Room Field Of View 默认 80°，Mo
 
 - `AgentScripts/VerifyMenuRoom.cs`：27 项实际 GPU／输入检查，包括居中、房间、星点、显隐、网格和游戏隔离。报告和截图在 `Logs/MenuRoom/`。
 - `AgentScripts/VerifyStartMenu.cs`：14 项真实任意位置点击、无按钮／中文菜单、暂停与输入交接、过渡结束和 F0 字幕检查。
+- `AgentScripts/VerifyVinesAndStars.cs`：22 项空间星点、贴面藤蔓、动态消退、UI 与实体遮挡检查，报告在 `Logs/VinesStars/`。
 - `AgentScripts/VerifyMenuDissolve.cs`：6 项网格消散 GPU 检查，移除了已取消的频谱断言。
 - `AgentScripts/VerifyMergeBuild.cs`：Windows x64 构建验证。
 
