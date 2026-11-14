@@ -22,6 +22,9 @@ public sealed class PlayerController : MonoBehaviour
     private float pitch;
     private float fallSpeed;
     public bool InputSuspended { get; set; }
+    public Transform ViewTransform => cameraTransform;
+    public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);
+    public bool UsesGravity => useGravity;
 
     private void Awake()
     {
