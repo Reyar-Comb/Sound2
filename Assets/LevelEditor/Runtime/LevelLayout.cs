@@ -8,6 +8,16 @@ namespace Sound2.LevelEditing
     public enum RoomUse { Hall, Living, Bedroom, Kitchen, Utility, Bathroom, Study, Classroom, Office, Shelves, Reading, CartBay, Checkout, Produce, ColdStore, Dining, Ward, Clinic, Treatment, Arena, Chase }
 
     [Serializable]
+    public sealed class RoomPartition
+    {
+        public string id = Guid.NewGuid().ToString("N");
+        public string name = "隔板";
+        public Vector2 start = new(-2, 0), end = new(2, 0);
+        [Min(.05f)] public float thickness = .15f;
+        [Min(.1f)] public float height = 2.4f;
+    }
+
+    [Serializable]
     public sealed class LevelRoom
     {
         public string id = Guid.NewGuid().ToString("N");
@@ -18,6 +28,13 @@ namespace Sound2.LevelEditing
         public Vector2 center;
         public Vector2 size = new Vector2(10, 10);
         public float rotation;
+        public List<RoomPartition> partitions = new();
+        public Vector2 PartitionPoint(Vector2 point) => center + Rotate(point);
+        public Vector2 PartitionLocal(Vector2 point)
+        {
+            float a = -rotation * Mathf.Deg2Rad; var p = point - center;
+            return new Vector2(p.x * Mathf.Cos(a) - p.y * Mathf.Sin(a), p.x * Mathf.Sin(a) + p.y * Mathf.Cos(a));
+        }
 
         public Vector2 Rotate(Vector2 p)
         {
@@ -79,6 +96,7 @@ namespace Sound2.LevelEditing
     [Serializable]
     public sealed class LevelCorridor
     {
+        public string id = Guid.NewGuid().ToString("N");
         public string name = "走廊";
         public bool curved;
         public bool doorOnly;
@@ -108,6 +126,7 @@ namespace Sound2.LevelEditing
     [DefaultExecutionOrder(-200), DisallowMultipleComponent]
     public sealed class LevelLayout : MonoBehaviour
     {
+        public List<RoomPartition> partitions = new();
         public List<LevelRoom> rooms = new List<LevelRoom>();
         public List<LevelCorridor> corridors = new List<LevelCorridor>();
         public List<LevelPit> pits = new List<LevelPit>();
@@ -136,7 +155,7 @@ namespace Sound2.LevelEditing
             foreach (var renderer in generatedRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
                 var preview = renderer.name == "Floor" ? floorMaterial
-                    : renderer.name == "Walls" || renderer.name == "Ceiling" || renderer.name == "DoorLintels" ? wallMaterial : pitMaterial;
+                    : renderer.name == "Walls" || renderer.name == "Ceiling" || renderer.name == "DoorLintels" || renderer.name.StartsWith("EmbeddedLintel_") || renderer.name.StartsWith("Partition_") ? wallMaterial : pitMaterial;
                 renderer.sharedMaterial = gameplay ? gameplayMaterial : preview;
             }
             var ceiling = generatedRoot.transform.Find("Ceiling");

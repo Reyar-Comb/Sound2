@@ -20,6 +20,7 @@ Shader "Sound2/SonicSpace Point Menu"
             float4x4 _RoomView;
             float3 _RoomEye;
             float _WindowPush, _WindowFall;
+            float _RespawnCover;
             struct Input {float4 vertex:POSITION;float2 uv:TEXCOORD0;};
             struct Varyings {float4 vertex:SV_POSITION;float2 uv:TEXCOORD0;};
             Varyings Vert(Input v) {Varyings o;o.vertex=UnityObjectToClipPos(v.vertex);o.uv=v.uv;return o;}
@@ -194,6 +195,16 @@ Shader "Sound2/SonicSpace Point Menu"
                 float aa=.70710678*720/_MenuSize.y;
                 float2 cell=floor(p/pitch),centre=(cell+.5)*pitch;
                 uint2 id=(uint2)max(cell,0);
+                if (_RespawnCover > 0)
+                {
+                    float seed = CellRandom(id, 101u);
+                    float appear = Ease((_RespawnCover - seed * .55) / .25);
+                    float merge = Ease((_RespawnCover - .5 - seed * .22) / .28);
+                    float blink = .35 + .65 * CellRandom(id, (uint)floor(_RespawnCover * 45) + 111u);
+                    float radius = lerp(_DotRadius, pitch * .708 + aa, merge);
+                    float dotAlpha = 1 - smoothstep(radius-aa, radius+aa, length(p-centre));
+                    return float4(1,1,1,dotAlpha * lerp(appear * blink, 1, merge));
+                }
                 float t=_Transition;
                 float radial=saturate(length(centre-_MenuSize.zw*.5)/length(_MenuSize.zw*.5));
                 // Fixed per-cell timing: a ragged, outward-moving front, never a UV displacement.

@@ -88,11 +88,12 @@ public sealed class PlayerController : MonoBehaviour
         ApplyCursorCapture(captured && isActiveAndEnabled);
     }
 
-    public void FollowPlatform(Vector3 displacement)
+    public void FaceDirection(Vector3 direction)
     {
-        if (displacement.sqrMagnitude <= 0) return;
-        transform.position += displacement;
-        Physics.SyncTransforms();
+        yaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+        pitch = 0;
+        transform.rotation = Quaternion.Euler(0, yaw, 0);
+        cameraTransform.localRotation = Quaternion.identity;
     }
 
     public void Teleport(Vector3 position)
@@ -104,6 +105,12 @@ public sealed class PlayerController : MonoBehaviour
         airborneTime = 0;
         characterController.enabled = wasEnabled;
         Physics.SyncTransforms();
+    }
+
+    public void RotateTransport(float degrees)
+    {
+        yaw = Mathf.Repeat(yaw + degrees, 360);
+        transform.rotation = Quaternion.Euler(0, yaw, 0);
     }
 
     private static void ApplyCursorCapture(bool captured)

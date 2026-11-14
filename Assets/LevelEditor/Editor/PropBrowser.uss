@@ -1,0 +1,7 @@
+.prop-browser { padding: 10px; }
+#prop-help { white-space: normal; margin-top: 8px; margin-bottom: 8px; }
+#prop-scroll { flex-grow: 1; }
+#prop-grid { flex-direction: row; flex-wrap: wrap; }
+.prop-card { width: 148px; height: 150px; margin: 4px; padding: 6px; flex-shrink: 0; }
+.prop-preview { height: 112px; flex-grow: 1; }
+.prop-card Label { white-space: normal; -unity-text-align: middle-center; }

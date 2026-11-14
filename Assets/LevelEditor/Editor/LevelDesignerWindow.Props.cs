@@ -37,51 +37,17 @@ namespace Sound2.LevelEditing.Editor
         {
             var section = new Foldout { text = "道具 / Props", value = tool == Tool.Prop };
             area.Add(section);
-            var prefabs = new System.Collections.Generic.List<GameObject>();
-            var names = new System.Collections.Generic.Dictionary<GameObject, string>();
-            foreach (var entry in new[] {
-                ("TickingClock", "钟表"), ("PickupBouncyBall", "球"), ("PickupAlarmClock", "闹钟"),
-                ("PickupGlassMug", "玻璃杯"), ("ResizableTable", "桌子"), ("Chair", "椅子"),
-                ("ShoppingCart", "购物车"), ("LibraryBookshelf", "图书架"), ("WritingDesk", "书桌"),
-                ("Computer", "电脑"), ("PickupWaterCup", "水杯"), ("PickupDeskLamp", "台灯"),
-                ("Refrigerator", "冰箱"), ("Stove", "灶台"), ("TrashBin", "垃圾桶"),
-                ("PickupCoffeeMug", "咖啡杯"), ("PickupCeramicVase", "陶瓷花瓶"),
-                ("Television", "电视"), ("Radio", "收音机"), ("TapeRecorder", "录音机"),
-                ("ServiceBell", "餐铃"), ("GameConsole", "游戏机"), ("HeartRateMonitor", "心率仪"), ("Ring", "戒指"),
-                ("WallMural", "壁画"), ("WallMirror", "镜子"), ("WallFlowerBasket", "花篮"),
-                ("WallCabinet", "橱柜"), ("BarCounter", "吧台"),
-                ("AdventureBed", "床"), ("AdventureSofa", "沙发"), ("AdventureCounter", "工作台"),
-                ("AdventureShelf", "超市货架"), ("AdventureCheckout", "收银台"),
-                ("AdventureHospitalBed", "病床"), ("AdventureWardCurtain", "病房隔帘"),
-                ("AdventureBedside", "床头柜"), ("AdventureWardrobe", "衣柜"),
-                ("AdventureSink", "洗手池"), ("AdventureToilet", "马桶"),
-                ("AdventureWasher", "洗衣机"), ("AdventureProduceBin", "果蔬陈列台"),
-                ("AdventurePine", "雪松"), ("AdventureSnowRock", "雪石"),
-                ("AdventureBench", "长椅"), ("AdventurePillar", "竞技场立柱") })
+            Button(section, "选择道具…", () => PropBrowserWindow.Open(prefab => { if (this != null) ChooseProp(prefab); })).name = "open-prop-browser";
+            section.Add(new Label("当前道具：" + PropCatalog.Name(propPrefab)) { name = "selected-prop-name" });
+            if (propPrefab != null && propPrefab.GetComponent<EmbeddedDoor>() != null)
+                section.Add(new Label(EmbeddedDoorPlacement.Help) { style = { whiteSpace = WhiteSpace.Normal } });
+            else
             {
-                var asset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/" + (entry.Item1.StartsWith("Adventure") ? "Adventure/" : "") + entry.Item1 + ".prefab");
-                if (asset == null) continue;
-                prefabs.Add(asset); names.Add(asset, entry.Item2);
+                var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)propSurface);
+                surface.RegisterValueChangedCallback(e => { propSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); section.Add(surface);
+                Float(section, "离表面距离", propOffset, v => { propOffset = Mathf.Max(0, v); SceneView.RepaintAll(); });
+                Float(section, "面内旋转角度", propAngle, v => { propAngle = v; SceneView.RepaintAll(); });
             }
-            if (propPrefab != null && !prefabs.Contains(propPrefab))
-            { prefabs.Add(propPrefab); names.Add(propPrefab, propPrefab.name); }
-            if (propPrefab == null && prefabs.Count > 0)
-            {
-                propPrefab = prefabs[0];
-                var metadata = propPrefab.GetComponent<LevelProp>();
-                propSurface = metadata != null ? metadata.surface : PropSurface.Floor;
-                propOffset = metadata != null ? metadata.surfaceOffset : .01f;
-                propAngle = 0;
-            }
-            if (prefabs.Count > 0)
-            {
-                var choice = new PopupField<GameObject>("道具", prefabs, prefabs.IndexOf(propPrefab), p => names[p], p => names[p]) { name = "prop-choice" };
-                choice.RegisterValueChangedCallback(e => ChooseProp(e.newValue)); section.Add(choice);
-            }
-            var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)propSurface);
-            surface.RegisterValueChangedCallback(e => { propSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); section.Add(surface);
-            Float(section, "离表面距离", propOffset, v => { propOffset = Mathf.Max(0, v); SceneView.RepaintAll(); });
-            Float(section, "面内旋转角度", propAngle, v => { propAngle = v; SceneView.RepaintAll(); });
             section.Add(new Label("道具保存在 Props 下，随场景保存和导出；重建几何不会删除。") { style = { whiteSpace = WhiteSpace.Normal } });
             section.SetEnabled(!Application.isPlaying);
         }
@@ -126,7 +92,12 @@ namespace Sound2.LevelEditing.Editor
             {
                 if (moving) CancelReposition(); else BeginReposition(instance);
             }).AddToClassList("primary");
-            if (moving)
+            bool embeddedDoor = instance.GetComponent<EmbeddedDoor>() != null;
+            var door = instance.GetComponent<EmbeddedDoor>();
+            if (door != null && string.IsNullOrEmpty(door.partitionId))
+                area.Add(new Label("此门尚未绑定隔板，请重新吸附到隔板或删除。"));
+            if (embeddedDoor) area.Add(new Label("门仅嵌入隔板，自动落地并匹配隔板厚度；移动请使用重新吸附。") { style = { whiteSpace = WhiteSpace.Normal } });
+            if (moving && !embeddedDoor)
             {
                 var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)repositionSurface);
                 surface.RegisterValueChangedCallback(e => { repositionSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); area.Add(surface);
@@ -139,6 +110,7 @@ namespace Sound2.LevelEditing.Editor
             {
                 if (tool == Tool.RepositionProp) tool = Tool.Select;
                 Undo.DestroyObjectImmediate(instance); selectedProp = null;
+                if (embeddedDoor) LevelBuilder.Rebuild(layout);
                 EditorSceneManager.MarkSceneDirty(layout.gameObject.scene); Refresh();
             });
             var serializedInstance = new SerializedObject(instance);
@@ -147,6 +119,7 @@ namespace Sound2.LevelEditing.Editor
             name.RegisterValueChangeCallback(_ => DrawObjects()); area.Add(name);
             var placement = new Foldout { text = "摆放", value = true };
             area.Add(placement);
+            placement.SetEnabled(!embeddedDoor);
             var transform = instance.transform;
             var serializedTransform = new SerializedObject(transform);
             AddPropField(placement, serializedTransform, "m_LocalPosition", "位置（局部）");
@@ -243,7 +216,8 @@ namespace Sound2.LevelEditing.Editor
                 moving ? repositionAngle : propAngle, out var pose);
             if (valid)
             {
-                var scale = moving ? source.transform.lossyScale : source.transform.localScale;
+                var scale = source.GetComponent<EmbeddedDoor>() != null ? layout.transform.lossyScale
+                    : moving ? source.transform.lossyScale : source.transform.localScale;
                 var rootMatrix = Matrix4x4.TRS(pose.position, pose.rotation, scale);
                 if (e.type == EventType.Repaint) foreach (var filter in source.GetComponentsInChildren<MeshFilter>(true))
                 {
@@ -287,7 +261,7 @@ namespace Sound2.LevelEditing.Editor
                     hasError = false;
                     Refresh();
                 }
-                else { status = "请指向布局中匹配的墙面或地面；贴墙时使用 3D 视图。"; hasError = true; UpdateStatus(); }
+                else { status = source != null && source.GetComponent<EmbeddedDoor>() != null ? EmbeddedDoorPlacement.Help : "请指向布局中匹配的墙面或地面；贴墙时使用 3D 视图。"; hasError = true; UpdateStatus(); }
                 e.Use();
             }
             if (e.type == EventType.MouseMove) view.Repaint();

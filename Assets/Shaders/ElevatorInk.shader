@@ -20,6 +20,7 @@ Shader "Sound2/Elevator White Ink"
             float4x4 _PanelToCabin;
             float _CabinEdges;
             float4 _CabinMotion;
+            float _ArrivalDissolve, _RespawnPaper;
             CBUFFER_END
             float4 _ElevatorPointGrid;
 
@@ -63,9 +64,12 @@ Shader "Sound2/Elevator White Ink"
 
             half4 frag(Varyings input):SV_Target
             {
+                float dissolve = _RespawnPaper > 0 ? 0 : _ArrivalDissolve;
                 float pixel = _ElevatorPointGrid.z;
                 float pitch = _ElevatorPointGrid.x;
-                if (_CabinEdges < .5 || pitch <= 0 || pixel <= 0) return _BaseColor;
+                if (pitch <= 0 || pixel <= 0)
+                    return half4(_BaseColor.rgb * (1 - dissolve), _BaseColor.a);
+                if (_CabinEdges < .5 && dissolve <= 0) return _BaseColor;
 
                 float2 screen = input.positionCS.xy * pixel;
                 float2 cell = floor(screen / pitch) + .5;
@@ -74,11 +78,12 @@ Shader "Sound2/Elevator White Ink"
                 float3 width = max((abs(dx) + abs(dy)) * (pitch * .48), .0001);
                 float radius = _ElevatorPointGrid.y;
                 float aa = .70710678 * pixel;
-                float ink = 0;
+                float ink = 0, paperDots = 0, whiteEdges = 0;
                 [unroll] for (int y = -1; y <= 1; y++)
                 [unroll] for (int x = -1; x <= 1; x++)
                 {
-                    float2 delta = (cell + float2(x, y)) * pitch - screen;
+                    float2 id = cell + float2(x, y);
+                    float2 delta = id * pitch - screen;
                     float3 point = input.cabin + dx * delta.x + dy * delta.y;
                     float inner = ShellEdge(point, float3(-2, 0, -2.8), float3(2, 3.1, 2.725), width);
                     float outer = ShellEdge(point, float3(-2.2, -.2, -3), float3(2.2, 3.3, 3), width);
@@ -87,11 +92,36 @@ Shader "Sound2/Elevator White Ink"
                         abs(point.z - 2.85) - .125)) / width;
                     float jamb = point.y <= 2.7 + width.y ? max(door.x, door.z) : 1e4;
                     float lintel = abs(point.x) <= 1.3 + width.x ? max(door.y, door.z) : 1e4;
-                    float edge = step(min(min(inner, outer), min(jamb, lintel)), 1);
+                    float edge = step(min(min(inner, outer), min(jamb, lintel)), 1) * step(.5, _CabinEdges);
                     float dotInk = 1 - smoothstep(radius - aa, radius + aa, length(delta));
-                    ink = max(ink, max(edge, CabinWallInk(point, input.normal)) * dotInk);
+                    if (_CabinEdges >= .5 && dissolve < 1)
+                    {
+                        float mark = max(edge, CabinWallInk(point, input.normal));
+                        if (_RespawnPaper > 0)
+                        {
+                            float rank = frac(sin(dot(id, float2(41.63, 71.19))) * 32719.43);
+                            float blink = .5 + .5 * sin(_TimeParameters.x * 27 + rank * 59);
+                            mark = edge * smoothstep(rank * .7, rank * .7 + .3, _RespawnPaper)
+                                * lerp(blink, 1, _RespawnPaper);
+                        }
+                        ink = max(ink, mark * dotInk);
+                    }
+
+                    if (dissolve > 0)
+                    {
+                        float seed = frac(sin(dot(id, float2(12.9898, 78.233))) * 43758.5453);
+                        float flicker = smoothstep(-.7, .85, sin(_Time.y * lerp(12, 35, seed) + seed * 73));
+                        float fade = 1 - smoothstep(.14 + seed * .59, .36 + seed * .64, dissolve);
+                        paperDots = max(paperDots, dotInk * fade * lerp(.25, 1, flicker));
+                        float reveal = smoothstep(seed * .45, .55 + seed * .4, dissolve);
+                        whiteEdges = max(whiteEdges, edge * dotInk * reveal * lerp(.2, 1, flicker));
+                    }
                 }
-                return half4(_BaseColor.rgb * (1 - ink), _BaseColor.a);
+                float2 id = cell;
+                float breakup = frac(sin(dot(id, float2(39.346, 11.135))) * 24634.63);
+                float paper = 1 - smoothstep(breakup * .24, breakup * .24 + .08, dissolve);
+                float background = (paper + (1 - paper) * paperDots) * (1 - ink * paper);
+                return half4(max(_BaseColor.rgb * background, whiteEdges.xxx), _BaseColor.a);
             }
             ENDHLSL
         }

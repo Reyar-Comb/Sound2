@@ -32,6 +32,8 @@ namespace Sound2.LevelEditing.Editor
         {
             pose = default;
             if (layout == null || layout.generatedRoot == null || prefab == null) return false;
+            if (prefab.GetComponent<EmbeddedDoor>() != null)
+                return EmbeddedDoorPlacement.TryPose(layout, prefab, ray, out pose);
             RaycastHit nearest = default;
             float distance = float.PositiveInfinity;
             Physics.SyncTransforms();
@@ -62,11 +64,14 @@ namespace Sound2.LevelEditing.Editor
             if (Application.isPlaying || layout == null || instance == null
                 || !instance.scene.IsValid() || instance.transform.parent != PropsRoot(layout))
                 throw new InvalidOperationException("请选择当前布局 Props 下的道具实例。");
+            var door = instance.GetComponent<EmbeddedDoor>();
+            var attachment = door != null ? EmbeddedDoorPlacement.ValidatePose(layout, instance, pose) : null;
             Undo.IncrementCurrentGroup();
             int group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("重新吸附关卡道具");
             Undo.RecordObject(instance.transform, "重新吸附关卡道具");
             instance.transform.SetPositionAndRotation(pose.position, pose.rotation);
+            if (door != null) { EmbeddedDoorPlacement.Bind(door, attachment); LevelBuilder.Rebuild(layout); }
             PrefabUtility.RecordPrefabInstancePropertyModifications(instance.transform);
             EditorSceneManager.MarkSceneDirty(instance.scene);
             Undo.FlushUndoRecordObjects();
@@ -98,6 +103,8 @@ namespace Sound2.LevelEditing.Editor
         {
             if (Application.isPlaying || layout == null || prefab == null || !PrefabUtility.IsPartOfPrefabAsset(prefab))
                 throw new InvalidOperationException("请在编辑模式选择有效布局和 Prefab 资源。");
+            var attachment = prefab.GetComponent<EmbeddedDoor>() != null
+                ? EmbeddedDoorPlacement.ValidatePose(layout, prefab, pose) : null;
             Undo.IncrementCurrentGroup();
             int group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("放置关卡道具");
@@ -122,6 +129,11 @@ namespace Sound2.LevelEditing.Editor
             instance.name = instanceName;
             PrefabUtility.RecordPrefabInstancePropertyModifications(instance);
             instance.transform.SetPositionAndRotation(pose.position, pose.rotation);
+            if (attachment != null)
+            {
+                EmbeddedDoorPlacement.Bind(instance.GetComponent<EmbeddedDoor>(), attachment);
+                LevelBuilder.Rebuild(layout);
+            }
             PrefabUtility.RecordPrefabInstancePropertyModifications(instance.transform);
             EditorSceneManager.MarkSceneDirty(layout.gameObject.scene);
             Undo.CollapseUndoOperations(group);
