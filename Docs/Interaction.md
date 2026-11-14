@@ -20,3 +20,5 @@
 在 Unity Play Mode 使用 `AgentScripts/VerifyInteraction.cs` 验证准心、动画、范围、方向、遮挡、菜单暂停、真实鼠标输入、准确目标拾取、投掷冷却与销毁清理。`AgentScripts/VerifyPickup.cs` 验证原有 E 键和拾取物理行为。`AgentScripts/ConfigureInteraction.cs` 可幂等地把组件配置到共享玩家预制体。
 
 `AgentScripts/VerifyReticleRendering.cs` 在 GPU 上分别运行面点、轮廓点和星点绘制通道，验证 720p / 1080p 下准心留白区内的渲染点为零，且面点和轮廓点在区域外正常保留。
+
+新增：交互圈厚度自动跟随实际渲染点的直径；字幕、楼层标识和其他玩家 UI 也应用附近完整点阵的柔和隐藏。配置与新地图模式见 [SeededMapAndSubtitles.md](SeededMapAndSubtitles.md)。

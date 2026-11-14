@@ -22,6 +22,9 @@ namespace Sound2.LevelEditing.Editor
         [SerializeField] float newPitSize = 2;
         [SerializeField] bool endConnection;
         [SerializeField] bool includePlayer = true;
+        [SerializeField] bool seededMode;
+        [SerializeField] int previewFloor;
+        [SerializeField] LevelMap seededMap;
         readonly List<Vector2> pending = new List<Vector2>();
         Vector2 hover;
         string status = "新建布局，或选择已有 LevelLayout。";
@@ -51,6 +54,8 @@ namespace Sound2.LevelEditing.Editor
         void OnSelection()
         {
             if (Selection.activeGameObject == null) return;
+            var map = Selection.activeGameObject.GetComponentInParent<LevelMap>();
+            if (map != null) { seededMap = map; seededMode = true; Refresh(); return; }
             var target = Selection.activeGameObject.GetComponentInParent<LevelLayout>();
             if (target != null && target != layout) Bind(target);
         }
@@ -67,6 +72,9 @@ namespace Sound2.LevelEditing.Editor
         {
             if (rootVisualElement.Q("header") == null) return;
             var header = rootVisualElement.Q("header"); header.Clear();
+            var mode = new PopupField<string>("生成模式", new List<string> { "手工布局", "种子程序化" }, seededMode ? 1 : 0);
+            mode.RegisterValueChangedCallback(e => { seededMode = mode.index == 1; Refresh(); }); header.Add(mode);
+            if (seededMode) { DrawSeededMode(); return; }
             var target = new ObjectField("编辑布局") { objectType = typeof(LevelLayout), allowSceneObjects = true, value = layout };
             target.RegisterValueChangedCallback(e => Bind((LevelLayout)e.newValue)); header.Add(target);
             var row = Row(header);
@@ -119,6 +127,51 @@ namespace Sound2.LevelEditing.Editor
             MaterialField(fold, "地板材质", layout.floorMaterial, v => layout.floorMaterial = v);
             MaterialField(fold, "墙壁材质", layout.wallMaterial, v => layout.wallMaterial = v);
             MaterialField(fold, "管壁材质", layout.pitMaterial, v => layout.pitMaterial = v);
+        }
+
+        void DrawSeededMode()
+        {
+            rootVisualElement.Q("tools").Clear(); rootVisualElement.Q("objects").Clear();
+            rootVisualElement.Q("properties").Clear(); rootVisualElement.Q("footer").Clear();
+            rootVisualElement.Q<Label>("instructions").text = "独立程序化模式：楼层编号 = 种子。相同楼层可复现，越深房间、分支与资源越多。手工布局不受影响。";
+            var area = rootVisualElement.Q("settings"); area.Clear();
+            var target = new ObjectField("程序化地图") { objectType = typeof(LevelMap), allowSceneObjects = true, value = seededMap };
+            target.RegisterValueChangedCallback(e => { seededMap = (LevelMap)e.newValue; Refresh(); }); area.Add(target);
+            var seed = new IntegerField("预览层数 / 种子") { value = previewFloor, isDelayed = true };
+            seed.RegisterValueChangedCallback(e => { previewFloor = Mathf.Max(0, e.newValue); Refresh(); }); area.Add(seed);
+            var plan = SeededFloorPlan.Generate(previewFloor, seededMap != null ? seededMap.growthLimit : 24);
+            area.Add(new Label($"F{previewFloor}：{plan.Rooms.Count} 房间 · {plan.Connections.Count} 连接 · {plan.Cells.Count} m² · {plan.Resources.Count} 资源"));
+            area.Add(new Label("输入仅预览指定层。实际游戏从 F0 开始，穿过竖井后进入 F1、F2……"));
+            if (seededMap != null)
+            {
+                Float(area, "层间距", seededMap.floorSpacing, v => { Undo.RecordObject(seededMap, "修改程序化配置"); seededMap.floorSpacing = Mathf.Max(8, v); EditorUtility.SetDirty(seededMap); });
+                var growth = new SliderInt("规模增长上限层", 0, 100) { value = seededMap.growthLimit };
+                growth.RegisterValueChangedCallback(e => { Undo.RecordObject(seededMap, "修改规模上限"); seededMap.growthLimit = e.newValue; EditorUtility.SetDirty(seededMap); }); area.Add(growth);
+                var profile = new ObjectField("数值 / 字幕配置") { objectType = typeof(FloorProgressionProfile), value = seededMap.profile };
+                profile.RegisterValueChangedCallback(e => { Undo.RecordObject(seededMap, "修改楼层配置"); seededMap.profile = (FloorProgressionProfile)e.newValue; EditorUtility.SetDirty(seededMap); }); area.Add(profile);
+            }
+            Button(area, "预览此层", () =>
+            {
+                var floor = SeededMapBuilder.Preview(seededMap, previewFloor);
+                var bounds = floor.GetComponent<MeshRenderer>().bounds;
+                var view = SceneView.lastActiveSceneView ?? GetWindow<SceneView>();
+                view.LookAt(bounds.center, Quaternion.Euler(90, 0, 0), bounds.extents.magnitude, true, true);
+            }).SetEnabled(seededMap != null && !Application.isPlaying);
+            Button(area, "创建独立程序化场景", () =>
+            {
+                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+                string path = EditorUtility.SaveFilePanelInProject("新建种子地图", "SeededMap", "unity", "创建独立场景，不改动已有地图。", "Assets/Scenes");
+                if (string.IsNullOrEmpty(path)) return;
+                try
+                {
+                    SeededMapBuilder.CreateScene(path);
+                    EditorSceneManager.OpenScene(path);
+                    seededMap = UnityEngine.Object.FindAnyObjectByType<LevelMap>();
+                    Selection.activeGameObject = seededMap.gameObject; Refresh();
+                }
+                catch (Exception e) { status = e.Message; hasError = true; UpdateStatus(); }
+            }).SetEnabled(!Application.isPlaying);
+            UpdateStatus();
         }
 
         void DrawObjects()
@@ -277,7 +330,7 @@ namespace Sound2.LevelEditing.Editor
         Vector2 Snap(Vector2 point) => snap <= 0 ? point : new Vector2(Mathf.Round(point.x / snap) * snap, Mathf.Round(point.y / snap) * snap);
         void SceneGUI(SceneView view)
         {
-            if (layout == null || Application.isPlaying) return;
+            if (seededMode || layout == null || Application.isPlaying) return;
             Event e = Event.current;
             var ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
             var plane = new Plane(layout.transform.up, layout.transform.position);

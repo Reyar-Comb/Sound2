@@ -2,6 +2,8 @@
 
 菜单：**Tools → Sound2 → 关卡编辑器**。
 
+窗口新增“生成模式”：**手工布局**保持下述编辑方式；**种子程序化**使用楼层编号生成可复现的地图，并在下落时准备下一层。新模式示例为 `Assets/Scenes/SeededMapDemo.unity`，详见 [种子地图、层数与字幕](SeededMapAndSubtitles.md)。已有地图不会自动转换。
+
 示例：`Assets/Scenes/LevelEditorDemo.unity`。双击场景后选中 `Editable Level`，在 Inspector 点击“打开关卡编辑器”。示例包含三个房间、直线/曲线走廊，以及房间内和走廊内各一个下落竖井。
 
 空白编辑工作区：`Assets/Scenes/LevelEditorWorkspace.unity`。它和示例场景均独立于 `BlackBoxPointCloud.unity`。

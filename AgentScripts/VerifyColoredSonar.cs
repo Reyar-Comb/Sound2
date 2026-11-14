@@ -80,10 +80,22 @@ public static class VerifyColoredSonar
             lightningBody.GetComponent<SonarObjectEmitter>().automatic=false;yield return null;
             field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000,profile);yield return Capture("white-reveals-blue-body");
             Check(Lit()>0 && pixels.All(p=>p.r==0 && p.g==0),"Player white sonar reveals the lightning body in blue, preserving its identity");
+            // Merge regression: UI exclusion must mask both MRT grids, including all colored palettes.
+            foreach(var kind in new[]{SonarPulseKind.Main,SonarPulseKind.Danger,SonarPulseKind.Coin,SonarPulseKind.Lightning})
+            {
+                field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000,kind,profile);
+                PlayerUiPointMask.SetLegacyPanel(field,new Rect(0,0,Screen.width,Screen.height),true);
+                yield return Capture("ui-masked-"+kind);
+                Check(Lit()==0,"UI exclusion hides "+kind+" faces and contours");
+                PlayerUiPointMask.SetLegacyPanel(field,default,false);
+                yield return Capture("ui-restored-"+kind);
+                Check(Lit()>0,"Removing UI exclusion restores "+kind+" points");
+            }
             Check(ShaderUtil.GetShaderMessages(s.renderingSettings.shader).Length==0,"Colored point shader compiles without errors or warnings");
         }
         finally
         {
+            PlayerUiPointMask.SetLegacyPanel(field,default,false);
             s.transform.SetPositionAndRotation(position,rotation);capsule.enabled=collision;player.enabled=moving;
             s.automatic=oldAuto;s.facePoints=faces;s.edgePoints=edges;s.SetRevealModes(near,sonar);hud.SetValue(s,oldHud);status.visible=oldStatus;
             for(int i=0;i<emitters.Length;i++)if(emitters[i]!=null)emitters[i].automatic=auto[i];

@@ -32,7 +32,7 @@ public static class ConfigurePickup
                 anchor = new GameObject("HoldPoint").transform;
                 anchor.SetParent(camera.transform, false);
             }
-            anchor.localPosition = new Vector3(.45f, -.3f, .8f);
+            anchor.localPosition = new Vector3(0, -.3f, .8f);
             pickup.pickupRange = range;
             pickup.holdPoint = anchor;
             pickup.viewTransform = camera.transform;
