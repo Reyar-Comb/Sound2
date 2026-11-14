@@ -58,7 +58,7 @@ namespace Sound2.LevelEditing
             if (material == null || material.shader.name != "Sound2/Elevator White Ink" || nearest.name.StartsWith("Shaft"))
                 return false;
             renderer.GetPropertyBlock(surfaceProperties);
-            return surfaceProperties.GetFloat("_ArrivalDissolve") < .2f;
+            return surfaceProperties.GetFloat("_RespawnPaper") > 0 || surfaceProperties.GetFloat("_ArrivalDissolve") < .2f;
         }
     }
 }
