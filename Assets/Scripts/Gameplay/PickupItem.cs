@@ -13,10 +13,27 @@ public sealed class PickupItem : InteractableObject
     [Range(0f, 1f)] public float wallNormalMaxUp = .5f;
     public Vector3 heldEulerAngles;
 
+    [Header("Breakage (opt-in)")]
+    public bool breakable;
+    [Min(.1f)] public float breakSpeed = 7;
+    public LayerMask breakLayers = ~0;
+    [Tooltip("Physical remnants only: no PickupItem or InteractableObject on any fragment.")]
+    public GameObject brokenPrefab;
+    [Min(0)] public float fragmentSeparationSpeed = .35f;
+    [Min(0), Tooltip("Zero keeps remnants until their scene or floor is unloaded.")]
+    public float fragmentLifetime;
+    [Min(1)] public float breakPulseRange = 10;
+    [Min(0)] public float breakHearingRange = 16;
+    public AudioClip breakClip;
+    public event System.Action PickedUp;
+    public event System.Action Broken;
+    public bool IsBroken { get; private set; }
+    public GameObject SpawnedRemains { get; private set; }
+
     public bool IsHeld => holder != null;
     public override string InteractionHint => "拾取";
     public PlayerPickup Holder => holder;
-    public bool CanPickUp => isActiveAndEnabled && !IsHeld && Time.time >= pickupAllowedAt;
+    public bool CanPickUp => isActiveAndEnabled && !IsBroken && !IsHeld && Time.time >= pickupAllowedAt;
     public override bool CanInteract(PlayerInteraction player) => base.CanInteract(player) && CanPickUp
         && player != null && player.Pickup != null && player.Pickup.HeldItem == null;
     public override bool TryInteract(PlayerInteraction player)
@@ -36,6 +53,7 @@ public sealed class PickupItem : InteractableObject
     RigidbodyInterpolation previousInterpolation;
     CollisionDetectionMode previousCollisionMode;
     float pickupAllowedAt;
+    bool releasePending;
     readonly List<(Collider item, Collider player)> ignoredPairs = new();
 
     void Awake()
@@ -101,6 +119,7 @@ public sealed class PickupItem : InteractableObject
         body.position = transform.position;
         body.rotation = transform.rotation;
         Physics.SyncTransforms();
+        PickedUp?.Invoke();
         return true;
     }
 
@@ -115,6 +134,30 @@ public sealed class PickupItem : InteractableObject
     public void Release(Vector3 position, Vector3 velocity,float cooldown=-1)
     {
         if (!IsHeld) return;
+        if (!Application.isPlaying || Application.exitCancellationToken.IsCancellationRequested) { holder = null; return; }
+        if (!gameObject.activeInHierarchy)
+        {
+            if (!releasePending) ReleaseAfterDeactivation(position, velocity, cooldown);
+            return;
+        }
+        ReleaseNow(position, velocity, cooldown);
+    }
+
+    async void ReleaseAfterDeactivation(Vector3 position, Vector3 velocity, float cooldown)
+    {
+        releasePending = true;
+        try
+        {
+            // Unity forbids reparenting a child while its parent's activation state is changing.
+            await Awaitable.NextFrameAsync(Application.exitCancellationToken);
+            if (this != null && Application.isPlaying && IsHeld) ReleaseNow(position, velocity, cooldown);
+        }
+        catch (System.OperationCanceledException) { }
+        finally { releasePending = false; }
+    }
+
+    void ReleaseNow(Vector3 position, Vector3 velocity, float cooldown)
+    {
         var playerColliders = holder.GetComponentsInChildren<Collider>();
         var releaseParent = ReleaseParent();
         holder = null;
@@ -172,6 +215,7 @@ public sealed class PickupItem : InteractableObject
 
     void OnCollisionEnter(Collision collision)
     {
+        if (!isActiveAndEnabled || TryBreak(collision, CollisionSonarEmitter.ImpactSpeed(collision))) return;
         if (IsHeld || Time.time >= pickupAllowedAt || collision.collider.GetComponentInParent<PlayerPickup>() != null
             || collision.collider.GetComponentInParent<PickupItem>() != null
             || (wallLayers.value & (1 << collision.gameObject.layer)) == 0) return;
@@ -181,6 +225,68 @@ public sealed class PickupItem : InteractableObject
                 pickupAllowedAt = Time.time;
                 break;
             }
+    }
+
+    public bool TryBreak(Collision collision, float impactSpeed)
+    {
+        if (IsBroken) return true;
+        if (!isActiveAndEnabled || !breakable || IsHeld || brokenPrefab == null || collision.contactCount == 0
+            || impactSpeed < Mathf.Max(.1f, breakSpeed)
+            || (breakLayers.value & (1 << collision.collider.gameObject.layer)) == 0
+            || collision.collider.GetComponentInParent<PlayerController>() != null) return false;
+        var contact = collision.GetContact(0);
+        BreakAt(contact.point, contact.normal);
+        return true;
+    }
+
+    void BreakAt(Vector3 point, Vector3 normal)
+    {
+        IsBroken = true;
+        var velocity = body.linearVelocity;
+        var angularVelocity = body.angularVelocity;
+        var center = body.worldCenterOfMass;
+        Broken?.Invoke();
+        foreach (var output in GetComponentsInChildren<AudioSource>(true)) output.Stop();
+        foreach (var itemCollider in colliders) itemCollider.enabled = false;
+
+        SpawnedRemains = Instantiate(brokenPrefab, transform.position, transform.rotation, transform.parent);
+        SpawnedRemains.transform.localScale = transform.localScale;
+        foreach (Transform part in SpawnedRemains.transform)
+        {
+            var original = transform.Find(part.name);
+            if (original != null)
+            {
+                part.localPosition = original.localPosition;
+                part.localRotation = original.localRotation;
+                part.localScale = original.localScale;
+            }
+        }
+        Physics.SyncTransforms();
+        foreach (var fragment in SpawnedRemains.GetComponentsInChildren<Rigidbody>())
+        {
+            Vector3 outward = (fragment.worldCenterOfMass - center).normalized;
+            fragment.linearVelocity = velocity + Vector3.Cross(angularVelocity, fragment.worldCenterOfMass - center)
+                + (outward + normal) * fragmentSeparationSpeed;
+            fragment.angularVelocity = angularVelocity;
+            fragment.WakeUp();
+        }
+        // One break pulse uses the existing field; shards do not have emission or pickup components.
+        var sonar = GetComponent<SonarObjectEmitter>();
+        var field = sonar != null ? sonar.pulseField : null;
+        if (field == null) field = FindAnyObjectByType<SonarPulseField>();
+        if (field != null && sonar != null)
+            field.EmitFrom(point + normal * .04f, breakPulseRange, sonar.waveSpeed, sonar.afterglow,
+                sonar.pulseKind, sonar.distanceSettings, sonar.densitySettings);
+        GameplayNoise.Emit(point, breakHearingRange, GameplayNoiseKind.Impact, this);
+        if (breakClip != null)
+        {
+            var output = SpawnedRemains.AddComponent<SpatialAudioEmitter>();
+            output.settings.maxDistance = breakHearingRange;
+            output.PlayOneShot(breakClip);
+        }
+        if (fragmentLifetime > 0) Destroy(SpawnedRemains, fragmentLifetime);
+        gameObject.SetActive(false);
+        Destroy(gameObject);
     }
 
     void OnDisable()

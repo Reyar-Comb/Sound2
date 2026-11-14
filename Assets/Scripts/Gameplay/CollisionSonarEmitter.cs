@@ -58,16 +58,14 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
     void OnCollisionEnter(Collision collision)
     {
         // Unity can send collision messages to disabled behaviours too.
-        if (!isActiveAndEnabled || sonar == null
-            || Time.time < nextEmission || collision.contactCount == 0
+        if (!isActiveAndEnabled || sonar == null || collision.contactCount == 0) return;
+        float impactSpeed = ImpactSpeed(collision);
+        if (TryGetComponent<PickupItem>(out var pickup) && pickup.TryBreak(collision, impactSpeed)) return;
+        if (Time.time < nextEmission
             || (collisionLayers.value & (1 << collision.collider.gameObject.layer)) == 0) return;
         if ((TryGetComponent<PickupItem>(out var item) && item.IsHeld)
             || collision.collider.GetComponentInParent<PlayerController>() != null) return;
 
-        float impactSpeed = 0;
-        for (int i = 0; i < collision.contactCount; i++)
-            impactSpeed = Mathf.Max(impactSpeed,
-                Mathf.Abs(Vector3.Dot(collision.relativeVelocity, collision.GetContact(i).normal)));
         if (impactSpeed < minimumImpactSpeed) return;
 
         float pulseRange = RangeForImpact(impactSpeed);
@@ -79,5 +77,13 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
         LastEmissionRange = pulseRange;
         nextEmission = Time.time + emissionInterval;
         Emissions++;
+    }
+
+    public static float ImpactSpeed(Collision collision)
+    {
+        float speed = 0;
+        for (int i = 0; i < collision.contactCount; i++)
+            speed = Mathf.Max(speed, Mathf.Abs(Vector3.Dot(collision.relativeVelocity, collision.GetContact(i).normal)));
+        return speed;
     }
 }
