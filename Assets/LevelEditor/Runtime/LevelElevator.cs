@@ -22,7 +22,7 @@ namespace Sound2.LevelEditing
         void ConfigureCabinEdges()
         {
             var properties = new MaterialPropertyBlock();
-            foreach (string part in new[] { "Floor", "Roof", "Back", "Left", "Right", "Left jamb", "Right jamb", "Lintel" })
+            foreach (string part in new[] { "Roof", "Back", "Left", "Right", "Left jamb", "Right jamb", "Lintel" })
             {
                 var panel = transform.Find(part);
                 if (panel == null || !panel.TryGetComponent<Renderer>(out var renderer)) continue;

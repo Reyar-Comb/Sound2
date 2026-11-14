@@ -35,6 +35,7 @@ namespace Sound2.LevelEditing.Editor
             ("WallMirror", "镜子"),
             ("WallFlowerBasket", "花篮"),
             ("WallCabinet", "橱柜"),
+            ("WoodenDoor", "门"),
             ("BarCounter", "吧台"),
             ("Bed", "床"),
             ("Sofa", "沙发"),

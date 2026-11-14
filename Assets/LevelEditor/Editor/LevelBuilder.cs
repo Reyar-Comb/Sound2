@@ -34,6 +34,7 @@ namespace Sound2.LevelEditing.Editor
             }
             layout.generatedRoot = root;
             layout.SetGameplayPresentation(false);
+            EmbeddedDoorEditorSync.Remember(layout);
             EditorUtility.SetDirty(layout);
             EditorSceneManager.MarkSceneDirty(layout.gameObject.scene);
             Physics.SyncTransforms();
@@ -61,6 +62,7 @@ namespace Sound2.LevelEditing.Editor
 
         public static void Persist(LevelLayout layout, string scenePath)
         {
+            EmbeddedDoorEditorSync.EnsureCurrent(layout);
             if (layout.generatedRoot == null) Rebuild(layout);
             var filters = layout.generatedRoot.GetComponentsInChildren<MeshFilter>(true);
             string folder = Path.ChangeExtension(scenePath, null) + "_Geometry";

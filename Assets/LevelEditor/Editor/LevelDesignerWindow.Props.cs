@@ -39,10 +39,15 @@ namespace Sound2.LevelEditing.Editor
             area.Add(section);
             Button(section, "选择道具…", () => PropBrowserWindow.Open(prefab => { if (this != null) ChooseProp(prefab); })).name = "open-prop-browser";
             section.Add(new Label("当前道具：" + PropCatalog.Name(propPrefab)) { name = "selected-prop-name" });
-            var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)propSurface);
-            surface.RegisterValueChangedCallback(e => { propSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); section.Add(surface);
-            Float(section, "离表面距离", propOffset, v => { propOffset = Mathf.Max(0, v); SceneView.RepaintAll(); });
-            Float(section, "面内旋转角度", propAngle, v => { propAngle = v; SceneView.RepaintAll(); });
+            if (propPrefab != null && propPrefab.GetComponent<EmbeddedDoor>() != null)
+                section.Add(new Label(EmbeddedDoorPlacement.Help) { style = { whiteSpace = WhiteSpace.Normal } });
+            else
+            {
+                var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)propSurface);
+                surface.RegisterValueChangedCallback(e => { propSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); section.Add(surface);
+                Float(section, "离表面距离", propOffset, v => { propOffset = Mathf.Max(0, v); SceneView.RepaintAll(); });
+                Float(section, "面内旋转角度", propAngle, v => { propAngle = v; SceneView.RepaintAll(); });
+            }
             section.Add(new Label("道具保存在 Props 下，随场景保存和导出；重建几何不会删除。") { style = { whiteSpace = WhiteSpace.Normal } });
             section.SetEnabled(!Application.isPlaying);
         }
@@ -87,7 +92,12 @@ namespace Sound2.LevelEditing.Editor
             {
                 if (moving) CancelReposition(); else BeginReposition(instance);
             }).AddToClassList("primary");
-            if (moving)
+            bool embeddedDoor = instance.GetComponent<EmbeddedDoor>() != null;
+            var door = instance.GetComponent<EmbeddedDoor>();
+            if (door != null && string.IsNullOrEmpty(door.partitionId))
+                area.Add(new Label("此门尚未绑定隔板，请重新吸附到隔板或删除。"));
+            if (embeddedDoor) area.Add(new Label("门仅嵌入隔板，自动落地并匹配隔板厚度；移动请使用重新吸附。") { style = { whiteSpace = WhiteSpace.Normal } });
+            if (moving && !embeddedDoor)
             {
                 var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)repositionSurface);
                 surface.RegisterValueChangedCallback(e => { repositionSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); area.Add(surface);
@@ -100,6 +110,7 @@ namespace Sound2.LevelEditing.Editor
             {
                 if (tool == Tool.RepositionProp) tool = Tool.Select;
                 Undo.DestroyObjectImmediate(instance); selectedProp = null;
+                if (embeddedDoor) LevelBuilder.Rebuild(layout);
                 EditorSceneManager.MarkSceneDirty(layout.gameObject.scene); Refresh();
             });
             var serializedInstance = new SerializedObject(instance);
@@ -108,6 +119,7 @@ namespace Sound2.LevelEditing.Editor
             name.RegisterValueChangeCallback(_ => DrawObjects()); area.Add(name);
             var placement = new Foldout { text = "摆放", value = true };
             area.Add(placement);
+            placement.SetEnabled(!embeddedDoor);
             var transform = instance.transform;
             var serializedTransform = new SerializedObject(transform);
             AddPropField(placement, serializedTransform, "m_LocalPosition", "位置（局部）");
@@ -204,7 +216,8 @@ namespace Sound2.LevelEditing.Editor
                 moving ? repositionAngle : propAngle, out var pose);
             if (valid)
             {
-                var scale = moving ? source.transform.lossyScale : source.transform.localScale;
+                var scale = source.GetComponent<EmbeddedDoor>() != null ? layout.transform.lossyScale
+                    : moving ? source.transform.lossyScale : source.transform.localScale;
                 var rootMatrix = Matrix4x4.TRS(pose.position, pose.rotation, scale);
                 if (e.type == EventType.Repaint) foreach (var filter in source.GetComponentsInChildren<MeshFilter>(true))
                 {
@@ -248,7 +261,7 @@ namespace Sound2.LevelEditing.Editor
                     hasError = false;
                     Refresh();
                 }
-                else { status = "请指向布局中匹配的墙面或地面；贴墙时使用 3D 视图。"; hasError = true; UpdateStatus(); }
+                else { status = source != null && source.GetComponent<EmbeddedDoor>() != null ? EmbeddedDoorPlacement.Help : "请指向布局中匹配的墙面或地面；贴墙时使用 3D 视图。"; hasError = true; UpdateStatus(); }
                 e.Use();
             }
             if (e.type == EventType.MouseMove) view.Repaint();

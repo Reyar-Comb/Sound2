@@ -55,7 +55,7 @@ public static class IntegrateRemoteLevelFixes
         {
             if(elevator.transform.Cast<Transform>().Any(t=>Removed.Contains(t.name)))throw new Exception("Legacy decoration restored");
             if(Application.isPlaying&&elevator.gameObject.activeInHierarchy)
-                foreach(var name in new[]{"Floor","Roof","Back","Left","Right","Left jamb","Right jamb","Lintel"})
+                foreach(var name in new[]{"Roof","Back","Left","Right","Left jamb","Right jamb","Lintel"})
                 {
                     var renderer=elevator.transform.Find(name).GetComponent<Renderer>();var properties=new MaterialPropertyBlock();renderer.GetPropertyBlock(properties);
                     if(properties.GetFloat("_CabinEdges")!=1)throw new Exception("Missing shell edge configuration");panels++;

@@ -57,14 +57,14 @@ Shader "Sound2/Elevator White Ink"
                 [unroll] for (int x = -1; x <= 1; x++)
                 {
                     float2 delta = (cell + float2(x, y)) * pitch - screen;
-                    float3 point = input.cabin + dx * delta.x + dy * delta.y;
-                    float inner = ShellEdge(point, float3(-2, 0, -2.8), float3(2, 3.1, 2.725), width);
-                    float outer = ShellEdge(point, float3(-2.2, -.2, -3), float3(2.2, 3.3, 3), width);
+                    float3 cabinPoint = input.cabin + dx * delta.x + dy * delta.y;
+                    float inner = ShellEdge(cabinPoint, float3(-2, 0, -2.8), float3(2, 3.1, 2.725), width);
+                    float outer = ShellEdge(cabinPoint, float3(-2.2, -.2, -3), float3(2.2, 3.3, 3), width);
                     // Inner doorway opening. The front and rear jamb faces share the same opening.
-                    float3 door = abs(float3(abs(point.x) - 1.3, point.y - 2.7,
-                        abs(point.z - 2.85) - .125)) / width;
-                    float jamb = point.y <= 2.7 + width.y ? max(door.x, door.z) : 1e4;
-                    float lintel = abs(point.x) <= 1.3 + width.x ? max(door.y, door.z) : 1e4;
+                    float3 door = abs(float3(abs(cabinPoint.x) - 1.3, cabinPoint.y - 2.7,
+                        abs(cabinPoint.z - 2.85) - .125)) / width;
+                    float jamb = cabinPoint.y <= 2.7 + width.y ? max(door.x, door.z) : 1e4;
+                    float lintel = abs(cabinPoint.x) <= 1.3 + width.x ? max(door.y, door.z) : 1e4;
                     if (min(min(inner, outer), min(jamb, lintel)) <= 1)
                         ink = max(ink, 1 - smoothstep(radius - aa, radius + aa, length(delta)));
                 }

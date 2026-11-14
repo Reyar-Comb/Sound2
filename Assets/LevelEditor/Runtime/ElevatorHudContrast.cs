@@ -53,8 +53,11 @@ namespace Sound2.LevelEditing
             Collider nearest=null;float distance=float.PositiveInfinity;
             for(int i=0;i<count;i++)if(hits[i].distance<distance && !hits[i].transform.IsChildOf(player))
             {distance=hits[i].distance;nearest=hits[i].collider;}
-            if(nearest==null || !nearest.TryGetComponent<Renderer>(out var renderer))return false;
+            if(nearest==null || !nearest.TryGetComponent<Renderer>(out var renderer) || !renderer.enabled)return false;
             var material=renderer.sharedMaterial;
+            // The black control plates need white HUD ink, unlike the white cabin shell.
+            if(nearest.GetComponentInParent<LevelElevatorButton>()!=null)
+                return material!=null && material.HasProperty("_BaseColor") && material.GetColor("_BaseColor").grayscale>.5f;
             // Thin ink seams sit on paper too; sampling a seam must not turn an entire caption white.
             return material!=null && material.shader.name=="Sound2/Elevator White Ink" && !nearest.name.StartsWith("Shaft");
         }
