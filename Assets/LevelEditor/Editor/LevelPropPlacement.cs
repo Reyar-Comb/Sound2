@@ -52,8 +52,11 @@ namespace Sound2.LevelEditing.Editor
                 ? Quaternion.LookRotation(nearest.normal, up) * Quaternion.AngleAxis(angle, Vector3.forward)
                 : Quaternion.FromToRotation(up, nearest.normal) * layout.transform.rotation * Quaternion.Euler(0, angle, 0);
             var metadata = prefab.GetComponent<LevelProp>();
-            Vector3 anchor = metadata != null ? metadata.surfaceAnchor : BottomAnchor(prefab);
             Vector3 scale = prefab.scene.IsValid() ? prefab.transform.lossyScale : prefab.transform.localScale;
+            // Authored anchors describe the default surface only: a wall hanging's centre
+            // is not its floor contact, and a floor prop's origin is not its back face.
+            Vector3 anchor = metadata != null && metadata.surface == surface
+                ? metadata.surfaceAnchor : BoundsAnchor(prefab, surface, scale);
             pose = new Pose(nearest.point + nearest.normal * Mathf.Max(0, offset)
                 - rotation * Vector3.Scale(anchor, scale), rotation);
             return true;
@@ -80,7 +83,7 @@ namespace Sound2.LevelEditing.Editor
             Physics.SyncTransforms();
         }
 
-        static Vector3 BottomAnchor(GameObject prefab)
+        static Vector3 BoundsAnchor(GameObject prefab, PropSurface surface, Vector3 scale)
         {
             bool found = false;
             Bounds bounds = default;
@@ -96,7 +99,10 @@ namespace Sound2.LevelEditing.Editor
                     if (!found) { bounds = new Bounds(p, Vector3.zero); found = true; } else bounds.Encapsulate(p);
                 }
             }
-            return found ? new Vector3(bounds.center.x, bounds.min.y, bounds.center.z) : Vector3.zero;
+            if (!found) return Vector3.zero;
+            return surface == PropSurface.Floor
+                ? new Vector3(bounds.center.x, scale.y < 0 ? bounds.max.y : bounds.min.y, bounds.center.z)
+                : new Vector3(bounds.center.x, bounds.center.y, scale.z < 0 ? bounds.max.z : bounds.min.z);
         }
 
         public static GameObject Place(LevelLayout layout, GameObject prefab, Pose pose)
