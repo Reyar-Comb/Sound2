@@ -92,24 +92,24 @@ public static class VerifyPulseAttenuation
             s.ClearPulses(); s.PulseField.EmitFootstepFrom(origin,3,100000,.1f,footProfile);
             yield return new WaitForSeconds(.2f);
             yield return Capture("footstep-expired"); Check(Energy()==0,"Footstep image disappears after its short afterglow");
-            Check(Shader.GetGlobalVectorArray("_SonarSceneDistanceFalloffs").Length==SonarPulseField.MaxPulses,"Per-emission profiles match all pulse slots");
+            Check(Shader.GetGlobalVectorArray("_SonarPulseDistanceFalloffs").Length==SonarPulseField.MaxPulses,"Per-emission profiles match all pulse slots");
             emitter.distanceAttenuation=true; emitter.playSound=false;
             emitter.fadeStartDistance=.4f; emitter.fadeEndDistance=2.5f;
             emitter.falloffPower=3; emitter.pulseStrength=.45f;
             s.ClearPulses(); int emissionsBefore=emitter.Emissions; emitter.EmitNow();
-            int slot=Array.FindIndex(Shader.GetGlobalVectorArray("_SonarSceneParameters"),v=>v.w>.5f);
-            var profile=Shader.GetGlobalVectorArray("_SonarSceneDistanceFalloffs")[slot];
+            int slot=Array.FindIndex(Shader.GetGlobalVectorArray("_SonarPulseParameters"),v=>v.w>.5f);
+            var profile=Shader.GetGlobalVectorArray("_SonarPulseDistanceFalloffs")[slot];
             Check(emitter.Emissions==emissionsBefore+1 && Vector4.Distance(profile,new Vector4(.4f,2.5f,3,.45f))<.0001f,
                 "Object emitter publishes its own independent attenuation profile");
-            var objectOrigin=Shader.GetGlobalVectorArray("_SonarSceneOrigins")[slot];
+            var objectOrigin=Shader.GetGlobalVectorArray("_SonarPulseOrigins")[slot];
             Check(Vector3.Distance(new Vector3(objectOrigin.x,objectOrigin.y,objectOrigin.z),emitter.transform.position)<.0001f,
                 "Object attenuation stays anchored to the object's emission position");
             s.distanceAttenuation=true;
-            Check(Shader.GetGlobalVectorArray("_SonarSceneDistanceFalloffs")[slot]==profile,
+            Check(Shader.GetGlobalVectorArray("_SonarPulseDistanceFalloffs")[slot]==profile,
                 "Changing the player switch does not alter an existing object pulse");
             emitter.distanceAttenuation=false; s.ClearPulses(); emitter.EmitNow();
-            slot=Array.FindIndex(Shader.GetGlobalVectorArray("_SonarSceneParameters"),v=>v.w>.5f);
-            profile=Shader.GetGlobalVectorArray("_SonarSceneDistanceFalloffs")[slot];
+            slot=Array.FindIndex(Shader.GetGlobalVectorArray("_SonarPulseParameters"),v=>v.w>.5f);
+            profile=Shader.GetGlobalVectorArray("_SonarPulseDistanceFalloffs")[slot];
             Check(profile.z==0 && profile.w==1,"Object attenuation off preserves original strength independently of player settings");
         }
         finally

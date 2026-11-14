@@ -42,10 +42,7 @@ public static class ConfigureBreakableProps
 
     static Mesh Store(string name,Mesh mesh)
     {
-        string path=Folder+"/"+name+".asset";
-        var existing=AssetDatabase.LoadAssetAtPath<Mesh>(path);
-        if(existing!=null){Object.DestroyImmediate(mesh);return existing;}
-        mesh.name=name;AssetDatabase.CreateAsset(mesh,path);return mesh;
+        return PropMeshAssets.Store(Folder,name,mesh,false);
     }
 
     static GameObject Part(GameObject parent,string name,Mesh mesh,Material material,Vector3 position,Quaternion rotation,Vector3 scale)
@@ -154,6 +151,7 @@ public static class ConfigureBreakableProps
             debris=Object.Instantiate(root);debris.name="AlarmClockBroken";
             foreach(Transform part in debris.transform)PhysicalPart(part.gameObject,.06f);
             Presentation(debris,new Vector3(0,-.41f,0));
+            PropFragments.SetLayer(debris);
             var broken=PrefabUtility.SaveAsPrefabAsset(debris,"Assets/Prefabs/AlarmClockBroken.prefab");
             // A compound collider keeps the front and feet usable without a hollow convex-hull enclosing other parts.
             Pickup(root,broken,7,.7f,new Vector3(0,.08f,.14f)).heldEulerAngles=new Vector3(0,180,0);
@@ -193,6 +191,7 @@ public static class ConfigureBreakableProps
             for(int i=0;i<6;i++)Shard("MugBase"+i,DiskWedge(i*Mathf.PI/3,(i+1)*Mathf.PI/3,.17f,.035f));
             for(int i=0;i<3;i++)Shard("MugHandle"+i,Handle(-Mathf.PI/2+i*Mathf.PI/3,-Mathf.PI/2+(i+1)*Mathf.PI/3));
             Presentation(debris,Vector3.zero);
+            PropFragments.SetLayer(debris);
             var broken=PrefabUtility.SaveAsPrefabAsset(debris,"Assets/Prefabs/GlassMugBroken.prefab");
             root=new GameObject("PickupGlassMug");SceneManager.MoveGameObjectToScene(root,stage);
             var complete=new Mesh();complete.CombineMeshes(combines.ToArray(),true,true);complete=Store("GlassMug",complete);
@@ -205,6 +204,9 @@ public static class ConfigureBreakableProps
                 var collider=colliderObject.AddComponent<MeshCollider>();collider.sharedMesh=shard.GetComponent<MeshFilter>().sharedMesh;collider.convex=true;
             }
             Pickup(root,broken,3.8f,.25f,new Vector3(0,.45f,0));
+            var interactionAnchor=new GameObject("Interaction Anchor").transform;
+            interactionAnchor.SetParent(root.transform,false);interactionAnchor.localPosition=new Vector3(0,.21f,0);
+            root.GetComponent<PickupItem>().interactionAnchor=interactionAnchor;
             Presentation(root,Vector3.zero);
             PrefabUtility.SaveAsPrefabAsset(root,path);
         }

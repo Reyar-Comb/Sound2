@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2909835235762296736}
   - component: {fileID: 388971072677165871}
   - component: {fileID: 1182544892505276458}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -42,7 +42,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 198757369818025794}
-  m_Mesh: {fileID: 4300000, guid: 0378562ae795e64458e8eda867efbc02, type: 2}
+  m_Mesh: {fileID: -2469282521019155093, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &2909835235762296736
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -113,7 +113,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 0378562ae795e64458e8eda867efbc02, type: 2}
+  m_Mesh: {fileID: -2469282521019155093, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &1182544892505276458
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -151,7 +151,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1528508538245143103}
   - component: {fileID: 4832013723964824141}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: GlassMugBroken
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -235,7 +235,7 @@ GameObject:
   - component: {fileID: 3128654425201914457}
   - component: {fileID: 447120050980641093}
   - component: {fileID: 3461790646023205858}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -264,7 +264,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 716440552584723577}
-  m_Mesh: {fileID: 4300000, guid: 10cf845f19882bf448c5360fb63c9d47, type: 2}
+  m_Mesh: {fileID: -6474640603254664567, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &3128654425201914457
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -335,7 +335,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 10cf845f19882bf448c5360fb63c9d47, type: 2}
+  m_Mesh: {fileID: -6474640603254664567, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &3461790646023205858
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -376,7 +376,7 @@ GameObject:
   - component: {fileID: 717929607578332138}
   - component: {fileID: 6804742681196021198}
   - component: {fileID: 6999166184535114042}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -405,7 +405,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1232863953462354702}
-  m_Mesh: {fileID: 4300000, guid: dcda033bc99f8c94ab900585077e0b91, type: 2}
+  m_Mesh: {fileID: -8666654059284854814, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &717929607578332138
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -476,7 +476,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: dcda033bc99f8c94ab900585077e0b91, type: 2}
+  m_Mesh: {fileID: -8666654059284854814, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &6999166184535114042
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -517,7 +517,7 @@ GameObject:
   - component: {fileID: 7217474049300255082}
   - component: {fileID: 1101962297702381201}
   - component: {fileID: 2782789070506940754}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper10
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -546,7 +546,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2641122096925656051}
-  m_Mesh: {fileID: 4300000, guid: caa4120304bae9b4fbed69b904679198, type: 2}
+  m_Mesh: {fileID: -6579480695923391849, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &7217474049300255082
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -617,7 +617,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: caa4120304bae9b4fbed69b904679198, type: 2}
+  m_Mesh: {fileID: -6579480695923391849, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &2782789070506940754
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -658,7 +658,7 @@ GameObject:
   - component: {fileID: 5410179591257721362}
   - component: {fileID: 3771634784356882072}
   - component: {fileID: 1580043866598426035}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugBase4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -687,7 +687,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2688377158151390052}
-  m_Mesh: {fileID: 4300000, guid: 2d88f84dca18b95458184abcc9f085fc, type: 2}
+  m_Mesh: {fileID: 3721691700381022713, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &5410179591257721362
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -758,7 +758,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 2d88f84dca18b95458184abcc9f085fc, type: 2}
+  m_Mesh: {fileID: 3721691700381022713, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &1580043866598426035
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -799,7 +799,7 @@ GameObject:
   - component: {fileID: 5791348908466753360}
   - component: {fileID: 8553610864105283989}
   - component: {fileID: 2671935457249083289}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -828,7 +828,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2711086760212417442}
-  m_Mesh: {fileID: 4300000, guid: aa31fcf4e2a3d4f438a2d5b1b5464598, type: 2}
+  m_Mesh: {fileID: 2760293475702344186, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &5791348908466753360
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -899,7 +899,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: aa31fcf4e2a3d4f438a2d5b1b5464598, type: 2}
+  m_Mesh: {fileID: 2760293475702344186, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &2671935457249083289
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -940,7 +940,7 @@ GameObject:
   - component: {fileID: 1980572668859594478}
   - component: {fileID: 6609612594239944403}
   - component: {fileID: 7374710334282858394}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower11
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -969,7 +969,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2941756061497300216}
-  m_Mesh: {fileID: 4300000, guid: 7b49e897e0d04af4f8454a3040d4a42f, type: 2}
+  m_Mesh: {fileID: 9045829229050409520, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &1980572668859594478
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1040,7 +1040,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 7b49e897e0d04af4f8454a3040d4a42f, type: 2}
+  m_Mesh: {fileID: 9045829229050409520, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &7374710334282858394
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1081,7 +1081,7 @@ GameObject:
   - component: {fileID: 1962910907501764373}
   - component: {fileID: 3915161964668617361}
   - component: {fileID: 5202442055080619544}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower7
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1110,7 +1110,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3792625637118560907}
-  m_Mesh: {fileID: 4300000, guid: 1b40c5b6099d7884b8b490f7675abcd9, type: 2}
+  m_Mesh: {fileID: -7706105944458201134, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &1962910907501764373
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1181,7 +1181,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 1b40c5b6099d7884b8b490f7675abcd9, type: 2}
+  m_Mesh: {fileID: -7706105944458201134, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &5202442055080619544
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1222,7 +1222,7 @@ GameObject:
   - component: {fileID: 5492655795883303337}
   - component: {fileID: 273229239888526158}
   - component: {fileID: 5467269045750830273}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugBase3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1251,7 +1251,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3842917974929764733}
-  m_Mesh: {fileID: 4300000, guid: e2430959c9c558441ad75de2060a2515, type: 2}
+  m_Mesh: {fileID: -2656695921294581512, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &5492655795883303337
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1322,7 +1322,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: e2430959c9c558441ad75de2060a2515, type: 2}
+  m_Mesh: {fileID: -2656695921294581512, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &5467269045750830273
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1363,7 +1363,7 @@ GameObject:
   - component: {fileID: 5722407477264667282}
   - component: {fileID: 1879378038219765366}
   - component: {fileID: 5849574162276017856}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower8
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1392,7 +1392,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4008414500552883652}
-  m_Mesh: {fileID: 4300000, guid: cbb40a83fb7c285409c5b112b6da199a, type: 2}
+  m_Mesh: {fileID: 496715524312509859, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &5722407477264667282
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1463,7 +1463,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: cbb40a83fb7c285409c5b112b6da199a, type: 2}
+  m_Mesh: {fileID: 496715524312509859, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &5849574162276017856
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1504,7 +1504,7 @@ GameObject:
   - component: {fileID: 2597804106024163127}
   - component: {fileID: 3137660868019552627}
   - component: {fileID: 4159315387528336865}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower10
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1533,7 +1533,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4044296108781475665}
-  m_Mesh: {fileID: 4300000, guid: a470862354a6a7a47a3081ccc3484bfe, type: 2}
+  m_Mesh: {fileID: 4399185435516682944, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &2597804106024163127
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1604,7 +1604,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: a470862354a6a7a47a3081ccc3484bfe, type: 2}
+  m_Mesh: {fileID: 4399185435516682944, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &4159315387528336865
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1645,7 +1645,7 @@ GameObject:
   - component: {fileID: 8970428560562005455}
   - component: {fileID: 3856298709604197890}
   - component: {fileID: 4270329579722143706}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugHandle0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1674,7 +1674,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4313398371588088725}
-  m_Mesh: {fileID: 4300000, guid: a9aeffb3ac1a0fc468033d14cf23bce6, type: 2}
+  m_Mesh: {fileID: 1831841899725035133, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &8970428560562005455
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1745,7 +1745,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: a9aeffb3ac1a0fc468033d14cf23bce6, type: 2}
+  m_Mesh: {fileID: 1831841899725035133, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &4270329579722143706
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1786,7 +1786,7 @@ GameObject:
   - component: {fileID: 4811238554627844405}
   - component: {fileID: 2792701817888810351}
   - component: {fileID: 3415941792847155246}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugHandle1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1815,7 +1815,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4513975042563071170}
-  m_Mesh: {fileID: 4300000, guid: f868e60fcf4d5684bb60ae770173de96, type: 2}
+  m_Mesh: {fileID: 803982117858016861, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &4811238554627844405
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1886,7 +1886,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: f868e60fcf4d5684bb60ae770173de96, type: 2}
+  m_Mesh: {fileID: 803982117858016861, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &3415941792847155246
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1927,7 +1927,7 @@ GameObject:
   - component: {fileID: 2581765530681934827}
   - component: {fileID: 4650063421043802466}
   - component: {fileID: 6575177312099648058}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1956,7 +1956,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4797692611962686998}
-  m_Mesh: {fileID: 4300000, guid: 43900f4672577ac428a94dbc189646b4, type: 2}
+  m_Mesh: {fileID: 7484274409283004080, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &2581765530681934827
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2027,7 +2027,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 43900f4672577ac428a94dbc189646b4, type: 2}
+  m_Mesh: {fileID: 7484274409283004080, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &6575177312099648058
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2068,7 +2068,7 @@ GameObject:
   - component: {fileID: 1695159189937703907}
   - component: {fileID: 8596069726430264426}
   - component: {fileID: 7542864922654071691}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2097,7 +2097,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4986553491671080713}
-  m_Mesh: {fileID: 4300000, guid: 79eb13e2e12f66b42829301ef880fbcb, type: 2}
+  m_Mesh: {fileID: 2524373740083013170, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &1695159189937703907
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2168,7 +2168,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 79eb13e2e12f66b42829301ef880fbcb, type: 2}
+  m_Mesh: {fileID: 2524373740083013170, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &7542864922654071691
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2209,7 +2209,7 @@ GameObject:
   - component: {fileID: 1594654848253414065}
   - component: {fileID: 6763880234398734883}
   - component: {fileID: 1041442127120075557}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2238,7 +2238,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5729049654656990822}
-  m_Mesh: {fileID: 4300000, guid: 125d8959b4aee5b4fa880204f5faa948, type: 2}
+  m_Mesh: {fileID: 4891037033510875980, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &1594654848253414065
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2309,7 +2309,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 125d8959b4aee5b4fa880204f5faa948, type: 2}
+  m_Mesh: {fileID: 4891037033510875980, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &1041442127120075557
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2350,7 +2350,7 @@ GameObject:
   - component: {fileID: 7148091292536792882}
   - component: {fileID: 5485464401216732979}
   - component: {fileID: 4405473257077841015}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2379,7 +2379,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5824593554257289080}
-  m_Mesh: {fileID: 4300000, guid: fcb5840d0d379df438fe70c59bd213e3, type: 2}
+  m_Mesh: {fileID: 7720188835883806929, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &7148091292536792882
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2450,7 +2450,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: fcb5840d0d379df438fe70c59bd213e3, type: 2}
+  m_Mesh: {fileID: 7720188835883806929, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &4405473257077841015
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2491,7 +2491,7 @@ GameObject:
   - component: {fileID: 2239915575783750821}
   - component: {fileID: 2605966401238381809}
   - component: {fileID: 4284196386233866101}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugBase0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2520,7 +2520,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5935921651657298539}
-  m_Mesh: {fileID: 4300000, guid: 4d24d2b7e86ca8a43bd6eeab61acb525, type: 2}
+  m_Mesh: {fileID: -4427690870417369134, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &2239915575783750821
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2591,7 +2591,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 4d24d2b7e86ca8a43bd6eeab61acb525, type: 2}
+  m_Mesh: {fileID: -4427690870417369134, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &4284196386233866101
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2632,7 +2632,7 @@ GameObject:
   - component: {fileID: 8321614236969914144}
   - component: {fileID: 1473778117185791465}
   - component: {fileID: 3600528797315397900}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2661,7 +2661,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5966280993729494982}
-  m_Mesh: {fileID: 4300000, guid: b946f2aef6523394ebe7188ad6466387, type: 2}
+  m_Mesh: {fileID: 1211576389644857337, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &8321614236969914144
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2732,7 +2732,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: b946f2aef6523394ebe7188ad6466387, type: 2}
+  m_Mesh: {fileID: 1211576389644857337, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &3600528797315397900
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2773,7 +2773,7 @@ GameObject:
   - component: {fileID: 1569548723906304607}
   - component: {fileID: 6525983325366033847}
   - component: {fileID: 5354154928521978942}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugBase1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2802,7 +2802,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6026427801898370961}
-  m_Mesh: {fileID: 4300000, guid: cf87fc60efc336e4a9f41d36f307f129, type: 2}
+  m_Mesh: {fileID: 1135866672474925542, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &1569548723906304607
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2873,7 +2873,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: cf87fc60efc336e4a9f41d36f307f129, type: 2}
+  m_Mesh: {fileID: 1135866672474925542, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &5354154928521978942
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2914,7 +2914,7 @@ GameObject:
   - component: {fileID: 2193226326087979054}
   - component: {fileID: 6542608100513591119}
   - component: {fileID: 6235185509236801009}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2943,7 +2943,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6106805705815697724}
-  m_Mesh: {fileID: 4300000, guid: d970e460237a8a2468b4a71d81e9c4d8, type: 2}
+  m_Mesh: {fileID: -7404026535747526406, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &2193226326087979054
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3014,7 +3014,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: d970e460237a8a2468b4a71d81e9c4d8, type: 2}
+  m_Mesh: {fileID: -7404026535747526406, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &6235185509236801009
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3055,7 +3055,7 @@ GameObject:
   - component: {fileID: 4831033879072548908}
   - component: {fileID: 4696344680863202222}
   - component: {fileID: 4902917314784942007}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3084,7 +3084,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6448797301847818952}
-  m_Mesh: {fileID: 4300000, guid: 72ac85770aec5594caad446bed8be928, type: 2}
+  m_Mesh: {fileID: 976983285514573070, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &4831033879072548908
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3155,7 +3155,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 72ac85770aec5594caad446bed8be928, type: 2}
+  m_Mesh: {fileID: 976983285514573070, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &4902917314784942007
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3196,7 +3196,7 @@ GameObject:
   - component: {fileID: 5230867189793874658}
   - component: {fileID: 5054327851090253992}
   - component: {fileID: 4095897077245380282}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper7
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3225,7 +3225,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6697442875042770122}
-  m_Mesh: {fileID: 4300000, guid: 9ad4583fc9dacb64f95fe18bd6448085, type: 2}
+  m_Mesh: {fileID: -8533004768352553980, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &5230867189793874658
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3296,7 +3296,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 9ad4583fc9dacb64f95fe18bd6448085, type: 2}
+  m_Mesh: {fileID: -8533004768352553980, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &4095897077245380282
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3337,7 +3337,7 @@ GameObject:
   - component: {fileID: 4093111721243351669}
   - component: {fileID: 6107267381493810442}
   - component: {fileID: 3704202351562243394}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower9
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3366,7 +3366,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7063397122101013533}
-  m_Mesh: {fileID: 4300000, guid: b5a4da6863f8bc44f8b9c93e586d7e1a, type: 2}
+  m_Mesh: {fileID: -1443188737381990487, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &4093111721243351669
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3437,7 +3437,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: b5a4da6863f8bc44f8b9c93e586d7e1a, type: 2}
+  m_Mesh: {fileID: -1443188737381990487, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &3704202351562243394
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3478,7 +3478,7 @@ GameObject:
   - component: {fileID: 1352737016964944513}
   - component: {fileID: 2807427904061704654}
   - component: {fileID: 6304788208533809292}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper9
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3507,7 +3507,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7200506448936280981}
-  m_Mesh: {fileID: 4300000, guid: 4aaf4c7d0c5525a47ad3c97bfc4cca9d, type: 2}
+  m_Mesh: {fileID: -7083413547528383068, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &1352737016964944513
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3578,7 +3578,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 4aaf4c7d0c5525a47ad3c97bfc4cca9d, type: 2}
+  m_Mesh: {fileID: -7083413547528383068, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &6304788208533809292
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3619,7 +3619,7 @@ GameObject:
   - component: {fileID: 8012358686126888343}
   - component: {fileID: 8861719740712479914}
   - component: {fileID: 9189486491640645708}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3648,7 +3648,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7342420983447524390}
-  m_Mesh: {fileID: 4300000, guid: d4f589759d90cf6488bde23f8fa23afc, type: 2}
+  m_Mesh: {fileID: 9210608473413149078, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &8012358686126888343
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3719,7 +3719,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: d4f589759d90cf6488bde23f8fa23afc, type: 2}
+  m_Mesh: {fileID: 9210608473413149078, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &9189486491640645708
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3760,7 +3760,7 @@ GameObject:
   - component: {fileID: 3513107169059085237}
   - component: {fileID: 5242900566932630955}
   - component: {fileID: 2615805981782243873}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugBase2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3789,7 +3789,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7467613329172012711}
-  m_Mesh: {fileID: 4300000, guid: 97f04367118d75c44a59048ee5679cc5, type: 2}
+  m_Mesh: {fileID: 3087034140059786268, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &3513107169059085237
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -3860,7 +3860,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 97f04367118d75c44a59048ee5679cc5, type: 2}
+  m_Mesh: {fileID: 3087034140059786268, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &2615805981782243873
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3901,7 +3901,7 @@ GameObject:
   - component: {fileID: 2109442303385318523}
   - component: {fileID: 7825219924536745124}
   - component: {fileID: 8019785731773019231}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3930,7 +3930,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7710322648761303117}
-  m_Mesh: {fileID: 4300000, guid: 3173a9fc536a0f44680bc0e15e1b399e, type: 2}
+  m_Mesh: {fileID: -5474155962901491544, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &2109442303385318523
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4001,7 +4001,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 3173a9fc536a0f44680bc0e15e1b399e, type: 2}
+  m_Mesh: {fileID: -5474155962901491544, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &8019785731773019231
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4042,7 +4042,7 @@ GameObject:
   - component: {fileID: 3143364872623034470}
   - component: {fileID: 7209876552810891920}
   - component: {fileID: 2608920491179912093}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallLower3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4071,7 +4071,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7855475572352247730}
-  m_Mesh: {fileID: 4300000, guid: 9a45e34997cf2c844aed45ea015b3f1a, type: 2}
+  m_Mesh: {fileID: 1328963082182625070, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &3143364872623034470
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4142,7 +4142,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 9a45e34997cf2c844aed45ea015b3f1a, type: 2}
+  m_Mesh: {fileID: 1328963082182625070, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &2608920491179912093
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4183,7 +4183,7 @@ GameObject:
   - component: {fileID: 7699957279739747197}
   - component: {fileID: 1735403828081699702}
   - component: {fileID: 9058987405102696500}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper11
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4212,7 +4212,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8005213951939522739}
-  m_Mesh: {fileID: 4300000, guid: faa00c621f0861d47ab33a2f3d6580ab, type: 2}
+  m_Mesh: {fileID: 425615829444601730, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &7699957279739747197
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4283,7 +4283,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: faa00c621f0861d47ab33a2f3d6580ab, type: 2}
+  m_Mesh: {fileID: 425615829444601730, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &9058987405102696500
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4324,7 +4324,7 @@ GameObject:
   - component: {fileID: 8403088596368348883}
   - component: {fileID: 8729189996378713259}
   - component: {fileID: 8478286267417211224}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugWallUpper8
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4353,7 +4353,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8090942348112192651}
-  m_Mesh: {fileID: 4300000, guid: 96cf68f942720b146b2684ad07e08816, type: 2}
+  m_Mesh: {fileID: -544333200541538156, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &8403088596368348883
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4424,7 +4424,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: 96cf68f942720b146b2684ad07e08816, type: 2}
+  m_Mesh: {fileID: -544333200541538156, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &8478286267417211224
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4465,7 +4465,7 @@ GameObject:
   - component: {fileID: 7591072421748266123}
   - component: {fileID: 8476138315310360591}
   - component: {fileID: 689372962134990139}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugHandle2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4494,7 +4494,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8910059663665644744}
-  m_Mesh: {fileID: 4300000, guid: ceb4919378e033848a97ee2333c35b3c, type: 2}
+  m_Mesh: {fileID: -1648743743509507642, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &7591072421748266123
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4565,7 +4565,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: ceb4919378e033848a97ee2333c35b3c, type: 2}
+  m_Mesh: {fileID: -1648743743509507642, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &689372962134990139
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4606,7 +4606,7 @@ GameObject:
   - component: {fileID: 3999466977551374546}
   - component: {fileID: 528873772194207742}
   - component: {fileID: 8802558610329936820}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: MugBase5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4635,7 +4635,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9093625218616540988}
-  m_Mesh: {fileID: 4300000, guid: d2c76f8e100518545acac0b3cda0ddad, type: 2}
+  m_Mesh: {fileID: -1978892591527406304, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!23 &3999466977551374546
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4706,7 +4706,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: d2c76f8e100518545acac0b3cda0ddad, type: 2}
+  m_Mesh: {fileID: -1978892591527406304, guid: a7ae047e1fa0cef4ca56f6b6886e064c, type: 2}
 --- !u!54 &8802558610329936820
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -32,13 +32,35 @@ namespace Sound2.LevelEditing.Editor
         {
             var section = new Foldout { text = "道具 / Props", value = tool == Tool.Prop };
             area.Add(section);
-            var row = Row(section);
-            Button(row, "钟表（贴墙）", () => ChooseProp(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/TickingClock.prefab")));
-            Button(row, "球（落地）", () => ChooseProp(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupBouncyBall.prefab")));
-            Button(row, "闹钟（可摔碎）", () => ChooseProp(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupAlarmClock.prefab")));
-            Button(row, "玻璃杯（可摔碎）", () => ChooseProp(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupGlassMug.prefab")));
-            var prefab = new ObjectField("道具 Prefab") { objectType = typeof(GameObject), allowSceneObjects = false, value = propPrefab };
-            prefab.RegisterValueChangedCallback(e => ChooseProp((GameObject)e.newValue)); section.Add(prefab);
+            var prefabs = new System.Collections.Generic.List<GameObject>();
+            var names = new System.Collections.Generic.Dictionary<GameObject, string>();
+            foreach (var entry in new[] {
+                ("TickingClock", "钟表"), ("PickupBouncyBall", "球"), ("PickupAlarmClock", "闹钟"),
+                ("PickupGlassMug", "玻璃杯"), ("ResizableTable", "桌子"), ("Chair", "椅子"),
+                ("ShoppingCart", "购物车"), ("LibraryBookshelf", "图书架"), ("WritingDesk", "书桌"),
+                ("Computer", "电脑"), ("PickupWaterCup", "水杯"), ("PickupDeskLamp", "台灯"),
+                ("Refrigerator", "冰箱"), ("Stove", "灶台"), ("TrashBin", "垃圾桶"),
+                ("PickupCoffeeMug", "咖啡杯"), ("PickupCeramicVase", "陶瓷花瓶") })
+            {
+                var asset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/" + entry.Item1 + ".prefab");
+                if (asset == null) continue;
+                prefabs.Add(asset); names.Add(asset, entry.Item2);
+            }
+            if (propPrefab != null && !prefabs.Contains(propPrefab))
+            { prefabs.Add(propPrefab); names.Add(propPrefab, propPrefab.name); }
+            if (propPrefab == null && prefabs.Count > 0)
+            {
+                propPrefab = prefabs[0];
+                var metadata = propPrefab.GetComponent<LevelProp>();
+                propSurface = metadata != null ? metadata.surface : PropSurface.Floor;
+                propOffset = metadata != null ? metadata.surfaceOffset : .01f;
+                propAngle = 0;
+            }
+            if (prefabs.Count > 0)
+            {
+                var choice = new PopupField<GameObject>("道具", prefabs, prefabs.IndexOf(propPrefab), p => names[p], p => names[p]) { name = "prop-choice" };
+                choice.RegisterValueChangedCallback(e => ChooseProp(e.newValue)); section.Add(choice);
+            }
             var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)propSurface);
             surface.RegisterValueChangedCallback(e => { propSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); section.Add(surface);
             Float(section, "离表面距离", propOffset, v => { propOffset = Mathf.Max(0, v); SceneView.RepaintAll(); });
@@ -80,32 +102,8 @@ namespace Sound2.LevelEditing.Editor
         {
             if (layout == null || selectedProp == null || selectedProp.transform.parent != LevelPropPlacement.PropsRoot(layout)) return false;
             var instance = selectedProp;
-            var transform = instance.transform;
             area.Add(new Label("道具：" + instance.name));
-            void Vector3Field(string label, Vector3 value, System.Action<Vector3> setter)
-            {
-                var field = new Vector3Field(label) { value = value };
-                field.Query<FloatField>().ForEach(f => f.isDelayed = true);
-                field.RegisterValueChangedCallback(e =>
-                {
-                    if (Application.isPlaying || instance == null) return;
-                    Undo.RecordObject(transform, "调整关卡道具"); setter(e.newValue);
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(transform);
-                    EditorSceneManager.MarkSceneDirty(instance.scene); SceneView.RepaintAll();
-                });
-                area.Add(field);
-            }
-            Vector3Field("局部位置", transform.localPosition, v => transform.localPosition = v);
-            Vector3Field("局部旋转", transform.localEulerAngles, v => transform.localEulerAngles = v);
-            Vector3Field("局部缩放", transform.localScale, v => transform.localScale = v);
-            var clock = instance.GetComponent<TickingClock>();
-            if (clock != null)
-                Float(area, "Tick 间隔（秒）", clock.tickInterval, v =>
-                {
-                    Undo.RecordObject(clock, "调整钟表速度"); clock.tickInterval = Mathf.Max(.05f, v);
-                    PrefabUtility.RecordPrefabInstancePropertyModifications(clock);
-                    EditorSceneManager.MarkSceneDirty(instance.scene);
-                });
+            area.Add(new Label("位置、旋转、缩放及组件参数请在 Unity Inspector 中调整。") { style = { whiteSpace = WhiteSpace.Normal } });
             Button(area, "在 Scene 中框选", () => { Selection.activeGameObject = instance; SceneView.lastActiveSceneView?.FrameSelected(); });
             Button(area, "删除此道具", () =>
             {

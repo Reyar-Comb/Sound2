@@ -61,6 +61,7 @@ public sealed class PlayerController : MonoBehaviour
 
     private void OnEnable()
     {
+        PropFragments.ExcludeFromPlayer(this);
         if (InputSuspended) return;
         ApplyCursorCapture(true);
     }

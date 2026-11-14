@@ -1,8 +1,19 @@
-.level-editor { padding: 10px; flex-grow: 1; }
-.title { font-size: 20px; -unity-font-style: bold; margin-bottom: 6px; color: rgb(112, 218, 218); }
+.editor-scroll { flex-grow: 1; min-width: 0; min-height: 0; }
+.level-editor { padding: 10px; flex-shrink: 0; min-width: 0; }
+.level-editor > VisualElement { flex-shrink: 0; min-width: 0; }
+.level-editor Label { white-space: normal; }
+.title { font-size: 20px; -unity-font-style: bold; margin-bottom: 6px; color: rgb(112, 218, 218); flex-shrink: 0; }
 .hint { white-space: normal; margin-top: 6px; margin-bottom: 8px; color: rgb(192, 201, 209); }
-.toolbar-row { flex-direction: row; flex-wrap: wrap; margin-top: 4px; margin-bottom: 4px; }
-.toolbar-row > Button { min-width: 78px; min-height: 25px; margin-right: 4px; margin-bottom: 4px; }
+.toolbar-row { flex-direction: row; flex-wrap: wrap; flex-shrink: 0; margin-top: 4px; margin-bottom: 4px; }
+.level-editor Button { white-space: normal; flex-shrink: 0; min-height: 26px; padding: 4px 8px; }
+.toolbar-row > Button { flex-basis: 110px; flex-grow: 1; min-width: 96px; margin-right: 4px; margin-bottom: 4px; }
+.level-editor .unity-base-field { min-width: 0; flex-shrink: 0; }
+.level-editor .unity-base-field__input { min-width: 0; }
+.level-editor .unity-base-field__label { min-width: 0; white-space: normal; flex-shrink: 1; }
+.level-editor .unity-foldout__content { min-width: 0; }
+.level-editor .unity-composite-field { flex-direction: column; align-items: stretch; }
+.level-editor .unity-composite-field > .unity-base-field__label { flex-shrink: 0; margin-bottom: 2px; }
+.level-editor .unity-composite-field > .unity-base-field__input { flex-basis: auto; }
 .active-tool { background-color: rgb(35, 102, 112); color: white; }
 .section { margin-top: 10px; margin-bottom: 6px; -unity-font-style: bold; font-size: 13px; }
 .item { min-height: 26px; -unity-text-align: middle-left; }
@@ -11,4 +22,3 @@
 .properties { margin-top: 6px; padding: 8px; background-color: rgba(0, 0, 0, 0.15); }
 .status { white-space: normal; margin-top: 8px; padding: 8px; background-color: rgba(0, 0, 0, 0.2); }
 .error { color: rgb(255, 174, 103); }
-ScrollView { flex-grow: 1; }

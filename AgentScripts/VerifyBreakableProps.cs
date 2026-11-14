@@ -32,7 +32,7 @@ public static class VerifyBreakableProps
             Check(prefab.GetComponent<SonarCueSource>().clip==null&&!prefab.GetComponent<SonarCueSource>().generateDefaultPing&&item.breakClip==null,name+": audio slots empty, no synthesis");
         }
         Check(Prefab("PickupAlarmClock").GetComponent<PickupAlarm>()!=null,"Alarm countdown is a separate configurable component");
-        Check(Prefab("PickupGlassMug").GetComponent<PickupItem>().brokenPrefab.transform.childCount==33,"Mug has matching wall, base and single-handle fragments");
+        Check(Prefab("PickupGlassMug").GetComponent<PickupItem>().brokenPrefab.transform.childCount==49,"Stemmed glass has matching bowl, stem and foot fragments");
         Check(!Prefab("PickupBouncyBall").GetComponent<PickupItem>().breakable,"Existing bouncy ball is not breakable by default");
         var actual=SceneManager.GetSceneByPath("Assets/Scenes/test.unity");
         var layout=actual.GetRootGameObjects().SelectMany(r=>r.GetComponentsInChildren<LevelLayout>()).Single();
@@ -176,8 +176,8 @@ public static class VerifyBreakableProps
             Check(cup!=null&&!cup.IsBroken,"Break layer mask excludes otherwise destructive collision");
             cup.breakLayers=~0;cupBody.position=center+new Vector3(2,1,3);cupBody.rotation=Quaternion.identity;cupBody.linearVelocity=Vector3.forward*10;cupBody.angularVelocity=Vector3.zero;Physics.SyncTransforms();
             await Until(()=>cup==null||cup.IsBroken,"Real high-speed cup impact shatters it");
-            var cupRemains=fixture.transform.Find("GlassMugBroken(Clone)");
-            Check(cupRemains!=null&&cupRemains.childCount==33,"Cup leaves all 33 authored fragments");
+            var cupRemains=fixture.transform.Find("WineGlassBroken(Clone)");
+            Check(cupRemains!=null&&cupRemains.childCount==49,"Glass leaves all 49 authored fragments");
             Check(cupRemains.GetComponentsInChildren<PickupItem>().Length==0&&cupRemains.GetComponentsInChildren<InteractableObject>().Length==0,"Cup fragments have no pickup or interaction components");
             var bodies=cupRemains.GetComponentsInChildren<Rigidbody>();var positions=bodies.Select(b=>b.position).ToArray();
             emitted=field.Emissions;await Frames(250);

@@ -250,6 +250,7 @@ public sealed class PickupItem : InteractableObject
         foreach (var itemCollider in colliders) itemCollider.enabled = false;
 
         SpawnedRemains = Instantiate(brokenPrefab, transform.position, transform.rotation, transform.parent);
+        PropFragments.SetLayer(SpawnedRemains);
         SpawnedRemains.transform.localScale = transform.localScale;
         foreach (Transform part in SpawnedRemains.transform)
         {

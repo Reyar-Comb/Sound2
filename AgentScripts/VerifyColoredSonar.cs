@@ -27,7 +27,7 @@ public static class VerifyColoredSonar
         var emitters=UnityEngine.Object.FindObjectsByType<SonarObjectEmitter>();var auto=Array.ConvertAll(emitters,e=>e.automatic);
         var scans=UnityEngine.Object.FindObjectsByType<MonsterScanEmitter>();var enabled=Array.ConvertAll(scans,e=>e.enabled);
         var hud=typeof(SphericalSonar).GetField("hud",BindingFlags.NonPublic|BindingFlags.Instance);bool oldHud=(bool)hud.GetValue(s);
-        var status=player.GetComponent<PlayerStatusHUD>();bool oldStatus=status.visible;status.visible=false;
+        var status=player.GetComponent<PlayerStatusHUD>();bool oldStatus=status!=null&&status.visible;if(status!=null)status.visible=false;
         var position=s.transform.position;var rotation=s.transform.rotation;
         bool oldAuto=s.automatic,near=s.proximityRendering,sonar=s.sonarRendering,faces=s.facePoints,edges=s.edgePoints,moving=player.enabled,collision=capsule.enabled;
         var cube=GameObject.CreatePrimitive(PrimitiveType.Cube);cube.transform.position=new Vector3(100,100,102);cube.transform.localScale=Vector3.one*.8f;
@@ -79,10 +79,10 @@ public static class VerifyColoredSonar
             field.ClearPulses();field.EmitFrom(origin,3,100000000,.05f,SonarPulseKind.Lightning,profile);yield return new WaitForSeconds(.15f);yield return Capture("expired");
             Check(Lit()==0,"Blue wave expires normally");
             field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000);field.EmitDangerFrom(origin,3,100000000,10000000,profile);
-            var before=(Vector4[])Shader.GetGlobalVectorArray("_SonarSceneOrigins").Clone();
+            var before=(Vector4[])Shader.GetGlobalVectorArray("_SonarPulseOrigins").Clone();
             for(int i=0;i<12;i++)field.EmitFrom(origin+Vector3.right*i,3,100000000,10000000,SonarPulseKind.Coin,profile);
-            var after=Shader.GetGlobalVectorArray("_SonarSceneOrigins");
-            Check(before.Take(12).SequenceEqual(after.Take(12)) && after.Length==24,"Coins use eight reserved slots without replacing player, footsteps or monster scans");
+            var after=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
+            Check(before.Take(SonarPulseField.CoinPulseOffset).SequenceEqual(after.Take(SonarPulseField.CoinPulseOffset)) && after.Length==SonarPulseField.MaxPulses,"Coins use eight reserved slots without replacing player, footsteps or monster scans");
             UnityEngine.Object.Destroy(cube);yield return null;
             lightningBody=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/BallLightning.prefab"));
             lightningBody.transform.position=new Vector3(100,100,102);
@@ -108,7 +108,7 @@ public static class VerifyColoredSonar
             source.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Stars,oldStars);
             PlayerUiPointMask.SetLegacyPanel(field,default,false);
             s.transform.SetPositionAndRotation(position,rotation);if(motion!=null)motion.enabled=motionEnabled;capsule.enabled=collision;player.enabled=moving;
-            s.automatic=oldAuto;s.facePoints=faces;s.edgePoints=edges;s.SetRevealModes(near,sonar);hud.SetValue(s,oldHud);status.visible=oldStatus;
+            s.automatic=oldAuto;s.facePoints=faces;s.edgePoints=edges;s.SetRevealModes(near,sonar);hud.SetValue(s,oldHud);if(status!=null)status.visible=oldStatus;
             for(int i=0;i<emitters.Length;i++)if(emitters[i]!=null)emitters[i].automatic=auto[i];
             for(int i=0;i<scans.Length;i++)scans[i].enabled=enabled[i];field.ClearPulses();if(cube!=null)UnityEngine.Object.Destroy(cube);if(lightningBody!=null)UnityEngine.Object.Destroy(lightningBody);
             report.complete=true;System.IO.File.WriteAllText(Path,JsonUtility.ToJson(report,true));

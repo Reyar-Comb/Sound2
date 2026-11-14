@@ -26,7 +26,35 @@ PlayerPickup 的持物惯性由四元数指数追随和 SmoothDamp 位置平滑�
 
 ## 可摔碎道具与延时闹钟
 
-`Assets/Prefabs/PickupAlarmClock.prefab` 是可拾取的双铃闹钟，复用 TickingClock、SonarObjectEmitter 和原有拿放逻辑。`Assets/Prefabs/PickupGlassMug.prefab` 是开口圆柱杯，带杯底和单侧把手。编辑时显示浅色模型，运行时沿用黑色材质和点云显影。两者已放在 `test.unity` 的 `Editable Level/Props` 下，玩家前方左侧为闹钟、右侧为杯子；地图编辑器增加了对应快捷入口。
+### 家具与日用品
+
+以下预制体位于 `Assets/Prefabs`，可在地图编辑器的道具下拉列表中直接放置。根节点位于底部，统一通过 LevelProp 在编辑模式显示预览材质、在运行模式使用黑色点云材质。
+
+| 道具 | Prefab | 拾取 / 破坏 |
+|---|---|---|
+| 椅子 | Chair | 静态 |
+| 购物车 | ShoppingCart | 静态，未添加推动或轮子运动 |
+| 图书架 | LibraryBookshelf | 静态，附带书本模型 |
+| 书桌 | WritingDesk | 静态，抽屉为模型细节 |
+| 电脑 | Computer | 静态，包含显示器、主机、键盘和鼠标 |
+| 水杯 | PickupWaterCup | 可拾取，不打碎 |
+| 台灯 | PickupDeskLamp | 可拾取，不打碎；灯泡为模型，无开关或照明玩法 |
+| 冰箱 | Refrigerator | 静态 |
+| 灶台 | Stove | 静态 |
+| 垃圾桶 | TrashBin | 静态，开口桶身 |
+| 咖啡杯 | PickupCoffeeMug | 可拾取，3.8m/s 撞击打碎；复用原带把手杯子模型 |
+| 陶瓷花瓶 | PickupCeramicVase | 可拾取，4.5m/s 撞击打碎；66 个碎片 |
+| 高脚玻璃杯 | PickupGlassMug | 保留原资源引用，可拾取，3.8m/s 撞击打碎；49 个碎片 |
+
+拾取、投掷、碰撞声波和碎裂全部复用 PickupItem / CollisionSonarEmitter。音频素材保持留空，无合成音兜底；所有碎片不可拾取。杯子和花瓶使用位于杯身的交互锚点，避免底部贴地造成提示闪烁。
+
+道具自定义网格按物品集中保存：`Assets/Models` 中 196 个网格存于 8 个 `.asset` 文件，碰撞网格及碎片网格作为子资源。闹钟使用 `BreakableProps/AlarmClock.asset`，咖啡杯使用 `BreakableProps/CoffeeMug.asset`；其他容器使用同名资源。预制体直接引用子资源，网格形状及碎片数量不变。生成工具通过编辑器工具 `PropMeshAssets.Store` 按名称复用子资源，避免再次产生独立碎片文件。
+
+碎片统一使用 `Fragments` 物理层。`PlayerController.OnEnable` 为玩家自身碰撞体添加该层的排除掩码，`PickupItem` 生成残骸时统一设置碎片层；保存的破碎 prefab 也已配置。玩家不会被碎片顶起或挡住，碎片仍与地面、墙壁和普通物体碰撞。新玩家、玩家重新启用以及以后生成的碎片均使用同一规则；手持道具不会被误当作玩家碰撞体修改。
+
+`AgentScripts/ConfigureHouseholdProps.cs` 生成本批模型和预制体；已有新道具不会被重建，玻璃杯转换会更新原预制体。`AgentScripts/VerifyHouseholdProps.cs` 的 Edit / Play 入口检查模型迁移、桌面吸附、拾取、撞击打碎、轻放不碎和碎片不可拾取。预览图片位于 `Logs/HouseholdProps`。
+
+`Assets/Prefabs/PickupAlarmClock.prefab` 是可拾取的双铃闹钟，复用 TickingClock、SonarObjectEmitter 和原有拿放逻辑。`Assets/Prefabs/PickupGlassMug.prefab` 现为高脚玻璃杯，保留原资源 GUID；原开口圆柱杯和单侧把手模型已转给 `PickupCoffeeMug.prefab`。编辑时显示浅色模型，运行时沿用黑色材质和点云显影。闹钟和玻璃杯已放在 `test.unity` 的 `Editable Level/Props` 下；地图编辑器通过道具下拉列表选择。
 
 PickupItem 新增可选的 Breakage 配置，原有球默认关闭：
 
@@ -43,7 +71,7 @@ PickupItem 新增可选的 Breakage 配置，原有球默认关闭：
 
 破坏速度复用 CollisionSonarEmitter 的接触法线计算，不以刚体总速度代替。低速落地与高速擦墙不会因总速度较大而误碎。碰撞发声和 PickupItem 共用幂等破坏入口，破坏时只发一次破碎声波，不再叠加普通碰撞声波。
 
-`AlarmClockBroken.prefab` 包含 13 个独立物理零件，包括外壳、表盘、四段外圈、两根指针、两只铃、两只脚和按钮；指针碎片继承打碎瞬间的位置与角度。`GlassMugBroken.prefab` 包含 33 个预切碎片：24 块杯壁、6 块杯底、3 段把手，与完整杯模型对应。碎片继承打碎时的运动并参与物理碰撞，不包含 PickupItem、InteractableObject、TickingClock 或重复发声组件，因此不能拾取，也不会在落地时连续发波。
+`AlarmClockBroken.prefab` 包含 13 个独立物理零件，包括外壳、表盘、四段外圈、两根指针、两只铃、两只脚和按钮；指针碎片继承打碎瞬间的位置与角度。`CoffeeMugBroken.prefab` 复用原杯子的 33 个预切碎片：24 块杯壁、6 块杯底、3 段把手。高脚杯使用 `WineGlassBroken.prefab`，包含 49 个杯碗、细柄和底座碎片。碎片继承打碎时的运动并参与物理碰撞，不包含 PickupItem、InteractableObject、TickingClock 或重复发声组件，因此不能拾取，也不会在落地时连续发波。
 
 闹钟上的独立 `PickupAlarm` 组件监听成功拾取事件：首次拿起后开始倒计时，默认 `Delay After Pickup = 5` 秒。放下、扔出和再次拾取都不重置倒计时。到时暂停 TickingClock，按 `Ring Interval = 0.2` 秒快速发波；默认 `Ring Range = 12m`、`Hearing Range = 16m`。菜单暂停玩法时同步暂停倒计时。`Alarm Clip` 是快速响铃录音，普通 tick 录音仍在 SonarCueSource.Clip；两者及破碎录音目前全部留空，Generate Default Ping 关闭，无合成音兜底。
 

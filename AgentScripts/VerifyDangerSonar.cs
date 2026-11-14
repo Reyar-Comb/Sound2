@@ -64,10 +64,10 @@ public static class VerifyDangerSonar
             profile.enabled=false;field.ClearPulses();field.EmitDangerFrom(origin,3,100000,.1f,profile);
             yield return new WaitForSeconds(.2f);yield return Capture("expired");Check(pixels.All(p=>p.r==0),"Danger dots expire after their own afterglow");
             field.ClearPulses();field.EmitFrom(origin,3,100000,10000);field.EmitFootstepFrom(origin,3,100000,10000,profile);
-            var before=(Vector4[])Shader.GetGlobalVectorArray("_SonarSceneOrigins").Clone();
+            var before=(Vector4[])Shader.GetGlobalVectorArray("_SonarPulseOrigins").Clone();
             for(int i=0;i<7;i++)field.EmitDangerFrom(new Vector3(110+i,100,100),3,100000,10000,profile);
-            var after=Shader.GetGlobalVectorArray("_SonarSceneOrigins");
-            Check(before.Take(8).SequenceEqual(after.Take(8)) && after.Length==SonarPulseField.MaxPulses,"Repeated danger scans use four reserved slots without replacing player or footstep waves");
+            var after=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
+            Check(before.Take(SonarPulseField.DangerPulseOffset).SequenceEqual(after.Take(SonarPulseField.DangerPulseOffset)) && after.Length==SonarPulseField.MaxPulses,"Repeated danger scans use four reserved slots without replacing player or footstep waves");
             Check(ShaderUtil.GetShaderMessages(s.renderingSettings.shader).Length==0,"MRT and red composition shader compile without errors or warnings");
         } finally {
             s.transform.SetPositionAndRotation(position,rotation);if(motion!=null)motion.enabled=motionEnabled;controller.enabled=collision;player.enabled=moving;

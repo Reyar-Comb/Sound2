@@ -1,18 +1,20 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:Style src="LevelEditorWindow.uss" />
-    <ui:VisualElement class="level-editor">
+    <ui:ScrollView name="editor-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden" class="editor-scroll">
+      <ui:VisualElement class="level-editor">
         <ui:Label text="关卡工坊 / LEVEL BUILDER" class="title" />
         <ui:Label text="在 Scene 视图中绘制 · XZ 平面 · 尺寸单位：米" class="hint" />
         <ui:VisualElement name="header" />
         <ui:VisualElement name="tools" class="toolbar-row" />
         <ui:Label name="instructions" class="hint" />
-        <ui:ScrollView>
+        <ui:VisualElement>
             <ui:VisualElement name="settings" />
             <ui:Label text="布局对象 / 点击选择" class="section" />
             <ui:VisualElement name="objects" />
             <ui:VisualElement name="properties" class="properties" />
-        </ui:ScrollView>
+        </ui:VisualElement>
         <ui:Label name="status" class="status" />
         <ui:VisualElement name="footer" class="toolbar-row" />
-    </ui:VisualElement>
+      </ui:VisualElement>
+    </ui:ScrollView>
 </ui:UXML>

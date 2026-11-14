@@ -9,6 +9,24 @@ namespace Sound2.LevelEditing.Editor
     {
         public static Transform PropsRoot(LevelLayout layout) => layout != null ? layout.transform.Find("Props") : null;
 
+        public static int EnsureUniqueNames(LevelLayout layout)
+        {
+            var parent = PropsRoot(layout);
+            if (Application.isPlaying || parent == null) return 0;
+            var names = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+            int renamed = 0;
+            foreach (Transform child in parent)
+            {
+                if (names.Add(child.name)) continue;
+                Undo.RecordObject(child.gameObject, "区分同名道具");
+                child.name = GameObjectUtility.GetUniqueNameForSibling(parent, child.name);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(child.gameObject);
+                names.Add(child.name); renamed++;
+            }
+            if (renamed > 0) EditorSceneManager.MarkSceneDirty(layout.gameObject.scene);
+            return renamed;
+        }
+
         public static bool TryPose(LevelLayout layout, GameObject prefab, Ray ray, PropSurface surface,
             float offset, float angle, out Pose pose)
         {
@@ -17,7 +35,10 @@ namespace Sound2.LevelEditing.Editor
             RaycastHit nearest = default;
             float distance = float.PositiveInfinity;
             Physics.SyncTransforms();
-            foreach (var collider in layout.generatedRoot.GetComponentsInChildren<Collider>())
+            var surfaces = new System.Collections.Generic.List<Collider>(layout.generatedRoot.GetComponentsInChildren<Collider>());
+            var props = PropsRoot(layout);
+            if (props != null) surfaces.AddRange(props.GetComponentsInChildren<Collider>());
+            foreach (var collider in surfaces)
                 if (collider.enabled && !collider.isTrigger && collider.Raycast(ray, out var hit, 10000)
                     && hit.distance < distance) { nearest = hit; distance = hit.distance; }
             if (nearest.collider == null) return false;
@@ -72,10 +93,14 @@ namespace Sound2.LevelEditing.Editor
                 root.transform.localScale = Vector3.one;
                 parent = root.transform;
             }
+            EnsureUniqueNames(layout);
+            string instanceName = GameObjectUtility.GetUniqueNameForSibling(parent, prefab.name);
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, layout.gameObject.scene);
             Undo.RegisterCreatedObjectUndo(instance, "放置关卡道具");
             Undo.SetTransformParent(instance.transform, parent, "放置关卡道具");
             Undo.RecordObject(instance.transform, "放置关卡道具");
+            instance.name = instanceName;
+            PrefabUtility.RecordPrefabInstancePropertyModifications(instance);
             instance.transform.SetPositionAndRotation(pose.position, pose.rotation);
             PrefabUtility.RecordPrefabInstancePropertyModifications(instance.transform);
             EditorSceneManager.MarkSceneDirty(layout.gameObject.scene);

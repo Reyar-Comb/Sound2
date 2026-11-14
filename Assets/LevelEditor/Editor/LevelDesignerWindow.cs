@@ -41,6 +41,7 @@ namespace Sound2.LevelEditing.Editor
 
         void OnEnable()
         {
+            minSize = new Vector2(280, 240);
             SceneView.duringSceneGui += SceneGUI;
             Undo.undoRedoPerformed += OnUndo;
             Selection.selectionChanged += OnSelection;
@@ -104,11 +105,11 @@ namespace Sound2.LevelEditing.Editor
             tools.SetEnabled(layout != null && !Application.isPlaying);
             rootVisualElement.Q<Label>("instructions").text = tool switch
             {
-                Tool.Line => "在 Scene 点击起点与终点，即可生成直线。Esc 取消。",
+                Tool.Line => "依次点击直线走廊的控制点，各点以直线连接。Enter 完成；Backspace 撤回一点，Esc 取消。",
                 Tool.Curve => "依次点击曲线经过的控制点，Enter 完成；Backspace 撤回一点，Esc 取消。",
                 Tool.Connect => "先从对象列表选中走廊，选择起点/终点，再点击房间边缘。连接点会跟随房间移动和缩放。",
                 Tool.Pit => "点击地面放置竖井。橙色轮廓是实际开口；管壁必须完整位于关卡内部。",
-                Tool.Prop => "选择 Prefab，在 Scene 点击放置；钟表贴墙、球贴地。贴墙请切到 3D 检查。Esc 退出放置。",
+                Tool.Prop => "从下拉列表选择道具，在 Scene 点击放置。放置墙面道具时请切到 3D 检查。Esc 退出放置。",
                 Tool.Rectangle or Tool.Circle => "点击 Scene 放置房间中心，切换选择工具后拖动中心与尺寸手柄。",
                 _ => "点击对象标记选择；拖动控制点调整形状。Ctrl+Z 撤销，Ctrl+Y 重做。"
             };
@@ -377,7 +378,7 @@ namespace Sound2.LevelEditing.Editor
                 if (e.type == EventType.KeyDown)
                 {
                     if (e.keyCode == KeyCode.Escape) { pending.Clear(); tool = Tool.Select; Refresh(); e.Use(); }
-                    else if (e.keyCode == KeyCode.Return && tool == Tool.Curve) { FinishCorridor(); e.Use(); }
+                    else if ((e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) && (tool == Tool.Line || tool == Tool.Curve)) { FinishCorridor(); e.Use(); }
                     else if (e.keyCode == KeyCode.Backspace && pending.Count > 0) { pending.RemoveAt(pending.Count - 1); e.Use(); }
                 }
             }
@@ -501,7 +502,7 @@ namespace Sound2.LevelEditing.Editor
             if (tool == Tool.Line || tool == Tool.Curve)
             {
                 if (pending.Count == 0 || Vector2.Distance(pending[pending.Count - 1], hover) > .05f) pending.Add(hover);
-                if (tool == Tool.Line && pending.Count == 2) FinishCorridor(); return;
+                return;
             }
             if (tool == Tool.Pit)
             {

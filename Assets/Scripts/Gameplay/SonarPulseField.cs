@@ -13,11 +13,15 @@ public sealed class SonarPulseField : MonoBehaviour
     public Vector3 LastOrigin { get; private set; }
 
     const int MaskSize = 48;
-    public const int MainPulseCapacity = 4;
+    public const int MainPulseCapacity = 32;
     public const int FootstepPulseCapacity = 4;
     public const int DangerPulseCapacity = 4;
     public const int CoinPulseCapacity = 8;
     public const int LightningPulseCapacity = 4;
+    public const int FootstepPulseOffset = MainPulseCapacity;
+    public const int DangerPulseOffset = FootstepPulseOffset + FootstepPulseCapacity;
+    public const int CoinPulseOffset = DangerPulseOffset + DangerPulseCapacity;
+    public const int LightningPulseOffset = CoinPulseOffset + CoinPulseCapacity;
     public const int MaxPulses = MainPulseCapacity + FootstepPulseCapacity + DangerPulseCapacity + CoinPulseCapacity + LightningPulseCapacity;
     const int FootstepMaskSize = 24;
     readonly Vector4[] origins = new Vector4[MaxPulses];
@@ -26,20 +30,22 @@ public sealed class SonarPulseField : MonoBehaviour
     readonly Vector4[] densityFalloffs = new Vector4[MaxPulses];
     readonly Color[] planes = new Color[MaskSize * MaskSize];
     Texture2DArray blockers;
+    Texture2D blockerUpload;
     int pulseIndex, footstepIndex, dangerIndex, coinIndex, lightningIndex;
     static SonarPulseField activeField;
     public static int ActiveColoredPalettes => activeField != null ? activeField.ColoredPalettes() : 0;
     int ColoredPalettes()
     {
         int mask = BallLightning.Instances.Count>0 ? 1<<2 : 0;
-        for (int i=8;i<MaxPulses;i++)
+        for (int i=DangerPulseOffset;i<MaxPulses;i++)
             if (parameters[i].w>.5f && Time.time-origins[i].w < parameters[i].x/parameters[i].y+parameters[i].z)
-                mask |= 1 << (i<12 ? 1 : i<20 ? 3 : 2);
+                mask |= 1 << (i<CoinPulseOffset ? 1 : i<LightningPulseOffset ? 3 : 2);
         return mask;
     }
     public int FootstepEmissions { get; private set; }
     public int DangerEmissions { get; private set; }
     public int LastRayCount { get; private set; }
+    public int ActivePulseReplacements { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetShaderState() { activeField=null; Shader.SetGlobalFloat("_SonarActive",0); }
@@ -49,6 +55,8 @@ public sealed class SonarPulseField : MonoBehaviour
         activeField = this;
         blockers = new Texture2DArray(MaskSize, MaskSize, MaxPulses * 6, TextureFormat.RGBAFloat, false, true)
         { name = "Sonar direct-path blocking planes", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        blockerUpload = new Texture2D(MaskSize, MaskSize, TextureFormat.RGBAFloat, false, true)
+        { name = "Sonar single-face upload", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
         ClearPulses();
         Publish();
     }
@@ -58,10 +66,10 @@ public sealed class SonarPulseField : MonoBehaviour
         Shader.SetGlobalFloat("_SonarActive", 1);
         Shader.SetGlobalFloat("_SonarMaskSize", MaskSize);
         // New names avoid Unity retaining the previous global array capacity after a reload.
-        Shader.SetGlobalVectorArray("_SonarSceneOrigins", origins);
-        Shader.SetGlobalVectorArray("_SonarSceneParameters", parameters);
-        Shader.SetGlobalVectorArray("_SonarSceneDistanceFalloffs", distanceFalloffs);
-        Shader.SetGlobalVectorArray("_SonarDensityFalloffs", densityFalloffs);
+        Shader.SetGlobalVectorArray("_SonarPulseOrigins", origins);
+        Shader.SetGlobalVectorArray("_SonarPulseParameters", parameters);
+        Shader.SetGlobalVectorArray("_SonarPulseDistanceFalloffs", distanceFalloffs);
+        Shader.SetGlobalVectorArray("_SonarPulseDensityFalloffs", densityFalloffs);
         Shader.SetGlobalTexture("_SonarBlockingPlanes", blockers);
     }
     // Identical sampling on all six cube faces avoids excessive samples at sphere poles.
@@ -118,13 +126,11 @@ public sealed class SonarPulseField : MonoBehaviour
         LastOrigin = origin;
         Physics.SyncTransforms();
         bool footstep = bank == 1, danger = bank == 2;
-        int slot = bank == 4 ? 20 + lightningIndex : bank == 3 ? 12 + coinIndex : danger ? 8 + dangerIndex
-            : footstep ? MainPulseCapacity + footstepIndex : pulseIndex;
-        if (bank == 4) lightningIndex = (lightningIndex + 1) % LightningPulseCapacity;
-        else if (bank == 3) coinIndex = (coinIndex + 1) % CoinPulseCapacity;
-        else if (danger) dangerIndex = (dangerIndex + 1) % DangerPulseCapacity;
-        else if (footstep) footstepIndex = (footstepIndex + 1) % FootstepPulseCapacity;
-        else pulseIndex = (pulseIndex + 1) % MainPulseCapacity;
+        int slot = bank == 4 ? SelectSlot(LightningPulseOffset, LightningPulseCapacity, ref lightningIndex)
+            : bank == 3 ? SelectSlot(CoinPulseOffset, CoinPulseCapacity, ref coinIndex)
+            : danger ? SelectSlot(DangerPulseOffset, DangerPulseCapacity, ref dangerIndex)
+            : footstep ? SelectSlot(FootstepPulseOffset, FootstepPulseCapacity, ref footstepIndex)
+            : SelectSlot(0, MainPulseCapacity, ref pulseIndex);
         int sampleSize = bank != 0 ? FootstepMaskSize : MaskSize;
         int blockSize = MaskSize / sampleSize;
         int hitCount = 0;
@@ -150,9 +156,11 @@ public sealed class SonarPulseField : MonoBehaviour
                 for (int by = 0; by < blockSize; by++) for (int bx = 0; bx < blockSize; bx++)
                     planes[(y * blockSize + by) * MaskSize + x * blockSize + bx] = plane;
             }
-            blockers.SetPixels(planes, slot * 6 + face);
+            // Upload only this wave's six faces, not the entire expanded pulse pool.
+            blockerUpload.SetPixels(planes);
+            blockerUpload.Apply(false);
+            Graphics.CopyTexture(blockerUpload, 0, 0, blockers, slot * 6 + face, 0);
         }
-        blockers.Apply(false);
         origins[slot] = new Vector4(LastOrigin.x, LastOrigin.y, LastOrigin.z, Time.time);
         parameters[slot] = new Vector4(pulseRange, pulseSpeed, pulseAfterglow, 1);
         float fadeEnd = Mathf.Clamp(falloff.y, .01f, pulseRange);
@@ -169,9 +177,33 @@ public sealed class SonarPulseField : MonoBehaviour
         return true;
     }
 
+    int SelectSlot(int offset, int capacity, ref int cursor)
+    {
+        int selected = offset + cursor;
+        float earliestEnd = float.PositiveInfinity;
+        for (int n = 0; n < capacity; n++)
+        {
+            int slot = offset + (cursor + n) % capacity;
+            var settings = parameters[slot];
+            float end = settings.w < .5f ? float.NegativeInfinity
+                : origins[slot].w + settings.x / settings.y + settings.z;
+            if (end <= Time.time)
+            {
+                cursor = (slot - offset + 1) % capacity;
+                return slot;
+            }
+            if (end < earliestEnd) { earliestEnd = end; selected = slot; }
+        }
+        // At saturation retire the wave closest to its natural end; other banks stay isolated.
+        ActivePulseReplacements++;
+        cursor = (selected - offset + 1) % capacity;
+        return selected;
+    }
+
     public void ClearPulses()
     {
         for (int i = 0; i < MaxPulses; i++) parameters[i] = Vector4.zero;
+        pulseIndex = footstepIndex = dangerIndex = coinIndex = lightningIndex = 0;
         if (blockers != null) Publish();
     }
     void OnDisable()
@@ -180,6 +212,8 @@ public sealed class SonarPulseField : MonoBehaviour
         Shader.SetGlobalFloat("_SonarActive", 0);
         Shader.SetGlobalTexture("_SonarBlockingPlanes", null);
         if (blockers != null) Destroy(blockers);
+        if (blockerUpload != null) Destroy(blockerUpload);
         blockers = null;
+        blockerUpload = null;
     }
 }
