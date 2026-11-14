@@ -102,6 +102,7 @@ GameObject:
   - component: {fileID: 1851772693180043651}
   - component: {fileID: 2922623047068839807}
   - component: {fileID: 6148220066546946733}
+  - component: {fileID: 4908591070415843194}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -172,6 +173,9 @@ MonoBehaviour:
   ascendSpeed: 3
   descendSpeed: 3
   maxPitch: 89
+  useGravity: 0
+  gravity: 20
+  terminalFallSpeed: 40
 --- !u!114 &6148220066546946733
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -197,6 +201,28 @@ MonoBehaviour:
   throwSpeed: 10
   throwUpwardSpeed: 1
   throwDistance: 0.9
+--- !u!114 &4908591070415843194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4599028716362026551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38ea1e00ec0a13a47877c83c54db7112, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
+  viewCamera: {fileID: 6939803567082866895}
+  aimAngle: 8
+  focusHysteresis: 1.5
+  crosshairRadius: 2
+  pointClearRadius: 14
+  pointClearFeather: 6
+  ringRadius: 18
+  ringThickness: 2
+  revealTime: 0.28
+  hideTime: 0.18
 --- !u!1 &6482992948592475382
 GameObject:
   m_ObjectHideFlags: 0

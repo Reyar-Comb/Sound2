@@ -4,7 +4,7 @@ using UnityEngine;
 /// <summary>A reusable rigidbody item with a post-throw pickup lockout.</summary>
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Rigidbody))]
-public sealed class PickupItem : MonoBehaviour
+public sealed class PickupItem : InteractableObject
 {
     [Min(0f)] public float pickupCooldown = 1f;
     [Tooltip("Only wall contacts on these layers can end the pickup cooldown early.")]
@@ -16,6 +16,14 @@ public sealed class PickupItem : MonoBehaviour
     public bool IsHeld => holder != null;
     public PlayerPickup Holder => holder;
     public bool CanPickUp => isActiveAndEnabled && !IsHeld && Time.time >= pickupAllowedAt;
+    public override bool CanInteract(PlayerInteraction player) => base.CanInteract(player) && CanPickUp
+        && player != null && player.Pickup != null && player.Pickup.HeldItem == null;
+    public override bool TryInteract(PlayerInteraction player)
+    {
+        if (!CanInteract(player) || !player.Pickup.TryPickUp(this)) return false;
+        onInteract.Invoke(player);
+        return true;
+    }
     public float CollisionRadius { get; private set; }
 
     Rigidbody body;

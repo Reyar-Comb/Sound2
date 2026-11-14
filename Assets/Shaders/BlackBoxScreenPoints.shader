@@ -38,6 +38,15 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
         float4 _PointViewport, _PointGridSize;
+        float4 _CrosshairClearZone; // xy: viewport centre; zw: clear radius/feather at 720p
+        float CrosshairPointVisibility(float2 center, float radius)
+        {
+            if(_CrosshairClearZone.z<=0) return 1;
+            float distance=length(center-_CrosshairClearZone.xy*_PointViewport.xy*(720.0/_PointViewport.y));
+            // Fade whole dots, including their radius: no sliced circles at the clear-zone edge.
+            return smoothstep(_CrosshairClearZone.z+radius,
+                _CrosshairClearZone.z+radius+max(.1,_CrosshairClearZone.w),distance);
+        }
         TEXTURE2D(_PointGrid); TEXTURE2D_X_FLOAT(_PointDepth);
         float _RevealDistance, _WorldCircleRadius, _WorldCoreRadius;
         float _ScreenDotSpacing, _ScreenDotRadius;
@@ -247,6 +256,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                 int2 candidate=cell+int2(x,y);
                 if(any(candidate<0)||any(candidate>=int2(_PointGridSize.xy))) continue;
                 float decision=LOAD_TEXTURE2D(_PointGrid,candidate)[channel];
+                decision*=CrosshairPointVisibility((float2(candidate)+.5)*pitch,radius+aa);
                 float distance=length(screen-(float2(candidate)+.5)*pitch);
                 result=max(result,decision*(1-smoothstep(radius-aa,radius+aa,distance)));
             }
@@ -292,7 +302,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             o.offset=corners[vertexID]*extent;
             float2 clipOffset=o.offset*(_PointViewport.y/720.0)*_PointViewport.zw*2;
             o.positionCS=float4(ndc+clipOffset,0,1);
-            o.brightness=brightness;
+            o.brightness=brightness*CrosshairPointVisibility(uv*_PointViewport.xy*(720.0/_PointViewport.y),extent);
             return o;
         }
         half4 DrawStars(StarVaryings input):SV_Target

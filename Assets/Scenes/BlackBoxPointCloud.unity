@@ -2666,7 +2666,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: waveSpeed
-      value: 1
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: firstDelay

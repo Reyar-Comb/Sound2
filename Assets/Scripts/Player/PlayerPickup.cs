@@ -46,10 +46,7 @@ public sealed class PlayerPickup : MonoBehaviour
 
     public bool TryPickUpNearest()
     {
-        if (HeldItem != null || pickupRange == null || !pickupRange.enabled || !pickupRange.gameObject.activeInHierarchy) return false;
-        var scale = pickupRange.transform.lossyScale;
-        float radius = pickupRange.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
-        Vector3 center = pickupRange.transform.TransformPoint(pickupRange.center);
+        if (HeldItem != null || !TryGetRange(out var center, out float radius)) return false;
         PickupItem nearest = null;
         float nearestDistance = float.PositiveInfinity;
         // Query the actual range collider on demand: cooldown expiry and compound colliders cannot leave stale candidates.
@@ -66,6 +63,33 @@ public sealed class PlayerPickup : MonoBehaviour
         if (nearest == null || !nearest.TryPickUp(this, holdPoint)) return false;
         heldItem = nearest;
         return true;
+    }
+
+    public bool TryGetRange(out Vector3 center, out float radius)
+    {
+        center = default;
+        radius = 0;
+        if (pickupRange == null || !pickupRange.enabled || !pickupRange.gameObject.activeInHierarchy) return false;
+        var scale = pickupRange.transform.lossyScale;
+        radius = pickupRange.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+        center = pickupRange.transform.TransformPoint(pickupRange.center);
+        return true;
+    }
+
+    // Explicit-target path: a mouse click must never pick a different, merely nearer item.
+    public bool TryPickUp(PickupItem item)
+    {
+        if (!isActiveAndEnabled || HeldItem != null || item == null || !item.CanPickUp
+            || !TryGetRange(out var center, out float radius)) return false;
+        foreach (var candidate in Physics.OverlapSphere(center, radius, pickupLayers, QueryTriggerInteraction.Ignore))
+        {
+            if (candidate.attachedRigidbody == null || candidate.attachedRigidbody.GetComponent<PickupItem>() != item) continue;
+            if (IsObstructed(viewTransform.position, candidate.ClosestPoint(viewTransform.position), item)) continue;
+            if (!item.TryPickUp(this, holdPoint)) return false;
+            heldItem = item;
+            return true;
+        }
+        return false;
     }
 
     bool IsObstructed(Vector3 origin, Vector3 target, PickupItem item)

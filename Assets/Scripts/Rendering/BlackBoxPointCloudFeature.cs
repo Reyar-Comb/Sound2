@@ -54,7 +54,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             public float animationTime;
             public float sharedDotRadius;
             public Matrix4x4 starViewProjection;
-            public Vector4 viewport, gridSize;
+            public Vector4 viewport, gridSize, crosshairClearZone;
         }
 
         public override void RecordRenderGraph(RenderGraph graph, ContextContainer frameData)
@@ -73,6 +73,9 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             Material drawMaterial, bool faces, bool corners, bool stars, float sharedDotRadius)
         {
             int width = camera.cameraTargetDescriptor.width, height = camera.cameraTargetDescriptor.height;
+            var interaction = camera.camera.GetComponentInParent<PlayerInteraction>();
+            Vector4 clearZone = interaction != null && interaction.viewCamera == camera.camera
+                ? interaction.PointClearZone : Vector4.zero;
             float pitch = Mathf.Max(1, drawMaterial.GetFloat("_ScreenDotSpacing")) * height / 720f;
             int columns = Mathf.CeilToInt(width / pitch) + 1, rows = Mathf.CeilToInt(height / pitch) + 1;
             var grid = graph.CreateTexture(new TextureDesc(columns, rows)
@@ -96,6 +99,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     data.starViewProjection = GL.GetGPUProjectionMatrix(camera.GetProjectionMatrix(),
                         !resources.isActiveTargetBackBuffer) * camera.GetViewMatrix();
                     data.viewport = new Vector4(width, height, 1f / width, 1f / height);
+                    data.crosshairClearZone = clearZone;
                     data.gridSize = new Vector4(columns, rows, 1f / columns, 1f / rows);
                     if (index == 0) builder.UseTexture(resources.cameraDepthTexture, AccessFlags.Read);
                     else builder.UseTexture(grid, AccessFlags.Read);
@@ -105,6 +109,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     {
                         var properties = new MaterialPropertyBlock();
                         properties.SetVector("_PointViewport", d.viewport);
+                        properties.SetVector("_CrosshairClearZone", d.crosshairClearZone);
                         properties.SetVector("_PointGridSize", d.gridSize);
                         properties.SetFloat("_PointAnimationTime", d.animationTime);
                         if (d.sharedDotRadius >= 0)
