@@ -1,7 +1,13 @@
 .prop-browser { padding: 10px; }
 #prop-help { white-space: normal; margin-top: 8px; margin-bottom: 8px; }
 #prop-scroll { flex-grow: 1; }
-#prop-grid { flex-direction: row; flex-wrap: wrap; }
+#prop-categories { flex-direction: row; flex-wrap: wrap; margin-top: 8px; }
+.prop-category { margin: 2px; padding: 5px 10px; }
+.prop-category-selected { background-color: rgb(52, 92, 116); color: white; border-color: rgb(104, 166, 193); border-width: 1px; }
+#prop-results { margin-bottom: 6px; }
+.prop-group { margin-bottom: 12px; }
+.prop-group-title { -unity-font-style: bold; padding: 6px; border-bottom-width: 1px; border-bottom-color: rgb(95, 95, 95); }
+.prop-group-grid { flex-direction: row; flex-wrap: wrap; }
 .prop-card { width: 148px; height: 150px; margin: 4px; padding: 6px; flex-shrink: 0; }
 .prop-preview { height: 112px; flex-grow: 1; }
 .prop-card Label { white-space: normal; -unity-text-align: middle-center; }

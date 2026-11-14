@@ -39,6 +39,7 @@ namespace Sound2.LevelEditing.Editor
             area.Add(section);
             Button(section, "选择道具…", () => PropBrowserWindow.Open(prefab => { if (this != null) ChooseProp(prefab); })).name = "open-prop-browser";
             section.Add(new Label("当前道具：" + PropCatalog.Name(propPrefab)) { name = "selected-prop-name" });
+            if (propPrefab != null) section.Add(new Label("分类：" + PropCatalog.Category(propPrefab)));
             if (propPrefab != null && propPrefab.GetComponent<EmbeddedDoor>() != null)
                 section.Add(new Label(EmbeddedDoorPlacement.Help) { style = { whiteSpace = WhiteSpace.Normal } });
             else

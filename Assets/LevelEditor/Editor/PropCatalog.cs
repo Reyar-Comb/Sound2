@@ -54,8 +54,26 @@ namespace Sound2.LevelEditing.Editor
             ("SnowRock", "雪石"),
             ("Bench", "长椅"),
             ("Pillar", "竞技场立柱"),
-            ("LevelElevator", "电梯入口")
+            ("LevelElevator", "电梯入口"),
+            ("SchoolBlackboard", "黑板"),
+            ("SchoolDesk", "课桌"),
+            ("SchoolChair", "课椅"),
+            ("SchoolChalkBox", "粉笔盒"),
+            ("SchoolSpeaker", "广播")
         }.ToDictionary(e=>e.id,e=>e.label);
+        public static readonly IReadOnlyList<string> Categories = System.Array.AsReadOnly(new[]
+            { "家", "学校", "超市", "餐厅", "图书馆", "雪林", "医院", "通用" });
+        static readonly Dictionary<string, string> CategoryById = new (string category, string[] ids)[]
+        {
+            ("家", new[] { "PickupAlarmClock", "Refrigerator", "Stove", "Television", "GameConsole", "WallCabinet", "Bed", "Sofa", "Bedside", "Wardrobe", "Washer" }),
+            ("学校", new[] { "SchoolBlackboard", "SchoolDesk", "SchoolChair", "SchoolChalkBox", "SchoolSpeaker" }),
+            ("超市", new[] { "ShoppingCart", "Shelf", "Checkout", "ProduceBin" }),
+            ("餐厅", new[] { "ServiceBell", "BarCounter" }),
+            ("图书馆", new[] { "LibraryBookshelf" }),
+            ("雪林", new[] { "Pine", "SnowRock" }),
+            ("医院", new[] { "HeartRateMonitor", "HospitalBed", "WardCurtain" })
+        }.SelectMany(group => group.ids.Select(id => (id, group.category))).ToDictionary(e => e.id, e => e.category);
+        public static string Category(GameObject prefab) => prefab != null && CategoryById.TryGetValue(prefab.name, out var category) ? category : "通用";
         public static string Name(GameObject prefab) => prefab == null ? "选择道具" : Names.TryGetValue(prefab.name,out var title) ? title : prefab.name;
         public static List<GameObject> All() => AssetDatabase.FindAssets("t:Prefab", new[]{"Assets/Prefabs"})
             .Select(AssetDatabase.GUIDToAssetPath).Select(AssetDatabase.LoadAssetAtPath<GameObject>)
