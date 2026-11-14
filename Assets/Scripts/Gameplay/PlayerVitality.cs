@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-/// <summary>Two accepted hits within the wound window kill; rejected hits never extend either timer.</summary>
+/// <summary>Two ordinary hits within the wound window or one lethal hit kill; rejected hits never extend either timer.</summary>
 [DisallowMultipleComponent]
 public sealed class PlayerVitality : MonoBehaviour
 {
@@ -36,14 +36,29 @@ public sealed class PlayerVitality : MonoBehaviour
             Changed?.Invoke(Health);
         }
     }
-    public bool TakeDamage(float amount)
+    // Shared by monsters and lethal vine areas so scene, capsule and occlusion rules stay identical.
+    public bool CanReceiveContactFrom(Transform source, Vector3 origin, float radius)
+    {
+        if (source == null || radius <= 0 || source.gameObject.scene != gameObject.scene
+            || !isActiveAndEnabled || IsDead || !TryGetComponent<CharacterController>(out var capsule)
+            || !capsule.enabled) return false;
+        if (Vector3.Distance(origin, capsule.ClosestPoint(origin)) > radius) return false;
+        Vector3 delta = capsule.bounds.center - origin;
+        foreach (var hit in Physics.RaycastAll(origin, delta.normalized, delta.magnitude,
+            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            if (!hit.transform.IsChildOf(source) && !hit.transform.IsChildOf(transform)) return false;
+        return true;
+    }
+    public bool TakeDamage(float amount) => ApplyDamage(amount, false);
+    public bool TakeLethalDamage() => ApplyDamage(1, true);
+    bool ApplyDamage(float amount, bool instantDeath)
     {
         if (amount <= 0 || float.IsNaN(amount) || float.IsInfinity(amount) || !isActiveAndEnabled
             || IsDead || IsInvulnerable || SonicSpaceStartMenu.BlocksGameplay
             || (controller != null && (!controller.isActiveAndEnabled || controller.InputSuspended))) return false;
         RecoverExpiredWound();
-        bool lethal = IsWounded;
-        // The amount is retained for API compatibility: each valid hit costs one wound state.
+        bool lethal = instantDeath || IsWounded;
+        // Ordinary damage keeps the two-hit rule; lethal hazards skip directly to death.
         Health = lethal ? 0 : Mathf.Max(1, maximumHealth) * .5f;
         woundedUntil = lethal ? 0 : Time.time + Mathf.Max(.1f, woundSeconds);
         invulnerableUntil = Time.time + Mathf.Max(0, invulnerabilitySeconds);

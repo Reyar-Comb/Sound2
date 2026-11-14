@@ -50,17 +50,11 @@ Shader "Sound2/Elevator White Ink"
 
                 float along = abs(normal.x) > .5 ? cabinPoint.z : cabinPoint.x;
                 float side = abs(normal.x) > .5 ? normal.x : normal.z + 3;
-                float2 tile = float2(along, cabinPoint.y) * 4;
-                float2 cell = floor(tile);
-                float seed = frac(sin(dot(float3(cell, side), float3(12.9898, 78.233, 37.719))) * 43758.5453);
-                float phase = frac(_Time.y / lerp(4, 9, seed) + seed * 17);
-                float star = step(.75, seed) * (1 - smoothstep(.12, .28, length(frac(tile) - .5)));
-                star *= smoothstep(0, .3, phase) * (1 - smoothstep(.65, 1, phase));
 
                 // Bands stay at fixed elevations as the cabin moves past them.
                 float band = frac((cabinPoint.y + _CabinMotion.x) / 1.35 + .09 * sin(along * 2 + side));
                 float wave = (1 - smoothstep(.06, .24, abs(band - .5))) * _CabinMotion.y;
-                return max(star * .78, wave);
+                return wave;
             }
 
             half4 frag(Varyings input):SV_Target

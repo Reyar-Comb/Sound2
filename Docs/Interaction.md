@@ -15,7 +15,9 @@
 
 `InteractableObject` 可作为独立组件，与同一物体上的 `PickupItem` 共存。玩家只有一个左键入口：空手点击先调用该物体上的非拾取交互组件，再尝试拾取；只有拾取组件时仍直接拾取。手持时左键只抛出，绝不再次调用物品交互；右键仅放下。E 的拾取／投掷绑定已移除。拾取冷却期间不可拾取；独立交互组件按自己的启用状态判断。菜单打开时不处理交互。
 
-电视、收音机、录音机、餐铃、游戏机、心率仪、戒指的 prefab 分别为 `Television`、`Radio`、`TapeRecorder`、`ServiceBell`、`GameConsole`、`HeartRateMonitor`、`Ring`，已加入地图编辑器下拉列表。新道具只挂空交互组件，不自动增加拾取、播放音频、切换电源等效果。闹钟额外挂独立交互组件，仍保留原有拾取、延时响铃和破碎行为。
+电视、收音机、录音机、餐铃、游戏机、心率仪、戒指的 prefab 分别为 `Television`、`Radio`、`TapeRecorder`、`ServiceBell`、`GameConsole`、`HeartRateMonitor`、`Ring`，已加入地图编辑器下拉列表。除收音机外，这批道具只挂空交互组件，不自动增加拾取、播放音频、切换电源等效果。闹钟额外挂独立交互组件，仍保留原有拾取、延时响铃和破碎行为。
+
+`Radio` 预制体已接入 `audiotest` 的 `ImpactSoundPool`、`AudioReactiveSonarEmitter`、扬声器声源锚点和 `RadioLoop.asset`（当前录音为 `tv`）。默认关闭；空手瞄准后左键调用 `Toggle()`，交替开启循环录音与峰值声波、停止播放。已发出的声波会传播完后自然消退。`test` 中的实例直接继承该配置，无需单独绑定事件。场景需要现有的 `SonarPulseField` 与点云渲染配置；`AudioReactiveSonarField` 会在首次播放时创建。`audiotest` 使用相同预制体组件，仅覆盖 `playOnStart=true` 保持演示自动播放，V 键仍由演示场景控制。
 
 本批模型位于 `Assets/Models/InteractiveProps`，每个道具一个 `.asset`；按材质合并网格以减少渲染对象。编辑时显示预览色，运行时由 `LevelProp` 切换为黑色点云材质。心率仪屏幕曲线只是静态模型细节，没有动态监测逻辑。
 

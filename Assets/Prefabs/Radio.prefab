@@ -95,6 +95,37 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &1693718447147349788
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7936805538609910598}
+  m_Layer: 0
+  m_Name: Speaker audio origin
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7936805538609910598
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1693718447147349788}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.01693654, y: 0.32549974, z: -0.026749969}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 260926930195185689}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4900814937813342288
 GameObject:
   m_ObjectHideFlags: 0
@@ -138,6 +169,8 @@ GameObject:
   - component: {fileID: 2058556641473186497}
   - component: {fileID: 2418437946826053276}
   - component: {fileID: 6652030048161913500}
+  - component: {fileID: 103976276027761786}
+  - component: {fileID: 199811877509989541}
   m_Layer: 0
   m_Name: Radio
   m_TagString: Untagged
@@ -160,6 +193,7 @@ Transform:
   m_Children:
   - {fileID: 2728005449721860637}
   - {fileID: 2009771316454085882}
+  - {fileID: 7936805538609910598}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &2058556641473186497
@@ -197,10 +231,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InteractableObject
   interactionAnchor: {fileID: 2009771316454085882}
   interactionEnabled: 1
-  interactionHint: "\u4EA4\u4E92"
+  interactionHint: "\u6536\u97F3\u673A\u7535\u6E90"
   onInteract:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 199811877509989541}
+        m_TargetAssemblyTypeName: AudioReactiveSonarEmitter, Assembly-CSharp
+        m_MethodName: Toggle
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: 
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &6652030048161913500
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,3 +263,117 @@ MonoBehaviour:
   surfaceAnchor: {x: 0, y: 0, z: 0}
   surfaceOffset: 0.005
   gameplayMaterial: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}
+--- !u!114 &103976276027761786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6244826291893739752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3af7f4e9a905a42ccb48a150da63b765, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ImpactSoundPool
+  clip: {fileID: 0}
+  listener: {fileID: 0}
+  settings:
+    hrtf: 1
+    occlusion: 0
+    reflections: 1
+    reflectionMix: 0.65
+    distanceMode: 2
+    minDistance: 1
+    maxDistance: 100
+    decibelsPerMetre: 3
+    distanceCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 4
+        value: 0.8
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 12
+        value: 0.15
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 20
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    farEarGain: 1
+  capacity: 1
+  preRoll: 0.025
+  tailSeconds: 2.25
+--- !u!114 &199811877509989541
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6244826291893739752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0370ee7aabd751478478077173341da, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AudioReactiveSonarEmitter
+  analysis: {fileID: 11400000, guid: ed3a3a511a562a84da8c4e3911dc9b57, type: 2}
+  visual:
+    range: 12
+    waveSpeed: 7
+    afterglow: 0.06
+    gain: 1
+    peakFloor: 0.025
+    peakCeiling: 0.473
+    responseExponent: 1.8
+    highQualityOcclusion: 0
+    distance:
+      enabled: 1
+      fadeStartDistance: 1
+      fadeEndDistance: 12
+      falloffPower: 1
+      pulseStrength: 1
+    density:
+      enabled: 0
+      fadeStartDistance: 6
+      fadeEndDistance: 10
+      falloffPower: 1
+  field: {fileID: 0}
+  emissionOrigin: {fileID: 7936805538609910598}
+  triggerKey: 0
+  loop: 1
+  playOnStart: 0
+  volume: 0.7
+  triggerOnCollision: 0
+  minimumImpactSpeed: 0.5
+  cooldown: 0.15
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295

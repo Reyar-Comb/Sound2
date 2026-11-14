@@ -9,10 +9,15 @@ namespace Sound2.LevelEditing
         [Min(.2f), InspectorName("矩形长度（米）")] public float depth = 4;
         [Min(.1f), InspectorName("攀爬高度（米）")] public float height = 3;
         [Range(1, 8), InspectorName("每次生长源数量")] public int growthSources = 3;
+        [Min(0), InspectorName("接触伤害距离（米）")] public float contactDamageRadius = .65f;
+        [Min(.1f), InspectorName("接触攻击间隔（秒）")] public float contactDamageInterval = .5f;
         [SerializeField, HideInInspector] Transform previewRoot;
         [SerializeField, HideInInspector] Transform[] previewEdges;
         Vector3 appliedSize;
         bool dirty = true;
+        MonsterVines vines;
+        PlayerVitality playerVitality;
+        float nextContactDamage;
         public Vector3 Size => new Vector3(width, height, depth);
         public Bounds WorldBounds
         {
@@ -32,7 +37,8 @@ namespace Sound2.LevelEditing
         public void ConfigurePreview(Transform root, Transform[] edges) { previewRoot = root; previewEdges = edges; RefreshPreview(); }
         void OnEnable()
         {
-            GetComponent<MonsterVines>().BindArea(this); dirty = true; RefreshPreview();
+            vines = GetComponent<MonsterVines>();
+            vines.BindArea(this); nextContactDamage = 0; dirty = true; RefreshPreview();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.update -= EditorUpdate;
             UnityEditor.EditorApplication.update += EditorUpdate;
@@ -55,6 +61,23 @@ namespace Sound2.LevelEditing
             if (UnityEditor.EditorUtility.IsPersistent(this)) return;
 #endif
             if (dirty || appliedSize != Size) RefreshPreview();
+            if (Application.isPlaying) TryContactDamage();
+        }
+        void TryContactDamage()
+        {
+            if (Time.time < nextContactDamage || contactDamageRadius <= 0 || vines == null
+                || !vines.isActiveAndEnabled) return;
+            if (playerVitality == null) playerVitality = FindAnyObjectByType<PlayerVitality>();
+            if (playerVitality == null || !playerVitality.TryGetComponent<CharacterController>(out var capsule)) return;
+            // Use the nearest point in the oriented area, rather than just its central pivot.
+            Vector3 local = transform.InverseTransformPoint(capsule.bounds.center);
+            Vector3 origin = transform.TransformPoint(new Vector3(
+                Mathf.Clamp(local.x, -width * .5f, width * .5f),
+                Mathf.Clamp(local.y, -.06f, height),
+                Mathf.Clamp(local.z, -depth * .5f, depth * .5f)));
+            if (!playerVitality.CanReceiveContactFrom(transform, origin, contactDamageRadius)) return;
+            nextContactDamage = Time.time + Mathf.Max(.1f, contactDamageInterval);
+            playerVitality.TakeLethalDamage();
         }
         static float Dimension(float value, float fallback, float min, float max) =>
             float.IsNaN(value) || float.IsInfinity(value) ? fallback : Mathf.Clamp(value, min, max);

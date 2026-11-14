@@ -170,6 +170,20 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                 if(vines==null || !vines.isActiveAndEnabled || (camera.camera.cullingMask & (1<<vines.gameObject.layer))==0
                     || !GeometryUtility.TestPlanesAABB(planes,vines.WorldBounds))continue;
                 var snapshot=new Vector4[MonsterVines.Capacity];int count=vines.Collect(snapshot);if(count==0)continue;
+                RecordRedPointBatch(graph,resources,camera,material,radius,uiCount,uiRects,uiOptions,clearZone,snapshot,count);
+            }
+            foreach(var cube in HypercubePointCloud.Instances)
+            {
+                if(cube==null || !cube.isActiveAndEnabled || (camera.camera.cullingMask & (1<<cube.gameObject.layer))==0
+                    || !GeometryUtility.TestPlanesAABB(planes,cube.WorldBounds))continue;
+                var snapshot=new Vector4[HypercubePointCloud.PointCount]; int count=cube.Collect(snapshot);
+                RecordRedPointBatch(graph,resources,camera,material,radius,uiCount,uiRects,uiOptions,clearZone,snapshot,count);
+            }
+        }
+
+        static void RecordRedPointBatch(RenderGraph graph,UniversalResourceData resources,UniversalCameraData camera,
+            Material material,float radius,int uiCount,Vector4[] uiRects,Vector4[] uiOptions,Vector4 clearZone,Vector4[] snapshot,int count)
+        {
                 for(int phase=0;phase<2;phase++)
                 {
                     using var builder=graph.AddRasterRenderPass<Data>(phase==0?"Clear vine dots":"Monster surface vines",out var data);
@@ -192,7 +206,6 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                         context.cmd.DrawProcedural(Matrix4x4.identity,d.material,d.index,MeshTopology.Triangles,6,d.pointCount,properties);
                     });
                 }
-            }
         }
 
         // Both groups use the original sampling and drawing passes. Only the material differs.

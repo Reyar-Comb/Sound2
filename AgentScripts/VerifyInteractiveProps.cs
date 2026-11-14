@@ -38,7 +38,8 @@ public static class VerifyInteractiveProps
         foreach(string name in Names)
         {
             var p=Prefab(name);Check(p!=null,name+": prefab exists");
-            var action=p.GetComponent<InteractableObject>();Check(action!=null && action.interactionAnchor!=null && action.onInteract.GetPersistentEventCount()==0,name+": empty independent action with focus anchor");
+            var action=p.GetComponent<InteractableObject>();Check(action!=null && action.interactionAnchor!=null && action.onInteract.GetPersistentEventCount()==(name=="Radio"?1:0),name+": independent action with focus anchor and expected callbacks");
+            if(name=="Radio")Check(action.onInteract.GetPersistentTarget(0)==p.GetComponent<AudioReactiveSonarEmitter>() && action.onInteract.GetPersistentMethodName(0)=="Toggle","Radio: interaction toggles prefab audio emitter");
             Check(p.GetComponent<PickupItem>()==null && p.GetComponent<Rigidbody>()==null,name+": no unintended pickup behaviour");
             var filters=p.GetComponentsInChildren<MeshFilter>();Check(filters.Length==1&&filters[0].sharedMesh!=null&&filters[0].sharedMesh.vertexCount>20,name+": combined authored model");
             Check(AssetDatabase.GetAssetPath(filters[0].sharedMesh)=="Assets/Models/InteractiveProps/"+name+".asset",name+": one mesh asset per prop");
@@ -92,7 +93,7 @@ public static class VerifyInteractiveProps
                 var go=Object.Instantiate(Prefab(name),Vector3.zero,Quaternion.identity,fixture.transform);var action=go.GetComponent<InteractableObject>();
                 go.transform.position=origin+forward*1.35f-action.InteractionPosition;Physics.SyncTransforms();int calls=0;action.onInteract.AddListener(_=>calls++);
                 await Wait(350);Check(interaction.FocusedTarget==action,name+": aimed object receives focus");await PressE();Check(calls==0&&pickup.HeldItem==null,name+": E does nothing");
-                var position=go.transform.position;await Click();Check(calls==1&&pickup.HeldItem==null&&go.transform.position==position,name+": left click invokes empty action once without pickup/effect");
+                var position=go.transform.position;await Click();Check(calls==1&&pickup.HeldItem==null&&go.transform.position==position,name+": left click invokes action once without pickup or movement");
                 Check(go.GetComponentInChildren<Renderer>().sharedMaterials.All(m=>m==go.GetComponent<LevelProp>().gameplayMaterial),name+": runtime black material retained");
                 action.interactionEnabled=false;await Click();Check(calls==1,name+": disabled action rejects click");action.interactionEnabled=true;
                 var wall=GameObject.CreatePrimitive(PrimitiveType.Cube);wall.transform.SetParent(fixture.transform);wall.transform.position=origin+forward*.6f;wall.transform.localScale=new Vector3(2,2,.1f);Physics.SyncTransforms();

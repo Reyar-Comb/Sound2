@@ -117,16 +117,9 @@ public sealed class PatrolMonster : MonoBehaviour
     bool Arrived() => hasDestination && !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + .1f;
     void TryContactDamage()
     {
-        if (Time.time < nextContactDamage || contactDamageRadius <= 0 || playerVitality == null
-            || playerVitality.gameObject.scene != gameObject.scene || !playerVitality.isActiveAndEnabled
-            || playerVitality.IsDead || !playerVitality.TryGetComponent<CharacterController>(out var capsule)
-            || !capsule.enabled) return;
+        if (Time.time < nextContactDamage || playerVitality == null) return;
         Vector3 origin = transform.position + Vector3.up * .9f;
-        if (Vector3.Distance(origin, capsule.ClosestPoint(origin)) > contactDamageRadius) return;
-        Vector3 delta = capsule.bounds.center - origin;
-        foreach (var hit in Physics.RaycastAll(origin, delta.normalized, delta.magnitude,
-            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
-            if (!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(playerVitality.transform)) return;
+        if (!playerVitality.CanReceiveContactFrom(transform, origin, contactDamageRadius)) return;
         nextContactDamage = Time.time + Mathf.Max(.1f, contactDamageInterval);
         playerVitality.TakeDamage(1);
     }
