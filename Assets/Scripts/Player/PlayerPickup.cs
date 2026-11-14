@@ -8,7 +8,7 @@ public sealed class PlayerPickup : MonoBehaviour
     [Tooltip("A separate child SphereCollider, with Is Trigger enabled. Edit its radius/center to change pickup range.")]
     public SphereCollider pickupRange;
     public Transform viewTransform;
-    [Tooltip("A child of the camera, positioned in the lower-right of the view.")]
+    [Tooltip("A child of the camera, positioned in the lower-center of the view.")]
     public Transform holdPoint;
     public LayerMask pickupLayers = ~0;
     public LayerMask obstacleLayers = ~0;

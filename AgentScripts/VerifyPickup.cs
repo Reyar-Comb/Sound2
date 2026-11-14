@@ -66,7 +66,7 @@ public static class VerifyPickup
             Check(picker.HeldItem == item && body.isKinematic && !item.GetComponent<Collider>().enabled, "E did not pick up the item.");
             await Press(keyboard);
             Vector3 local = picker.viewTransform.InverseTransformPoint(item.transform.position);
-            Check(local.x > 0 && local.y < 0 && local.z > 0, "Held item is not lower-right.");
+            Check(Mathf.Abs(local.x) < .001f && local.y < 0 && local.z > 0, "Held item is not lower-center.");
             picker.viewTransform.localRotation = Quaternion.Euler(20, 30, 0);
             // Suspend movement so PlayerController does not overwrite the camera rotation during this check.
             controller.InputSuspended = true;
@@ -145,7 +145,7 @@ public static class VerifyPickup
             Check(Physics.GetIgnoreCollision(item.GetComponent<Collider>(), player.GetComponent<CharacterController>()), "Thrower collision was not ignored at release.");
             await Tick(150);
             Check(!Physics.GetIgnoreCollision(item.GetComponent<Collider>(), player.GetComponent<CharacterController>()), "Thrower collision was not restored after separation.");
-            return new { passed = true, checks = new[] { "prefab wiring", "E pickup/throw", "camera lower-right hold", "airborne cooldown", "wall unlock", "floor stays locked", "editable collider range", "no pickup through walls", "cooldown expiry in range", "blocked throw", "throw velocity", "thrower collision restoration" } };
+            return new { passed = true, checks = new[] { "prefab wiring", "E pickup/throw", "camera lower-center hold", "airborne cooldown", "wall unlock", "floor stays locked", "editable collider range", "no pickup through walls", "cooldown expiry in range", "blocked throw", "throw velocity", "thrower collision restoration" } };
         }
         finally
         {
