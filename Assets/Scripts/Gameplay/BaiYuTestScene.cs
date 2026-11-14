@@ -9,7 +9,7 @@ public sealed class BaiYuTestScene : MonoBehaviour
 {
     public LevelMap map;
     public PlayerFloorProgression player;
-    public GameObject coinPrefab, lightningPrefab, pickupPrefab;
+    public GameObject lightningPrefab, pickupPrefab;
     public Material worldMaterial;
     public GameObject ActiveContent { get; private set; }
     public RuntimePatrolNavigation Navigation { get; private set; }
@@ -18,8 +18,8 @@ public sealed class BaiYuTestScene : MonoBehaviour
 
     void Start()
     {
-        if (map == null || player == null || coinPrefab == null || lightningPrefab == null || pickupPrefab == null)
-        { Debug.LogError("BaiYu-Test requires map, player and all three gameplay prefabs.", this); enabled = false; return; }
+        if (map == null || player == null || lightningPrefab == null || pickupPrefab == null)
+        { Debug.LogError("BaiYu-Test requires map, player and lightning and pickup prefabs.", this); enabled = false; return; }
         player.FloorChanged += EnterFloor;
         EnterFloor(player.CurrentRule);
     }
@@ -63,19 +63,6 @@ public sealed class BaiYuTestScene : MonoBehaviour
         nav.geometryRoot = floor.transform;
         var controller = player.GetComponent<PlayerController>();
         var sonar = player.GetComponentInChildren<SphericalSonar>();
-        int growth = Mathf.Min(rule.floor, map.growthLimit);
-        // One introductory coin is nearby; further coins occupy deterministic room positions.
-        for (int i = 0; i < 6 + growth * 3; i++)
-        {
-            int room = i == 0 ? 0 : 1 + (i - 1) % (floor.Plan.Rooms.Count - 1);
-            float x = i == 0 ? 1.8f : (i % 2 == 0 ? 2.2f : -2.2f);
-            float z = i == 0 ? 1.6f : (i % 3 - 1) * 2.2f;
-            var coin = Instantiate(coinPrefab, InRoom(floor, room, x, z, .9f), Quaternion.identity, root.transform);
-            coin.name = "Coin " + (i + 1);
-            coin.GetComponent<CoinPickup>().phaseOffset = i * .17f;
-            var emitter = coin.GetComponent<SonarObjectEmitter>();
-            emitter.firstDelay = .7f + (i % 8) * .35f;
-        }
         for (int i = 0; i <= floor.Plan.Rooms.Count; i++)
         {
             int room = i == 0 ? 0 : i - 1;

@@ -1,12 +1,10 @@
 # 物理道具、球状闪电与声波密度
 
-体验入口为 `Assets/Scenes/BaiYu-Test.unity` 与 `Assets/Scenes/TeammateSonarHall.unity`。所有普通球、金币、棱晶和方块均为物理道具，没有自动收集、背包或资源入账；状态 HUD 只显示生命。操作与本轮验证见 [PhysicalItems.md](PhysicalItems.md)。
+体验入口为 `Assets/Scenes/BaiYu-Test.unity` 与 `Assets/Scenes/TeammateSonarHall.unity`。所有普通球、棱晶和方块均为物理道具，没有自动收集、背包或资源入账；状态 HUD 只显示生命。操作与本轮验证见 [PhysicalItems.md](PhysicalItems.md)。
 
-## 金币
+## 硬币移除
 
-`Assets/Prefabs/Coin.prefab` 使用 PickupItem、Rigidbody 和凸 MeshCollider；CoinPickup 只负责动画与白色点阵显影。出生时在地面上方 0.9m 浮动，第一次拿起后停止装饰浮动，交由持物与刚体物理控制。
-
-金币仍使用稀疏白色点阵，密度 0.16，显影 0.55 秒；前 65% 时间从币面中心向外传播，每个点按共享声波的平方余辉衰减。环境小波周期 3 秒、范围 2m、速度 5m/s、余辉 0.45 秒。手持时重复小波以便观察；放下后恢复周期显影。其他声波不能把金币提前全部照亮。圆点沿用共享屏幕点阵尺寸、抗锯齿、准心与字幕避让。
+硬币实例、Coin.prefab 和程序化楼层生成入口已移除；物理道具只保留球、棱晶与方块。CoinPickup 类型与原有波槽编号保留为历史序列化／渲染兼容接口，当前玩法不创建硬币。配置工具不会重新生成硬币。
 
 ## 球状闪电
 
@@ -35,14 +33,14 @@ PatrolMonster 增加 Evade 状态。怪物在 7m 感知距离内检查闪电位�
 
 密度倍率为 `pow(1 - smoothstep(start, end, distance), power)`。面点云用它乘到原 FaceDensityAt 的密度，轮廓用它筛选同一 OrderedRank；保留点仍沿用原来的大小与位置，没有靠缩小点或只降低亮度来伪装稀疏。现有亮度/余像衰减仍单独作用。Range、亮度终止距离和密度终止距离中最小者决定实际可探索边界。
 
-这个配置已接入正式通用物体组件，金币和闪电也可以独立调整。既有白波及脚步默认不额外开启新的密度衰减，因此保留原有图案。
+这个配置已接入正式通用物体组件，物体与闪电也可以独立调整。既有白波及脚步默认不额外开启新的密度衰减，因此保留原有图案。
 
 ## 渲染与波槽
 
-共用 SonarPulseField，24 槽：0–3 主波、4–7 脚步、8–11 怪物、12–19 金币、20–23 闪电。各组循环，不互相覆盖。金币等局部波使用与脚步一致的 24×24×6 遮挡射线，主波保持 48×48×6。
+共用 SonarPulseField，24 槽：0–3 主波、4–7 脚步、8–11 怪物、12–19 历史局部波保留槽、20–23 闪电。各组循环，不互相覆盖。历史局部波使用与脚步一致的 24×24×6 遮挡射线，主波保持 48×48×6。
 
-共享 Shader 一次采样原普通网格与彩色网格，彩色网格存面/边亮度及各自的颜色编号，仍调用同一 FaceDensityAt、OrderedRank、圆点半径和准星避让逻辑。绘制按玩家白／金币白→蓝→红优先级组合，先清除对应圆点覆盖再绘制，避免重叠出现白色或混合成紫色。没有活动波时跳过对应颜色的合成。
+共享 Shader 一次采样原普通网格与彩色网格，彩色网格存面/边亮度及各自的颜色编号，仍调用同一 FaceDensityAt、OrderedRank、圆点半径和准星避让逻辑。绘制按玩家／物体白→蓝→红优先级组合，先清除对应圆点覆盖再绘制，避免重叠出现白色或混合成紫色。没有活动波时跳过对应颜色的合成。
 
 ## 验证入口
 
-本轮验证见 [PhysicalItems.md](PhysicalItems.md)。ConfigureWorldObjects 与 ConfigurePhysicalItems 维护 prefab 及场景配置；VerifyColoredSonar 验证共享颜色、密度与 UI 避让；VerifyCoinPoints 验证金币外扩波纹。
+本轮验证见 [PhysicalItems.md](PhysicalItems.md)。ConfigureWorldObjects 与 ConfigurePhysicalItems 维护 prefab 及场景配置；VerifyColoredSonar 验证共享颜色、密度与 UI 避让；VerifyThrowableWorld 验证通用碰撞诱饵与无硬币楼层。

@@ -11,19 +11,7 @@ public static class ConfigurePhysicalItems
         if(Application.isPlaying)throw new InvalidOperationException("Exit Play mode first.");
         var active=UnityEngine.SceneManagement.SceneManager.GetActiveScene();
         if(active.isDirty)throw new InvalidOperationException("Preserve unsaved scene edits before migrating gameplay assets.");
-        const string coinPath="Assets/Prefabs/Coin.prefab",lightningPath="Assets/Prefabs/BallLightning.prefab";
-        var coinRoot=PrefabUtility.LoadPrefabContents(coinPath);
-        try
-        {
-            var coin=coinRoot.GetComponent<CoinPickup>();coin.visual.localPosition=Vector3.zero;
-            var body=coinRoot.GetComponent<Rigidbody>();if(body==null)body=coinRoot.AddComponent<Rigidbody>();
-            body.mass=.15f;body.useGravity=true;body.isKinematic=true;body.collisionDetectionMode=CollisionDetectionMode.ContinuousSpeculative;
-            var collider=coin.body.GetComponent<MeshCollider>();if(collider==null)collider=coin.body.gameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh=coin.body.GetComponent<MeshFilter>().sharedMesh;collider.convex=true;
-            var pickup=coinRoot.GetComponent<PickupItem>();if(pickup==null)pickup=coinRoot.AddComponent<PickupItem>();pickup.interactionAnchor=coin.visual;
-            PrefabUtility.SaveAsPrefabAsset(coinRoot,coinPath);
-        }
-        finally{PrefabUtility.UnloadPrefabContents(coinRoot);}
+        const string lightningPath="Assets/Prefabs/BallLightning.prefab";
         var lightningRoot=PrefabUtility.LoadPrefabContents(lightningPath);
         try
         {
@@ -42,11 +30,6 @@ public static class ConfigurePhysicalItems
             foreach(var root in scene.GetRootGameObjects())
             {
                 foreach(var wallet in root.GetComponentsInChildren<PlayerWallet>(true)){UnityEngine.Object.DestroyImmediate(wallet);removed++;}
-                foreach(var coin in root.GetComponentsInChildren<CoinPickup>(true))
-                {
-                    // Legacy hall coins stored the hover height on the visual; now the rigidbody pivot is central.
-                    if(coin.transform.position.y<.3f){coin.transform.position+=Vector3.up*.9f;PrefabUtility.RecordPrefabInstancePropertyModifications(coin.transform);}
-                }
                 foreach(var lightning in root.GetComponentsInChildren<BallLightning>(true))
                 {lightning.autoCycle=true;PrefabUtility.RecordPrefabInstancePropertyModifications(lightning);}
             }
@@ -61,7 +44,7 @@ public static class ConfigurePhysicalItems
             foreach(var rule in profile.overrides)foreach(var cue in rule.entrySubtitles)
             {
                 if(cue.text.Contains("棱晶") || cue.text.Contains("收集") || cue.text.Contains("金币靠近"))
-                    cue.text="普通球、棱晶、金币和方块均可拿起；左键抛出，右键轻放。";
+                    cue.text="普通球、棱晶和方块均可拿起；左键抛出，右键轻放。";
                 else if(cue.text.Contains("WASD"))cue.text="WASD 移动，鼠标转向；瞄准物品左键拿起，持物时左键抛出、右键放下。";
                 else if(cue.text.Contains("切换闪电") || cue.text.Contains("开关"))cue.text="球状闪电会自行切换平静与活跃状态，注意避让。";
                 else cue.text=cue.text.Replace("资源","物品");

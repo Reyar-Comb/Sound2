@@ -19,13 +19,12 @@ public static class VerifyPhysicalItems
             check(UnityEngine.Object.FindObjectsByType<PlayerWallet>().Length==0,"No wallet/backpack component remains in the running scene");
             check(typeof(PlayerFloorProgression).GetProperty("CollectedResources")==null,"Progression has no resource inventory counter");
             check(!setup.ActiveContent.GetComponentsInChildren<InteractableObject>().Any(x=>x.name.Contains("switch") || x.InteractionHint.Contains("切换")),"No lightning interaction switch remains");
-            check(setup.ActiveContent.GetComponentsInChildren<CoinPickup>().All(x=>x.GetComponent<PickupItem>()!=null)
-                && setup.map.FindFloor(0).GetComponentsInChildren<MapResource>().All(x=>x.GetComponent<PickupItem>()!=null),"Coins and crystals use physical pickup items");
+            check(setup.ActiveContent.GetComponentsInChildren<CoinPickup>().Length==0
+                && setup.map.FindFloor(0).GetComponentsInChildren<MapResource>().All(x=>x.GetComponent<PickupItem>()!=null),"Coins are absent and crystals use physical pickup items");
             player.enabled=false;motion.enabled=false;setup.player.enabled=false;player.Teleport(new Vector3(100,1.05f,100));pickup.viewTransform.rotation=Quaternion.identity;
             ground=GameObject.CreatePrimitive(PrimitiveType.Cube);ground.transform.position=new Vector3(100,-.5f,100);ground.transform.localScale=new Vector3(12,1,12);
             ground.GetComponent<Renderer>().sharedMaterial=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/PureBlack.mat");
             var originals=new[]{AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupBouncyBall.prefab"),
-                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Coin.prefab"),
                 setup.map.FindFloor(0).GetComponentInChildren<MapResource>().gameObject,
                 setup.ActiveContent.GetComponentsInChildren<PickupItem>().First(x=>x.name=="可搬运方块").gameObject};
             foreach(var original in originals)

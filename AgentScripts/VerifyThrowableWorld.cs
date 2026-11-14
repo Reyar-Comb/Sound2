@@ -25,6 +25,7 @@ public static class VerifyThrowableWorld
         var all=UnityEngine.Object.FindObjectsByType<PickupItem>();
         Check(all.Length>3 && all.All(p=>p.GetComponents<CollisionSonarEmitter>().Length==1 && p.GetComponents<SonarObjectEmitter>().Length==1),"Every live ball, cube and crystal has exactly one impact/sonar emitter");
         Check(all.All(p=>!p.GetComponent<SonarObjectEmitter>().automatic && p.GetComponent<SonarObjectEmitter>().toggleKey==UnityEngine.InputSystem.Key.None),"Throwable sonar is driven by collisions rather than automatic timers or a shared toggle key");
+        Check(UnityEngine.Object.FindObjectsByType<CoinPickup>().Length==0 && AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Coin.prefab")==null,"Current floor contains no coins and the coin prefab is removed");
         foreach(var normal in new[]{Vector3.up,Vector3.right,Vector3.left,Vector3.forward,Vector3.back})
         {
             var outputs=new HashSet<Vector3>();bool valid=true;
@@ -90,6 +91,7 @@ public static class VerifyThrowableWorld
         int previousFloor=setup.player.CurrentFloor;setup.MoveToShaft();
         for(int i=0;i<80 && setup.player.CurrentFloor==previousFloor;i++)await Tick(50);
         Check(setup.player.CurrentFloor==previousFloor+1 && setup.PopulatedFloor==setup.player.CurrentFloor,"Normal shaft descent still populates the next floor");
+        Check(UnityEngine.Object.FindObjectsByType<CoinPickup>().Length==0,"Newly generated floor never respawns coins");
         Check(UnityEngine.Object.FindObjectsByType<PickupItem>().All(p=>p.GetComponent<CollisionSonarEmitter>()!=null),"New-floor throwables also inherit impact feedback");
         var report=new{passed=checks.All(c=>c.StartsWith("PASS")),checks};System.IO.File.WriteAllText("Logs/ThrowableWorld/report.json",Newtonsoft.Json.JsonConvert.SerializeObject(report,Newtonsoft.Json.Formatting.Indented));return report;
     }

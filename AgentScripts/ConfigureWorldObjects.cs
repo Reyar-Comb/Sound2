@@ -7,25 +7,6 @@ using UnityEngine.InputSystem;
 public static class ConfigureWorldObjects
 {
     static void Folder(string parent,string name) {if(!AssetDatabase.IsValidFolder(parent+"/"+name))AssetDatabase.CreateFolder(parent,name);}
-    static GameObject CreateCoin(Material black)
-    {
-        var root=new GameObject("Coin");
-        var pivot=new GameObject("Floating visual");pivot.transform.SetParent(root.transform,false);
-        var mesh=GameObject.CreatePrimitive(PrimitiveType.Cylinder);mesh.name="Coin body (pulse reveal)";mesh.transform.SetParent(pivot.transform,false);
-        mesh.transform.localRotation=Quaternion.Euler(90,0,0);mesh.transform.localScale=new Vector3(.55f,.05f,.55f);
-        Object.DestroyImmediate(mesh.GetComponent<Collider>());
-        var renderer=mesh.GetComponent<Renderer>();renderer.sharedMaterial=black;renderer.enabled=false;
-        var pulse=root.AddComponent<SonarObjectEmitter>();pulse.toggleKey=Key.None;pulse.pulseKind=SonarPulseKind.Coin;pulse.emissionOrigin=pivot.transform;
-        pulse.interval=3;pulse.firstDelay=.7f;pulse.range=2;pulse.waveSpeed=5;pulse.afterglow=.45f;pulse.playSound=false;
-        pulse.distanceSettings=new SonarDistanceSettings {enabled=true,fadeStartDistance=.2f,fadeEndDistance=2,falloffPower=1,pulseStrength=.8f};
-        pulse.densitySettings=new SonarDensitySettings {enabled=true,fadeStartDistance=.7f,fadeEndDistance=2,falloffPower=1};
-        var coin=root.AddComponent<CoinPickup>();coin.visual=pivot.transform;coin.body=renderer;
-        var rigidbody=root.AddComponent<Rigidbody>();rigidbody.mass=.15f;rigidbody.isKinematic=true;rigidbody.useGravity=true;
-        rigidbody.collisionDetectionMode=CollisionDetectionMode.ContinuousSpeculative;
-        var collider=mesh.AddComponent<MeshCollider>();collider.sharedMesh=mesh.GetComponent<MeshFilter>().sharedMesh;collider.convex=true;
-        root.AddComponent<PickupItem>().interactionAnchor=pivot.transform;
-        return root;
-    }
     static GameObject CreateLightning(Material black)
     {
         var root=new GameObject("Ball Lightning");root.AddComponent<NavMeshAgent>().enabled=false;
@@ -48,29 +29,11 @@ public static class ConfigureWorldObjects
         if(player.GetComponent<PlayerStatusHUD>()==null)player.gameObject.AddComponent<PlayerStatusHUD>();
         Folder("Assets/Materials","Gameplay");
         var black=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/PureBlack.mat");
-        const string coinPath="Assets/Prefabs/Coin.prefab", lightningPath="Assets/Prefabs/BallLightning.prefab";
-        if(AssetDatabase.LoadAssetAtPath<GameObject>(coinPath)==null)
-        {var root=CreateCoin(black);PrefabUtility.SaveAsPrefabAsset(root,coinPath);Object.DestroyImmediate(root);}
+        const string lightningPath="Assets/Prefabs/BallLightning.prefab";
         if(AssetDatabase.LoadAssetAtPath<GameObject>(lightningPath)==null)
         {
             var root=CreateLightning(AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/PureBlack.mat"));
             PrefabUtility.SaveAsPrefabAsset(root,lightningPath);Object.DestroyImmediate(root);
-        }
-        if(Object.FindObjectsByType<CoinPickup>().Length==0)
-        {
-            var group=new GameObject("Coins");
-            Vector3[] positions={new Vector3(1.8f,0,2.4f),new Vector3(-2,0,3),new Vector3(-4,0,-1),
-                new Vector3(3,0,-4),new Vector3(8,0,0),new Vector3(0,0,-8)};
-            for(int i=0;i<positions.Length;i++)
-            {
-                var coin=(GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(coinPath),scene);
-                coin.name="Coin "+(i+1);coin.transform.SetParent(group.transform);coin.transform.position=positions[i]+Vector3.up*.9f;
-                var pickup=coin.GetComponent<CoinPickup>();pickup.phaseOffset=i*.17f;
-                var pulse=coin.GetComponent<SonarObjectEmitter>();pulse.firstDelay=.7f+i*.35f;
-                PrefabUtility.RecordPrefabInstancePropertyModifications(coin.transform);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(pickup);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(pulse);
-            }
         }
         var nav=Object.FindAnyObjectByType<RuntimePatrolNavigation>();
         var hazard=Object.FindAnyObjectByType<BallLightning>();
@@ -86,6 +49,6 @@ public static class ConfigureWorldObjects
             scan.densitySettings=new SonarDensitySettings {enabled=true,fadeStartDistance=6,fadeEndDistance=10,falloffPower=1};
         EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);AssetDatabase.SaveAssets();
         Selection.activeGameObject=hazard.gameObject;
-        return new {coins=Object.FindObjectsByType<CoinPickup>().Length,lightning=hazard.name,coinPrefab=coinPath,lightningPrefab=lightningPath};
+        return new {lightning=hazard.name,lightningPrefab=lightningPath};
     }
 }

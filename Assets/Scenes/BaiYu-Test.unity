@@ -485,7 +485,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BaiYuTestScene
   map: {fileID: 899216349}
   player: {fileID: 1227687886}
-  coinPrefab: {fileID: 3813717430456518742, guid: 47647135dceba4bec816f33a66969e9a, type: 3}
   lightningPrefab: {fileID: 3566545434081345505, guid: a613a5792bfb74f6baf536df260a76de, type: 3}
   pickupPrefab: {fileID: 6703033844639753018, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
   worldMaterial: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}

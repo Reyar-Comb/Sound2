@@ -39,13 +39,12 @@ public static class VerifyMergeBuild
                     if(missing>0)failures.Add(path+": "+missing+" missing scripts");
                     int coins=roots.Sum(r=>r.GetComponentsInChildren<CoinPickup>(true).Length),wallets=roots.Sum(r=>r.GetComponentsInChildren<PlayerWallet>(true).Length);
                     if(wallets>0)failures.Add(path+": obsolete wallet still attached");
-                    foreach(var coin in roots.SelectMany(r=>r.GetComponentsInChildren<CoinPickup>(true)))
-                        if(coin.GetComponent<PickupItem>()==null || coin.GetComponent<Rigidbody>()==null || coin.transform.position.y<.3f)failures.Add(path+": incompatible coin "+coin.name);
+                    if(coins>0)failures.Add(path+": removed coin objects still present");
                     checks.Add(new {scene=path,missingScripts=missing,brokenReferences=broken,coins,wallets});
                 }
                 finally{if(opened)EditorSceneManager.CloseScene(scene,true);}
             }
-            foreach(var path in new[]{"Assets/Prefabs/Coin.prefab","Assets/Prefabs/BallLightning.prefab"})
+            foreach(var path in new[]{"Assets/Prefabs/BallLightning.prefab"})
             {
                 var root=PrefabUtility.LoadPrefabContents(path);
                 try{foreach(var t in root.GetComponentsInChildren<Transform>(true))if(GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(t.gameObject)>0)failures.Add(path+": missing script");}

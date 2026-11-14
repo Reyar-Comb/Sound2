@@ -51,7 +51,6 @@ public static class ConfigureBaiYuTest
         PrefabUtility.RecordPrefabInstancePropertyModifications(player.GetComponent<PlayerFloorProgression>());
         var setup = new GameObject("BaiYu-Test Systems").AddComponent<BaiYuTestScene>();
         setup.map = map; setup.player = player.GetComponent<PlayerFloorProgression>();
-        setup.coinPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Coin.prefab");
         setup.lightningPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/BallLightning.prefab");
         setup.pickupPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupBouncyBall.prefab");
         setup.worldMaterial = map.geometryMaterial;
