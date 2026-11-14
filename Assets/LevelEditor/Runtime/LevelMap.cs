@@ -71,7 +71,7 @@ namespace Sound2.LevelEditing
             }
             var floor = root.GetComponent<SeededFloor>(); floor.floorIndex = index; floor.Plan = plan;
             float depth = Mathf.Max(8,floorSpacing)-SeededFloorGeometry.WallHeight;
-            floor.Geometry = SeededFloorGeometry.Build(plan,depth);
+            floor.Geometry = SeededFloorGeometry.Build(plan,depth,Application.isPlaying);
             root.GetComponent<MeshFilter>().sharedMesh = floor.Geometry; root.GetComponent<MeshCollider>().sharedMesh = floor.Geometry;
             // The shaft arrives at local (0,0). A solid landing slab avoids relying on
             // four coplanar mesh triangles meeting exactly under a fast-falling capsule.

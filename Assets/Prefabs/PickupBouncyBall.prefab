@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 5709747528251588879}
   - component: {fileID: 118845501540813271}
   - component: {fileID: 4156179385338595490}
+  - component: {fileID: 4949061240307408546}
   m_Layer: 0
   m_Name: PickupBouncyBall
   m_TagString: Untagged
@@ -93,7 +94,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}
+  - {fileID: 2100000, guid: 9ed47e8ebb3fbdc48af1179b5ba2aad9, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -328,3 +329,19 @@ MonoBehaviour:
   rangePerSpeed: 2
   maximumRange: 36
   hearingRange: 20
+--- !u!114 &4949061240307408546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6703033844639753018}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89d9dc6e8b7d98742ae4dd336212804f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Sound2.LevelEditing.LevelProp
+  surface: 0
+  surfaceAnchor: {x: 0, y: -0.5, z: 0}
+  surfaceOffset: 0.01
+  gameplayMaterial: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}

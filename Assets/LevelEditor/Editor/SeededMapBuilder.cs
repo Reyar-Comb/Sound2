@@ -25,15 +25,8 @@ namespace Sound2.LevelEditing.Editor
                 player.transform.position = new Vector3(0, 1.1f, 0);
                 var controller = new SerializedObject(player.GetComponent<PlayerController>());
                 controller.FindProperty("useGravity").boolValue = true; controller.ApplyModifiedPropertiesWithoutUndo();
-                var camera = player.GetComponentInChildren<Camera>();
-                camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = Color.black;
-                var sonar = camera.gameObject.AddComponent<SphericalSonar>();
-                sonar.proximityRendering = true;
-                sonar.renderingSettings = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/SonarDots.mat");
-                var sonarData = new SerializedObject(sonar);
-                sonarData.FindProperty("hud").boolValue = false; sonarData.ApplyModifiedPropertiesWithoutUndo();
+                LevelBuilder.ConfigurePointCloudPlayer(player);
                 PrefabUtility.RecordPrefabInstancePropertyModifications(player.GetComponent<PlayerController>());
-                PrefabUtility.RecordPrefabInstancePropertyModifications(camera);
                 if (!EditorSceneManager.SaveScene(scene, path)) throw new InvalidOperationException("无法保存场景。");
                 return path;
             }
@@ -48,7 +41,7 @@ namespace Sound2.LevelEditing.Editor
         {
             var result = map.Preview(floor);
             var previewMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/LevelEditor/Materials/Walls.mat");
-            result.GetComponent<MeshRenderer>().sharedMaterial = previewMaterial;
+            foreach (var renderer in result.GetComponentsInChildren<MeshRenderer>()) renderer.sharedMaterial = previewMaterial;
             Physics.SyncTransforms();
             return result;
         }

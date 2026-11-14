@@ -28,11 +28,12 @@ namespace Sound2.LevelEditing.Editor
             }
             if (previousRoot != null)
             {
-                foreach (var filter in previousRoot.GetComponentsInChildren<MeshFilter>())
+                foreach (var filter in previousRoot.GetComponentsInChildren<MeshFilter>(true))
                     if (filter.sharedMesh != null && !AssetDatabase.Contains(filter.sharedMesh)) Object.DestroyImmediate(filter.sharedMesh);
                 Object.DestroyImmediate(previousRoot.gameObject);
             }
             layout.generatedRoot = root;
+            layout.SetGameplayPresentation(false);
             EditorUtility.SetDirty(layout);
             EditorSceneManager.MarkSceneDirty(layout.gameObject.scene);
             Physics.SyncTransforms();
@@ -45,6 +46,7 @@ namespace Sound2.LevelEditing.Editor
             if (layout.floorMaterial == null) layout.floorMaterial = Material("Floor", new Color(.18f, .29f, .34f));
             if (layout.wallMaterial == null) layout.wallMaterial = Material("Walls", new Color(.56f, .68f, .72f));
             if (layout.pitMaterial == null) layout.pitMaterial = Material("Shaft", new Color(.75f, .36f, .12f));
+            layout.gameplayMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/PureBlack.mat");
         }
 
         static Material Material(string name, Color color)
@@ -60,7 +62,7 @@ namespace Sound2.LevelEditing.Editor
         public static void Persist(LevelLayout layout, string scenePath)
         {
             if (layout.generatedRoot == null) Rebuild(layout);
-            var filters = layout.generatedRoot.GetComponentsInChildren<MeshFilter>();
+            var filters = layout.generatedRoot.GetComponentsInChildren<MeshFilter>(true);
             string folder = Path.ChangeExtension(scenePath, null) + "_Geometry";
             Directory.CreateDirectory(folder);
             AssetDatabase.Refresh();
@@ -103,6 +105,7 @@ namespace Sound2.LevelEditing.Editor
                 SceneManager.SetActiveScene(scene);
                 var copy = Object.Instantiate(source.gameObject);
                 copy.name = source.name;
+                RestorePropPrefabLinks(source.transform.Find("Props"), copy.transform.Find("Props"));
                 var layout = copy.GetComponent<LevelLayout>();
                 layout.geometryAsset = "";
                 // Rebuild to separate transient meshes from the source scene.
@@ -121,6 +124,26 @@ namespace Sound2.LevelEditing.Editor
                 if (previous.IsValid() && previous.isLoaded) SceneManager.SetActiveScene(previous);
             }
             AssetDatabase.SaveAssets();
+        }
+
+        static void RestorePropPrefabLinks(Transform source, Transform copy)
+        {
+            if (source == null || copy == null) return;
+            for (int i = 0; i < source.childCount; i++)
+            {
+                var original = source.GetChild(i).gameObject;
+                var cloned = copy.GetChild(i).gameObject;
+                var prefab = PrefabUtility.GetCorrespondingObjectFromSource(original);
+                if (prefab == null || PrefabUtility.IsPartOfPrefabInstance(cloned)) continue;
+                PrefabUtility.ConvertToPrefabInstance(cloned, prefab, new ConvertToPrefabInstanceSettings {
+                    objectMatchMode = ObjectMatchMode.ByHierarchy,
+                    componentsNotMatchedBecomesOverride = true,
+                    gameObjectsNotMatchedBecomesOverride = true,
+                    recordPropertyOverridesOfMatches = true,
+                    changeRootNameToAssetName = false,
+                    logInfo = false
+                }, InteractionMode.AutomatedAction);
+            }
         }
 
         public static void AddLighting()
@@ -163,8 +186,29 @@ namespace Sound2.LevelEditing.Editor
                 var serialized = new SerializedObject(controller);
                 serialized.FindProperty("useGravity").boolValue = true;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.RecordPrefabInstancePropertyModifications(controller);
             }
+            ConfigurePointCloudPlayer(player);
             return player;
+        }
+
+        // Shared by authored exports and seeded maps; use the existing renderer and reveal switches.
+        public static void ConfigurePointCloudPlayer(GameObject player)
+        {
+            var camera = player.GetComponentInChildren<Camera>(true);
+            if (camera == null) throw new InvalidOperationException("玩家缺少相机。");
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = Color.black;
+            var sonar = camera.GetComponent<SphericalSonar>();
+            if (sonar == null) sonar = camera.gameObject.AddComponent<SphericalSonar>();
+            sonar.renderingSettings = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/SonarDots.mat");
+            sonar.SetRevealModes(false, true);
+            var style = camera.GetComponent<BlackBoxProximitySource>();
+            style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Stars, false);
+            style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Twinkle, false);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(camera);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(sonar);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(style);
         }
     }
 

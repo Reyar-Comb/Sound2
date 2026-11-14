@@ -123,6 +123,9 @@ namespace Sound2.LevelEditing.Editor
                 meshes.Add("Floor", Extrude(Difference(footprint, Union(holes)), -layout.floorThickness, 0, "Floor"));
                 var ring = Difference(Offset(footprint, layout.wallThickness), footprint);
                 meshes.Add("Walls", Extrude(ring, 0, layout.wallHeight, "Walls"));
+                // Cover the whole room/corridor union, including above floor pits. The pits themselves stay open below.
+                meshes.Add("Ceiling", Extrude(Offset(footprint, layout.wallThickness), layout.wallHeight,
+                    layout.wallHeight + layout.floorThickness, "Ceiling"));
                 for (int i = 0; i < layout.pits.Count; i++)
                 {
                     var pit = layout.pits[i];

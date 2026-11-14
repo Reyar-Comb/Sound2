@@ -9,9 +9,9 @@ using UnityEngine.UIElements;
 
 namespace Sound2.LevelEditing.Editor
 {
-    public sealed class LevelDesignerWindow : EditorWindow
+    public sealed partial class LevelDesignerWindow : EditorWindow
     {
-        enum Tool { Select, Rectangle, Circle, Line, Curve, Pit, Connect }
+        enum Tool { Select, Rectangle, Circle, Line, Curve, Pit, Connect, Prop }
         enum Kind { None, Room, Corridor, Pit }
         [SerializeField] LevelLayout layout;
         [SerializeField] Tool tool;
@@ -44,12 +44,23 @@ namespace Sound2.LevelEditing.Editor
             SceneView.duringSceneGui += SceneGUI;
             Undo.undoRedoPerformed += OnUndo;
             Selection.selectionChanged += OnSelection;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
         }
         void OnDisable()
         {
             SceneView.duringSceneGui -= SceneGUI;
             Undo.undoRedoPerformed -= OnUndo;
             Selection.selectionChanged -= OnSelection;
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+        }
+        void OnPlayModeChanged(PlayModeStateChange state)
+        {
+            if (state != PlayModeStateChange.EnteredEditMode && state != PlayModeStateChange.EnteredPlayMode) return;
+            if (layout == null)
+                layout = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects()
+                    .SelectMany(r => r.GetComponentsInChildren<LevelLayout>(true)).FirstOrDefault();
+            if (selectedProp == null) selectedProp = null;
+            Refresh();
         }
         void OnSelection()
         {
@@ -58,6 +69,7 @@ namespace Sound2.LevelEditing.Editor
             if (map != null) { seededMap = map; seededMode = true; Refresh(); return; }
             var target = Selection.activeGameObject.GetComponentInParent<LevelLayout>();
             if (target != null && target != layout) Bind(target);
+            if (target != null) SelectPropFromHierarchy();
         }
         void OnUndo() { if (layout != null) { TryRebuild(); Refresh(); } }
 
@@ -82,7 +94,7 @@ namespace Sound2.LevelEditing.Editor
             Button(row, "俯视 / 框选全部", Frame);
             Button(row, "3D 检查", () => { if (SceneView.lastActiveSceneView != null) SceneView.lastActiveSceneView.rotation = Quaternion.Euler(45, -30, 0); });
             var tools = rootVisualElement.Q("tools"); tools.Clear();
-            string[] names = { "选择 / 编辑", "矩形房间", "圆柱房间", "直线走廊", "曲线走廊", "方形竖井", "连接端点" };
+            string[] names = { "选择 / 编辑", "矩形房间", "圆柱房间", "直线走廊", "曲线走廊", "方形竖井", "连接端点", "放置道具" };
             for (int i = 0; i < names.Length; i++)
             {
                 Tool value = (Tool)i;
@@ -96,6 +108,7 @@ namespace Sound2.LevelEditing.Editor
                 Tool.Curve => "依次点击曲线经过的控制点，Enter 完成；Backspace 撤回一点，Esc 取消。",
                 Tool.Connect => "先从对象列表选中走廊，选择起点/终点，再点击房间边缘。连接点会跟随房间移动和缩放。",
                 Tool.Pit => "点击地面放置竖井。橙色轮廓是实际开口；管壁必须完整位于关卡内部。",
+                Tool.Prop => "选择 Prefab，在 Scene 点击放置；钟表贴墙、球贴地。贴墙请切到 3D 检查。Esc 退出放置。",
                 Tool.Rectangle or Tool.Circle => "点击 Scene 放置房间中心，切换选择工具后拖动中心与尺寸手柄。",
                 _ => "点击对象标记选择；拖动控制点调整形状。Ctrl+Z 撤销，Ctrl+Y 重做。"
             };
@@ -127,6 +140,7 @@ namespace Sound2.LevelEditing.Editor
             MaterialField(fold, "地板材质", layout.floorMaterial, v => layout.floorMaterial = v);
             MaterialField(fold, "墙壁材质", layout.wallMaterial, v => layout.wallMaterial = v);
             MaterialField(fold, "管壁材质", layout.pitMaterial, v => layout.pitMaterial = v);
+            DrawPropSettings(area);
         }
 
         void DrawSeededMode()
@@ -186,11 +200,13 @@ namespace Sound2.LevelEditing.Editor
             for (int i = 0; i < layout.rooms.Count; i++) Item(Kind.Room, i, "▣  " + layout.rooms[i].name);
             for (int i = 0; i < layout.corridors.Count; i++) Item(Kind.Corridor, i, "↝  " + layout.corridors[i].name + "  /  " + layout.corridors[i].width.ToString("0.##") + " m");
             for (int i = 0; i < layout.pits.Count; i++) Item(Kind.Pit, i, "□  " + layout.pits[i].name);
+            DrawPropObjects(area);
         }
 
         void DrawProperties()
         {
             var area = rootVisualElement.Q("properties"); area.Clear();
+            if (DrawPropProperties(area)) return;
             if (layout == null || selected < 0) { area.Add(new Label("选择对象以编辑参数")); return; }
             if (kind == Kind.Room && selected < layout.rooms.Count)
             {
@@ -248,7 +264,7 @@ namespace Sound2.LevelEditing.Editor
             }
         }
 
-        void Select(Kind k, int index) { kind = k; selected = index; Refresh(); SceneView.RepaintAll(); }
+        void Select(Kind k, int index) { selectedProp = null; kind = k; selected = index; Refresh(); SceneView.RepaintAll(); }
         void Change(Action action)
         {
             if (layout == null || Application.isPlaying) return;
@@ -337,6 +353,12 @@ namespace Sound2.LevelEditing.Editor
             if (plane.Raycast(ray, out float distance)) hover = Snap(layout.Local(ray.GetPoint(distance)));
             Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
             DrawOutlines();
+            if (tool == Tool.Prop)
+            {
+                PropSceneGUI(view, ray, e);
+                Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;
+                return;
+            }
             if (tool == Tool.Select) EditHandles();
             else
             {

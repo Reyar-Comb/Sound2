@@ -6,11 +6,14 @@ public sealed class SonarCueSource : MonoBehaviour
 {
     public AudioSource output;
     public AudioClip clip;
+    [Tooltip("Use the original sonar ping when no clip is assigned. Disable for recording-only props.")]
+    public bool generateDefaultPing = true;
     AudioClip generatedClip;
 
     public void Play()
     {
         if (!isActiveAndEnabled) return;
+        if (clip == null && !generateDefaultPing) return;
         if (output == null) output = GetComponent<AudioSource>();
         if (clip == null && generatedClip == null) generatedClip = ProceduralAudioClips.CreateSonarPing();
         var spatial = output.GetComponent<SpatialAudioEmitter>();

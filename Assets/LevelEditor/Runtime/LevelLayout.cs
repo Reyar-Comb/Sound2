@@ -94,7 +94,7 @@ namespace Sound2.LevelEditing
         public float rotation;
     }
 
-    [DisallowMultipleComponent]
+    [DefaultExecutionOrder(-200), DisallowMultipleComponent]
     public sealed class LevelLayout : MonoBehaviour
     {
         public List<LevelRoom> rooms = new List<LevelRoom>();
@@ -108,8 +108,26 @@ namespace Sound2.LevelEditing
         public Material floorMaterial;
         public Material wallMaterial;
         public Material pitMaterial;
+        [Tooltip("Gameplay surface material. Preview materials above remain unchanged while editing.")]
+        public Material gameplayMaterial;
         [HideInInspector] public GameObject generatedRoot;
         [HideInInspector] public string geometryAsset;
+
+        void OnEnable() => SetGameplayPresentation(Application.isPlaying);
+        void OnDisable() => SetGameplayPresentation(false);
+
+        public void SetGameplayPresentation(bool gameplay)
+        {
+            if (generatedRoot == null) return;
+            foreach (var renderer in generatedRoot.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                var preview = renderer.name == "Floor" ? floorMaterial
+                    : renderer.name == "Walls" || renderer.name == "Ceiling" ? wallMaterial : pitMaterial;
+                renderer.sharedMaterial = gameplay ? gameplayMaterial : preview;
+            }
+            var ceiling = generatedRoot.transform.Find("Ceiling");
+            if (ceiling != null) ceiling.gameObject.SetActive(gameplay);
+        }
 
         public LevelRoom FindRoom(string id) => rooms.Find(r => r.id == id);
         public Vector3 World(Vector2 point, float y = 0) => transform.TransformPoint(new Vector3(point.x, y, point.y));

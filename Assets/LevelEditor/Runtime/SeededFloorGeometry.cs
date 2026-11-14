@@ -7,7 +7,7 @@ namespace Sound2.LevelEditing
     public static class SeededFloorGeometry
     {
         public const float WallHeight = 3.2f;
-        public static Mesh Build(SeededFloorPlan plan, float shaftDepth)
+        public static Mesh Build(SeededFloorPlan plan, float shaftDepth, bool includeCeiling = false)
         {
             var vertices = new List<Vector3>(); var triangles = new List<int>();
             void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
@@ -23,6 +23,11 @@ namespace Sound2.LevelEditing
             }
             foreach (var cell in plan.Cells)
             {
+                // Subsequent floors receive the previous floor's shaft at local (0,0).
+                // Keep that 2x2 aperture open; an outgoing floor pit still has a roof overhead.
+                bool incomingShaft = plan.Floor > 0 && cell.x >= -1 && cell.x < 1 && cell.y >= -1 && cell.y < 1;
+                if (includeCeiling && !incomingShaft)
+                    Box(new(cell.x, WallHeight, cell.y), new(cell.x + 1, WallHeight + .25f, cell.y + 1));
                 if (plan.IsPit(cell)) continue;
                 float x = cell.x, z = cell.y;
                 Quad(new(x,0,z), new(x,0,z+1), new(x+1,0,z+1), new(x+1,0,z));

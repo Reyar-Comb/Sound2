@@ -51,8 +51,8 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
         activeRenderers[renderer] = this;
-        if (settings == null || renderingData.cameraData.cameraType == CameraType.Preview
-            || renderingData.cameraData.cameraType == CameraType.Reflection) return;
+        // Authoring/Scene cameras keep their ordinary materials and lighting; effects belong to the running game.
+        if (settings == null || !Application.isPlaying || renderingData.cameraData.cameraType != CameraType.Game) return;
         var cameraSettings = settings;
         float sharedDotRadius = -1;
         if (renderingData.cameraData.camera.TryGetComponent<SphericalSonar>(out var sonar)
