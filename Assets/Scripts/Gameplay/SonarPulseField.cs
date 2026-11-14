@@ -43,6 +43,8 @@ public sealed class SonarPulseField : MonoBehaviour
     readonly Vector4[] parameters = new Vector4[MaxPulses];
     readonly Vector4[] distanceFalloffs = new Vector4[MaxPulses];
     readonly Vector4[] densityFalloffs = new Vector4[MaxPulses];
+    // cos/sin of accumulated doorway yaw; blocker textures stay in their sampled frame.
+    readonly Vector4[] blockerRotations = new Vector4[MaxPulses];
     readonly Color[] planes = new Color[MaskSize * MaskSize];
     Texture2DArray blockers;
     Texture2D blockerUpload;
@@ -90,6 +92,7 @@ public sealed class SonarPulseField : MonoBehaviour
         Shader.SetGlobalVectorArray("_SonarPulseParameters", parameters);
         Shader.SetGlobalVectorArray("_SonarPulseDistanceFalloffs", distanceFalloffs);
         Shader.SetGlobalVectorArray("_SonarPulseDensityFalloffs", densityFalloffs);
+        Shader.SetGlobalVectorArray("_SonarBlockerRotations", blockerRotations);
         Shader.SetGlobalTexture("_SonarBlockingPlanes", blockers);
     }
     // Identical sampling on all six cube faces avoids excessive samples at sphere poles.
@@ -197,6 +200,7 @@ public sealed class SonarPulseField : MonoBehaviour
         SampleRays(origin, effectiveRange, bank == 0 ? mainDirections : localDirections);
         hitCount = EncodePlanes(origin, sampleSize, blockers, slot * 6);
         origins[slot] = new Vector4(LastOrigin.x, LastOrigin.y, LastOrigin.z, Time.time);
+        blockerRotations[slot] = new Vector4(1, 0, 0, 0);
         parameters[slot] = new Vector4(pulseRange, pulseSpeed, pulseAfterglow, 1);
         float fadeEnd = Mathf.Clamp(falloff.y, .01f, pulseRange);
         distanceFalloffs[slot] = new Vector4(Mathf.Clamp(falloff.x, 0, fadeEnd - .001f), fadeEnd,
@@ -283,6 +287,26 @@ public sealed class SonarPulseField : MonoBehaviour
         ActivePulseReplacements++;
         cursor = (selected - offset + 1) % capacity;
         return selected;
+    }
+
+    // Preserve the existing white reveal without emitting sound, restarting its fade, or
+    // resampling thousands of rays during a seamless doorway transfer. New waves sample normally.
+    // Colored world cues keep their real positions: never copy a danger or collectible hint.
+    public void RemapDoorwayReveal(Vector3 origin, Vector3 destination, float yawDelta)
+    {
+        if (!isActiveAndEnabled || blockers == null) return;
+        var rotation = Quaternion.Euler(0, yawDelta, 0);
+        float c = Mathf.Cos(yawDelta * Mathf.Deg2Rad), s = Mathf.Sin(yawDelta * Mathf.Deg2Rad);
+        for (int i = 0; i < DangerPulseOffset; i++)
+        {
+            var settings = parameters[i];
+            if (settings.w < .5f || Time.time - origins[i].w >= settings.x / settings.y + settings.z) continue;
+            Vector3 mapped = destination + rotation * ((Vector3)origins[i] - origin);
+            origins[i] = new Vector4(mapped.x, mapped.y, mapped.z, origins[i].w);
+            var basis = blockerRotations[i];
+            blockerRotations[i] = new Vector4(c * basis.x - s * basis.y, s * basis.x + c * basis.y, 0, 0);
+        }
+        Publish();
     }
 
     public void ClearPulses()

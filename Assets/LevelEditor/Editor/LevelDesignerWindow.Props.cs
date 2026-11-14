@@ -143,6 +143,26 @@ namespace Sound2.LevelEditing.Editor
             DrawPropDimensions(area, instance.GetComponent<ResizableBar>(), "吧台尺寸", ("length", "长度（米）"));
             DrawPropDimensions(area, instance.GetComponent<ResizableWardCurtain>(), "病房隔帘尺寸（保持褶皱尺度）", ("length", "长度（米）"));
             DrawRingTableSettings(area, instance.GetComponent<DrapedRingTable>());
+            var interaction = instance.GetComponent<DoorInteraction>();
+            if (interaction != null)
+            {
+                DrawPropDimensions(area, interaction, "门的通行与传送", ("openingSide", "允许开门的方向"),
+                    ("teleportDestination", "开门传送到"), ("autoCloseDelay", "自动关门等待（秒，0 关闭）"),
+                    ("lockedShakeAngle", "锁门晃动角度"), ("lockedShakeDuration", "锁门晃动时长（秒）"));
+                area.Add(new Label("正面为门的本地 +Z；绿色箭头指向允许开门的一侧，青线连接目标门。\n成功开门时立即传送，保留门前相对位置和朝向；目标门继续同一开门动作。目标留空为普通门，双向传送需两扇门分别设置目标。\n自动关门从完全打开后计时，受阻时暂停关门。两处门周围的布局应保持相近。")
+                    { style = { whiteSpace = WhiteSpace.Normal } });
+                var issue = new HelpBox("", HelpBoxMessageType.Warning);
+                area.Add(issue);
+                void UpdateDoorIssue()
+                {
+                    if (interaction == null) return;
+                    string message = interaction.TeleportConfigurationIssue();
+                    issue.text = message ?? "";
+                    issue.style.display = message == null ? DisplayStyle.None : DisplayStyle.Flex;
+                }
+                UpdateDoorIssue();
+                issue.schedule.Execute(UpdateDoorIssue).Every(500);
+            }
             var vines = instance.GetComponent<MonsterVineArea>();
             if (vines != null)
             {

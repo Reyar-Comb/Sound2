@@ -115,6 +115,25 @@ public sealed class PlayerController : MonoBehaviour
         transform.rotation = Quaternion.Euler(0, yaw, 0);
     }
 
+    // Door transfers preserve jump/fall velocity, pitch and procedural animation phases.
+    public void TeleportSeamlessly(Vector3 position, float yawDelta)
+    {
+        Vector3 previous = transform.position;
+        Quaternion rotation = Quaternion.Euler(0, yawDelta, 0);
+        bool wasEnabled = characterController.enabled;
+        characterController.enabled = false;
+        transform.position = position;
+        RotateTransport(yawDelta);
+        pushVelocity = rotation * pushVelocity;
+        characterController.enabled = wasEnabled;
+        GetComponent<PlayerCameraMotion>()?.RemapMotionHistory(previous, position, rotation);
+        GetComponent<FootstepEmitter>()?.RemapMotionHistory(previous, position, rotation);
+        GetComponent<PlayerPickup>()?.RemapMotionHistory(previous, position, rotation);
+        GetComponent<PlayerFloorProgression>()?.ResetTraversalSample();
+        GetComponentInChildren<SonarPulseField>()?.RemapDoorwayReveal(previous, position, yawDelta);
+        Physics.SyncTransforms();
+    }
+
     private static void ApplyCursorCapture(bool captured)
     {
         Cursor.lockState = captured ? CursorLockMode.Locked : CursorLockMode.None;

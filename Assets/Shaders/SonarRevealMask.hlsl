@@ -8,6 +8,7 @@ float _SonarActive, _SonarMaskSize;
 #define SONAR_LIGHTNING_OFFSET 48
 float4 _SonarPulseOrigins[SONAR_PULSE_COUNT], _SonarPulseParameters[SONAR_PULSE_COUNT];
 float4 _SonarPulseDensityFalloffs[SONAR_PULSE_COUNT];
+float4 _SonarBlockerRotations[SONAR_PULSE_COUNT]; // cos/sin of doorway mapping yaw
 float4 _SonarPulseDistanceFalloffs[SONAR_PULSE_COUNT]; // start metres, end metres, power (0 = disabled), strength
 TEXTURE2D_ARRAY(_SonarBlockingPlanes);
 
@@ -53,6 +54,10 @@ PulseReveals SonarVisibility(float3 positionWS, float3 normalWS, float orderedRa
         }
         float age = elapsed - distance / settings.y;
         if (age < 0 || age >= settings.z) continue;
+        // Read the original blocker cubemap in its original frame after a doorway transfer.
+        // Distance/fade and world-space density above/below remain in the arrival space.
+        float2 basis = _SonarBlockerRotations[i].xy;
+        delta.xz = float2(basis.x * delta.x - basis.y * delta.z, basis.y * delta.x + basis.x * delta.z);
         float3 magnitude = abs(delta);
         int face;
         float2 uv;

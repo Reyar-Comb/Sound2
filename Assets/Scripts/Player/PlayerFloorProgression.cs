@@ -156,6 +156,8 @@ public sealed class PlayerFloorProgression : MonoBehaviour
         if (vitality != null) vitality.Died -= BeginRespawn;
     }
 
+    public void ResetTraversalSample() => previousPosition = transform.position;
+
     void LateUpdate()
     {
         Vector3 position = transform.position;

@@ -52,6 +52,11 @@ public sealed class PlayerCameraMotion : MonoBehaviour
         offset = offsetVelocity = angles = angleVelocity = Vector3.zero;
     }
 
+    public void RemapMotionHistory(Vector3 origin, Vector3 destination, Quaternion rotation)
+    {
+        previousPosition = destination + rotation * (previousPosition - origin);
+    }
+
     void LateUpdate()
     {
         Vector3 displacement = transform.position - previousPosition;

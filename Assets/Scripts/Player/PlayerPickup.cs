@@ -48,6 +48,14 @@ public sealed class PlayerPickup : MonoBehaviour
         }
     }
 
+    public void RemapMotionHistory(Vector3 origin, Vector3 destination, Quaternion rotation)
+    {
+        previousViewPosition = destination + rotation * (previousViewPosition - origin);
+        followingRotation = rotation * followingRotation;
+        // Held objects are parented to holdPoint and moved with the player. Keep local lag intact.
+        if (HeldItem != null) HeldItem.SetHeldPose(HeldItem.transform.position, HeldItem.transform.rotation);
+    }
+
     void LateUpdate()
     {
         var item = HeldItem;

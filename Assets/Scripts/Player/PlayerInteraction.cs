@@ -206,6 +206,12 @@ public sealed class PlayerInteraction : MonoBehaviour
         return interacted;
     }
 
+    public void RemapDoorFocus(Sound2.LevelEditing.DoorInteraction source, Sound2.LevelEditing.DoorInteraction destination)
+    {
+        if (FocusedTarget == source) FocusedTarget = destination;
+        if (shownTarget == source) shownTarget = destination;
+    }
+
     void UpdateRing()
     {
         if (shownTarget == null || !shownTarget.CanInteract(this) || !HasLineOfSight(shownTarget))

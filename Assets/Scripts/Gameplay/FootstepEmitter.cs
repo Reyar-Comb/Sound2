@@ -81,6 +81,11 @@ public sealed class FootstepEmitter : MonoBehaviour
         nextStepTime = Time.time;
     }
 
+    public void RemapMotionHistory(Vector3 origin, Vector3 destination, Quaternion rotation)
+    {
+        previousPosition = destination + rotation * (previousPosition - origin);
+    }
+
     void LateUpdate()
     {
         Vector3 position = transform.position;
