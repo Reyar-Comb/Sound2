@@ -19,8 +19,8 @@ public static class VerifySphericalSonar
             int before=UnityEngine.Object.FindObjectsByType<MeshRenderer>().Length;
             if(!s.Emit()) throw new Exception("Wait until the emission cooldown ends.");
             int after=UnityEngine.Object.FindObjectsByType<MeshRenderer>().Length;
-            var parameters=Shader.GetGlobalVectorArray("_SonarPulseParameters");
-            var origins=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
+            var parameters=Shader.GetGlobalVectorArray("_SonarSceneParameters");
+            var origins=Shader.GetGlobalVectorArray("_SonarSceneOrigins");
             int slot=Array.FindIndex(parameters,v=>v.w>.5f);
             var texture=(Texture2DArray)Shader.GetGlobalTexture("_SonarBlockingPlanes");
             var plane=texture.GetPixels(slot*6)[24*48+24];
@@ -29,7 +29,7 @@ public static class VerifySphericalSonar
             bool behindBlocked=Vector3.Dot(normal,Vector3.right*4)<plane.a-.06f;
             s.transform.position+=Vector3.forward*.3f;
             s.GetComponent<BlackBoxProximitySource>().PublishPosition();
-            bool originFixed=origins.SequenceEqual(Shader.GetGlobalVectorArray("_SonarPulseOrigins"));
+            bool originFixed=origins.SequenceEqual(Shader.GetGlobalVectorArray("_SonarSceneOrigins"));
             s.transform.position=origin;
             var style=s.GetComponent<BlackBoxProximitySource>();
             bool stylesCorrect=style.IsStyleEnabled(BlackBoxProximitySource.PointStyle.Face)==s.facePoints

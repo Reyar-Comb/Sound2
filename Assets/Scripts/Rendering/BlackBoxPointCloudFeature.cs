@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -48,9 +49,9 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
         private sealed class Data
         {
             public Material material;
-            public TextureHandle grid;
+            public TextureHandle grid, dangerGrid;
             public TextureHandle depth;
-            public int index;
+            public int index, palette;
             public float animationTime;
             public float sharedDotRadius;
             public Matrix4x4 starViewProjection;
@@ -62,15 +63,25 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             var resources = frameData.Get<UniversalResourceData>();
             var camera = frameData.Get<UniversalCameraData>();
             if (!resources.cameraDepthTexture.IsValid()) return;
+            var dangerGroups = new List<Data>();
             bool separateFaces = faceMaterial != null && faceMaterial != material;
             if (separateFaces)
-                RecordPoints(graph, resources, camera, faceMaterial, true, false, false, sharedDotRadius);
-            RecordPoints(graph, resources, camera, material, !separateFaces, true, true, sharedDotRadius);
+                RecordPoints(graph, resources, camera, faceMaterial, true, false, false, sharedDotRadius, dangerGroups);
+            RecordPoints(graph, resources, camera, material, !separateFaces, true, true, sharedDotRadius, dangerGroups);
+            // Shared circles, composed in priority order: yellow, blue, red.
+            // Clear before each color to keep overlaps and AA edges from mixing into false colors.
+            int colors=SonarPulseField.ActiveColoredPalettes;
+            for(int palette=3;palette>=1;palette--)
+            {
+                if((colors & (1<<palette))==0) continue;
+                foreach(var group in dangerGroups) RecordDanger(graph,resources,group,true,palette);
+                foreach(var group in dangerGroups) RecordDanger(graph,resources,group,false,palette);
+            }
         }
 
         // Both groups use the original sampling and drawing passes. Only the material differs.
         static void RecordPoints(RenderGraph graph, UniversalResourceData resources, UniversalCameraData camera,
-            Material drawMaterial, bool faces, bool corners, bool stars, float sharedDotRadius)
+            Material drawMaterial, bool faces, bool corners, bool stars, float sharedDotRadius, List<Data> dangerGroups)
         {
             int width = camera.cameraTargetDescriptor.width, height = camera.cameraTargetDescriptor.height;
             var interaction = camera.camera.GetComponentInParent<PlayerInteraction>();
@@ -83,6 +94,10 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                 name = faces ? "BlackBox face decisions" : "BlackBox contour decisions", colorFormat = GraphicsFormat.R8G8B8A8_UNorm,
                 filterMode = FilterMode.Point, clearBuffer = false
             });
+            var dangerGrid = graph.CreateTexture(new TextureDesc(columns, rows) {
+                name = "BlackBox danger decisions", colorFormat = GraphicsFormat.R8G8B8A8_UNorm,
+                filterMode = FilterMode.Point, clearBuffer = false
+            });
             for (int index = 0; index < 4; index++)
             {
                 if ((index == 1 && !faces) || (index == 2 && !corners) || (index == 3 && !stars)) continue;
@@ -93,6 +108,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     data.material = drawMaterial;
                     data.sharedDotRadius = sharedDotRadius;
                     data.grid = index == 0 ? TextureHandle.nullHandle : grid;
+                    data.dangerGrid = index == 0 ? TextureHandle.nullHandle : dangerGrid;
                     data.depth = index == 0 ? resources.cameraDepthTexture : TextureHandle.nullHandle;
                     data.index = index;
                     data.animationTime = Time.time;
@@ -102,9 +118,14 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     data.crosshairClearZone = clearZone;
                     data.gridSize = new Vector4(columns, rows, 1f / columns, 1f / rows);
                     if (index == 0) builder.UseTexture(resources.cameraDepthTexture, AccessFlags.Read);
-                    else builder.UseTexture(grid, AccessFlags.Read);
+                    else { builder.UseTexture(grid, AccessFlags.Read); builder.UseTexture(dangerGrid, AccessFlags.Read); }
                     builder.SetRenderAttachment(index == 0 ? grid : resources.activeColorTexture, 0,
                         index == 0 ? AccessFlags.Write : AccessFlags.ReadWrite);
+                    if (index == 0) builder.SetRenderAttachment(dangerGrid, 1, AccessFlags.Write);
+                    if (index == 1 || index == 2)
+                        dangerGroups.Add(new Data { material = data.material, dangerGrid = dangerGrid,
+                            index = index + 3, sharedDotRadius = sharedDotRadius, viewport = data.viewport,
+                            gridSize = data.gridSize, crosshairClearZone = clearZone });
                     builder.SetRenderFunc(static (Data d, RasterGraphContext context) =>
                     {
                         var properties = new MaterialPropertyBlock();
@@ -116,12 +137,32 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                             properties.SetFloat("_ScreenDotRadius", d.sharedDotRadius);
                         properties.SetMatrix("_StarViewProjection", d.starViewProjection);
                         if (d.grid.IsValid()) properties.SetTexture("_PointGrid", (RTHandle)d.grid);
+                        if (d.dangerGrid.IsValid()) properties.SetTexture("_DangerPointGrid", (RTHandle)d.dangerGrid);
                         if (d.depth.IsValid()) properties.SetTexture("_PointDepth", (RTHandle)d.depth);
                         context.cmd.DrawProcedural(Matrix4x4.identity, d.material, d.index,
                             MeshTopology.Triangles, d.index == 3 ? 6 : 3, d.index == 3 ? 128 : 1, properties);
                     });
                 }
             }
+        }
+        static void RecordDanger(RenderGraph graph, UniversalResourceData resources, Data input, bool clear = false, int palette = 1)
+        {
+            using var builder = graph.AddRasterRenderPass<Data>("BlackBox danger dots", out var data);
+            data.palette=palette; data.material=input.material; data.dangerGrid=input.dangerGrid; data.index=input.index + (clear ? 2 : 0);
+            data.sharedDotRadius=input.sharedDotRadius; data.viewport=input.viewport;
+            data.gridSize=input.gridSize; data.crosshairClearZone=input.crosshairClearZone;
+            builder.UseTexture(data.dangerGrid, AccessFlags.Read);
+            builder.SetRenderAttachment(resources.activeColorTexture,0,AccessFlags.ReadWrite);
+            builder.SetRenderFunc(static (Data d, RasterGraphContext context) => {
+                var properties = new MaterialPropertyBlock();
+                properties.SetVector("_PointViewport",d.viewport); properties.SetVector("_PointGridSize",d.gridSize);
+                properties.SetVector("_CrosshairClearZone",d.crosshairClearZone);
+                if(d.sharedDotRadius>=0) properties.SetFloat("_ScreenDotRadius",d.sharedDotRadius);
+                properties.SetTexture("_DangerPointGrid",(RTHandle)d.dangerGrid);
+                properties.SetFloat("_PulsePalette",d.palette);
+                properties.SetColor("_PulseColor",d.palette==1?Color.red:d.palette==2?Color.blue:new Color(1,1,0,1));
+                context.cmd.DrawProcedural(Matrix4x4.identity,d.material,d.index,MeshTopology.Triangles,3,1,properties);
+            });
         }
     }
 }

@@ -26,6 +26,8 @@ public sealed class FootstepEmitter : MonoBehaviour
         enabled = true, fadeStartDistance = .4f, fadeEndDistance = 3,
         falloffPower = 2, pulseStrength = .6f
     };
+    [Header("AI hearing")]
+    [Min(0)] public float hearingRange = 6;
     [Header("Optional recorded audio (silent until assigned)")]
     public AudioSource audioSource;
     public AudioClip[] clips;
@@ -93,6 +95,7 @@ public sealed class FootstepEmitter : MonoBehaviour
             var clip = clips[clipIndex++ % clips.Length];
             if (clip != null) audioSource.PlayOneShot(clip, volume);
         }
+        GameplayNoise.Emit(LastOrigin, hearingRange, GameplayNoiseKind.Footstep, this);
         Steps++;
         Stepped?.Invoke(LastOrigin);
         onStep.Invoke(LastOrigin);

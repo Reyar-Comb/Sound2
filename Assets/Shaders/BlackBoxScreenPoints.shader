@@ -38,6 +38,16 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
         float4 _PointViewport, _PointGridSize;
+        int _SonarBlueBodyCount;
+        float4 _SonarBlueBodies[8];
+        bool LightningSurface(float3 p)
+        {
+            [loop] for(int i=0;i<min(_SonarBlueBodyCount,8);i++)
+                if(abs(length(p-_SonarBlueBodies[i].xyz)-_SonarBlueBodies[i].w)<.045) return true;
+            return false;
+        }
+        float _PulsePalette;
+        float4 _PulseColor;
         float4 _CrosshairClearZone; // xy: viewport centre; zw: clear radius/feather at 720p
         float CrosshairPointVisibility(float2 center, float radius)
         {
@@ -47,7 +57,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             return smoothstep(_CrosshairClearZone.z+radius,
                 _CrosshairClearZone.z+radius+max(.1,_CrosshairClearZone.w),distance);
         }
-        TEXTURE2D(_PointGrid); TEXTURE2D_X_FLOAT(_PointDepth);
+        TEXTURE2D(_PointGrid); TEXTURE2D(_DangerPointGrid); TEXTURE2D_X_FLOAT(_PointDepth);
         float _RevealDistance, _WorldCircleRadius, _WorldCoreRadius;
         float _ScreenDotSpacing, _ScreenDotRadius;
         float4 _DistanceBands, _DensityLevels, _CoreDensityLevels, _WorldRadialBandEnds, _RadialDensityLevels;
@@ -199,13 +209,15 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             if(Random01(eventSeed)>=saturate(_StarChance)) return 0;
             return (animate?GentlePulse(frac(cycle)):1)*saturate(_StarBrightness);
         }
-        float4 SampleGrid(Varyings input):SV_Target
+        struct GridSamples { float4 normal:SV_Target0; float4 danger:SV_Target1; };
+        GridSamples SampleGrid(Varyings input)
         {
-            if(_BlackBoxPlayerActive<.5) return 0;
+            GridSamples samples; samples.normal=0; samples.danger=0;
+            if(_BlackBoxPlayerActive<.5) return samples;
             uint2 cell=(uint2)input.positionCS.xy;
             float pitch=max(_ScreenDotSpacing,1)*_PointViewport.y/720.0;
             float2 uv=(float2(cell)+.5)*pitch*_PointViewport.zw;
-            if(any(uv>=1)) return 0;
+            if(any(uv>=1)) return samples;
             float3 p,n;
             bool surface=SurfaceAt(uv,p,n);
             float4 result=0;
@@ -228,21 +240,42 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             {
                 // Same points and contours, gated by pulse arrival and fade.
                 float sonarRank=OrderedRank(cell);
-                float2 pulseReveal=SonarVisibility(p,n,sonarRank);
-                float reveal=pulseReveal.x;
+                PulseReveals pulseReveal=SonarVisibility(p,n,sonarRank);
+                float reveal=pulseReveal.white.x;
                 if(reveal>0)
                 {
                     float sonarDistance=length(_BlackBoxPlayerPosition.xyz-p);
-                    float sonarFace=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?pulseReveal.y:0;
+                    float sonarFace=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?pulseReveal.white.y:0;
                     float contour=_EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5
                         && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n)*reveal:0;
                     // Union the two masks. Overlapping dots retain their original brightness and size.
                     result=max(result,float4(sonarFace,contour,0,sonarFace>0 || contour>0?1:0));
                 }
+                float sonarDistance=length(_BlackBoxPlayerPosition.xyz-p);
+                bool faces=_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5;
+                float edgeMask=_EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5
+                    && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n):0;
+                float2 red=float2(faces?pulseReveal.danger.y:0,edgeMask*pulseReveal.danger.x);
+                float2 blue=float2(faces?pulseReveal.lightning.y:0,edgeMask*pulseReveal.lightning.x);
+                float2 gold=float2(faces?pulseReveal.coin.y:0,edgeMask*pulseReveal.coin.x);
+                // Other sources can reveal the sphere, but its identity remains blue.
+                if(LightningSurface(p)) {blue=max(blue,result.xy);result.xy=0;}
+                // Store brightness and palette separately for the two original styles.
+                float2 face=red.x>0?float2(red.x,1.0/3):blue.x>0?float2(blue.x,2.0/3):float2(gold.x,1);
+                float2 edge=red.y>0?float2(red.y,1.0/3):blue.y>0?float2(blue.y,2.0/3):float2(gold.y,1);
+                samples.danger=float4(face.x,edge.x,face.y,edge.y);
             }
-            return result;
+            if(surface && LightningSurface(p))
+            {
+                if(samples.danger.z!=1.0/3 && result.x>samples.danger.x) {samples.danger.x=result.x;samples.danger.z=2.0/3;}
+                if(samples.danger.w!=1.0/3 && result.y>samples.danger.y) {samples.danger.y=result.y;samples.danger.w=2.0/3;}
+                result.xy=0;
+            }
+            samples.normal=result;
+            return samples;
         }
-        float DrawPoints(Varyings input,int channel)
+        // Every color uses this exact grid, circle, AA and reticle mask calculation.
+        float2 PointResponse(Varyings input,int channel,bool danger)
         {
             float referencePixel=720.0/_PointViewport.y;
             float2 screen=input.positionCS.xy*referencePixel;
@@ -250,20 +283,39 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             int2 cell=(int2)floor(screen/pitch);
             float radius=clamp(_ScreenDotRadius,0,pitch*.75);
             float aa=.70710678*referencePixel;
-            float result=0;
+            float2 result=0;
             [unroll] for(int y=-1;y<=1;y++) [unroll] for(int x=-1;x<=1;x++)
             {
                 int2 candidate=cell+int2(x,y);
                 if(any(candidate<0)||any(candidate>=int2(_PointGridSize.xy))) continue;
-                float decision=LOAD_TEXTURE2D(_PointGrid,candidate)[channel];
-                decision*=CrosshairPointVisibility((float2(candidate)+.5)*pitch,radius+aa);
-                float distance=length(screen-(float2(candidate)+.5)*pitch);
-                result=max(result,decision*(1-smoothstep(radius-aa,radius+aa,distance)));
+                float4 gridSample=danger?LOAD_TEXTURE2D(_DangerPointGrid,candidate):LOAD_TEXTURE2D(_PointGrid,candidate);
+                float decision=gridSample[channel];
+                if(danger && abs(gridSample[channel+2]*3-_PulsePalette)>.25) decision=0;
+                float mask=CrosshairPointVisibility((float2(candidate)+.5)*pitch,radius+aa);
+                float circle=1-smoothstep(radius-aa,radius+aa,length(screen-(float2(candidate)+.5)*pitch));
+                result.x=max(result.x,decision*mask*circle);
+                if(decision>0) result.y=max(result.y,mask*circle);
             }
             return result;
         }
+        float DrawPoints(Varyings input,int channel) { return PointResponse(input,channel,false).x; }
         half4 DrawFaces(Varyings input):SV_Target { float v=DrawPoints(input,0);return half4(v,v,v,0); }
         half4 DrawCorners(Varyings input):SV_Target { float v=DrawPoints(input,1);return half4(v,v,v,0); }
+        half4 DrawDanger(Varyings input,int channel)
+        {
+            float2 dotResponse=PointResponse(input,channel,true);
+            // White underneath is cleared first; maximum blending preserves overlapping red AA.
+            return half4(_PulseColor.rgb*dotResponse.x,dotResponse.y);
+        }
+        half4 DrawDangerFaces(Varyings input):SV_Target { return DrawDanger(input,0); }
+        half4 DrawDangerCorners(Varyings input):SV_Target { return DrawDanger(input,1); }
+        half4 ClearDanger(Varyings input,int channel)
+        {
+            clip(PointResponse(input,channel,true).y-0.000001);
+            return 0;
+        }
+        half4 ClearDangerFaces(Varyings input):SV_Target { return ClearDanger(input,0); }
+        half4 ClearDangerCorners(Varyings input):SV_Target { return ClearDanger(input,1); }
         struct StarVaryings
         {
             float4 positionCS:SV_POSITION;
@@ -349,6 +401,46 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             HLSLPROGRAM
             #pragma vertex StarVert
             #pragma fragment DrawStars
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "DangerFaceDots"
+            Blend One One
+            BlendOp Max
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment DrawDangerFaces
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "DangerCornerDots"
+            Blend One One
+            BlendOp Max
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment DrawDangerCorners
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "ClearDangerFaces"
+            Blend Off
+            ColorMask RGB
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment ClearDangerFaces
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "ClearDangerCorners"
+            Blend Off
+            ColorMask RGB
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment ClearDangerCorners
             ENDHLSL
         }
     }

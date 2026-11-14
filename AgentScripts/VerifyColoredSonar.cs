@@ -1,0 +1,94 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using UnityEditor;
+using UnityEngine;
+
+public static class VerifyColoredSonar
+{
+    [Serializable] public class Report {public bool complete;public List<string> checks=new List<string>();public List<string> frames=new List<string>();}
+    static Report report;static Color32[] pixels;
+    const string Path="/tmp/Sound2-ColoredSonar.json";
+    static void Check(bool pass,string text)=>report.checks.Add((pass?"PASS: ":"FAIL: ")+text);
+    static int Lit()=>pixels.Count(p=>Math.Max(p.r,Math.Max(p.g,p.b))>8);
+    public static string Main(){report=new Report();UnityEngine.Object.FindAnyObjectByType<SphericalSonar>().StartCoroutine(Run());return Path;}
+    static IEnumerator Capture(string name)
+    {
+        yield return null;yield return new WaitForEndOfFrame();var image=ScreenCapture.CaptureScreenshotAsTexture();pixels=image.GetPixels32();
+        report.frames.Add(name+": "+Lit()+" lit pixels");System.IO.File.WriteAllBytes("/tmp/Sound2-Colors-"+name+".png",image.EncodeToPNG());UnityEngine.Object.Destroy(image);
+    }
+    static IEnumerator Run()
+    {
+        var s=UnityEngine.Object.FindAnyObjectByType<SphericalSonar>();var field=s.PulseField;var player=s.GetComponentInParent<PlayerController>();var capsule=player.GetComponent<CharacterController>();
+        var emitters=UnityEngine.Object.FindObjectsByType<SonarObjectEmitter>();var auto=Array.ConvertAll(emitters,e=>e.automatic);
+        var scans=UnityEngine.Object.FindObjectsByType<MonsterScanEmitter>();var enabled=Array.ConvertAll(scans,e=>e.enabled);
+        var hud=typeof(SphericalSonar).GetField("hud",BindingFlags.NonPublic|BindingFlags.Instance);bool oldHud=(bool)hud.GetValue(s);
+        var status=player.GetComponent<PlayerStatusHUD>();bool oldStatus=status.visible;status.visible=false;
+        var position=s.transform.position;var rotation=s.transform.rotation;
+        bool oldAuto=s.automatic,near=s.proximityRendering,sonar=s.sonarRendering,faces=s.facePoints,edges=s.edgePoints,moving=player.enabled,collision=capsule.enabled;
+        var cube=GameObject.CreatePrimitive(PrimitiveType.Cube);cube.transform.position=new Vector3(100,100,102);cube.transform.localScale=Vector3.one*.8f;
+        cube.GetComponent<Renderer>().sharedMaterial=AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/BlackBox/PureBlack.mat");
+        GameObject lightningBody=null;
+        var origin=new Vector3(100,100,101.1f);var profile=new SonarDistanceSettings();
+        var density=new SonarDensitySettings {enabled=true,fadeStartDistance=0,fadeEndDistance=3,falloffPower=8};
+        try
+        {
+            foreach(var e in emitters)e.automatic=false;foreach(var scan in scans)scan.enabled=false;
+            s.automatic=false;player.enabled=false;capsule.enabled=false;hud.SetValue(s,false);
+            s.SetRevealModes(false,true);s.transform.SetPositionAndRotation(new Vector3(100,100,100),Quaternion.identity);
+            foreach(bool face in new[]{true,false})
+            {
+                s.facePoints=face;s.edgePoints=!face;string style=face?"faces":"contours";
+                field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000,profile);yield return Capture("white-"+style);var white=pixels;
+                field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000,SonarPulseKind.Coin,profile);yield return Capture("yellow-"+style);
+                Check(Lit()>0 && pixels.All(p=>p.r==p.g && p.b==0),"Coin "+style+" are pure yellow");
+                Check(pixels.Select(p=>p.r).SequenceEqual(white.Select(p=>p.r)),"Yellow "+style+" use exactly the original point positions, radii and density");
+                field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000,SonarPulseKind.Lightning,profile);yield return Capture("blue-"+style);
+                Check(Lit()>0 && pixels.All(p=>p.r==0 && p.g==0),"Lightning "+style+" are pure blue");
+                // HDR targets can have 10 blue bits versus 11 red bits; allow two final 8-bit levels.
+                Check(pixels.Select((p,i)=>Math.Abs(p.b-white[i].r)<=2).All(v=>v),"Blue "+style+" match the original lattice, radius and density within two HDR color-quantization levels");
+                int full=Lit();var fullPixels=pixels;
+                field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000,SonarPulseKind.Lightning,profile,density);yield return Capture("thinned-"+style);
+                Check(Lit()>0 && Lit()<full,"Density attenuation removes "+style+" points rather than only dimming them");
+                Check(pixels.Where((p,i)=>p.b>8).Select((p)=>p.b).Any() && pixels.Select((p,i)=>p.b==0 || p.b==fullPixels[i].b).All(v=>v),"Retained "+style+" keep their original pixel brightness");
+            }
+            s.facePoints=s.edgePoints=true;field.ClearPulses();
+            field.EmitFrom(origin,3,100000000,10000000,SonarPulseKind.Coin,profile);
+            field.EmitFrom(origin,3,100000000,10000000,SonarPulseKind.Lightning,profile);field.EmitFrom(origin,3,100000000,10000000,profile);
+            yield return Capture("blue-priority");Check(Lit()>0 && pixels.All(p=>p.r==0 && p.g==0),"Blue remains blue when white and yellow waves overlap");
+            field.EmitDangerFrom(origin,3,100000000,10000000,profile);yield return Capture("red-priority");
+            Check(Lit()>0 && pixels.All(p=>p.g==0 && p.b==0),"Monster red has priority over blue and yellow");
+            density.fadeEndDistance=.4f;field.ClearPulses();field.EmitDangerFrom(origin,3,100000000,10000000,profile,density);yield return Capture("density-cap");
+            Check(Lit()==0,"Density cap hides faces and contours completely beyond its endpoint");
+            field.ClearPulses();field.EmitFrom(origin,1,.1f,10000000,SonarPulseKind.Coin,profile);yield return Capture("before-arrival");
+            Check(Lit()==0,"Yellow wave waits for arrival");
+            field.ClearPulses();field.EmitFrom(new Vector3(100,100,99),1,100000000,10000000,SonarPulseKind.Coin,profile);yield return Capture("short-range");
+            Check(Lit()==0,"Short coin wave cannot reveal distant geometry");
+            field.ClearPulses();field.EmitFrom(origin,3,100000000,.05f,SonarPulseKind.Lightning,profile);yield return new WaitForSeconds(.15f);yield return Capture("expired");
+            Check(Lit()==0,"Blue wave expires normally");
+            field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000);field.EmitDangerFrom(origin,3,100000000,10000000,profile);
+            var before=(Vector4[])Shader.GetGlobalVectorArray("_SonarSceneOrigins").Clone();
+            for(int i=0;i<12;i++)field.EmitFrom(origin+Vector3.right*i,3,100000000,10000000,SonarPulseKind.Coin,profile);
+            var after=Shader.GetGlobalVectorArray("_SonarSceneOrigins");
+            Check(before.Take(12).SequenceEqual(after.Take(12)) && after.Length==24,"Coins use eight reserved slots without replacing player, footsteps or monster scans");
+            UnityEngine.Object.Destroy(cube);yield return null;
+            lightningBody=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/BallLightning.prefab"));
+            lightningBody.transform.position=new Vector3(100,100,102);
+            var hazard=lightningBody.GetComponent<BallLightning>();hazard.hoverHeight=100;hazard.autoCycle=false;hazard.wanderSpeed=0;
+            lightningBody.GetComponent<SonarObjectEmitter>().automatic=false;yield return null;
+            field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000,profile);yield return Capture("white-reveals-blue-body");
+            Check(Lit()>0 && pixels.All(p=>p.r==0 && p.g==0),"Player white sonar reveals the lightning body in blue, preserving its identity");
+            Check(ShaderUtil.GetShaderMessages(s.renderingSettings.shader).Length==0,"Colored point shader compiles without errors or warnings");
+        }
+        finally
+        {
+            s.transform.SetPositionAndRotation(position,rotation);capsule.enabled=collision;player.enabled=moving;
+            s.automatic=oldAuto;s.facePoints=faces;s.edgePoints=edges;s.SetRevealModes(near,sonar);hud.SetValue(s,oldHud);status.visible=oldStatus;
+            for(int i=0;i<emitters.Length;i++)if(emitters[i]!=null)emitters[i].automatic=auto[i];
+            for(int i=0;i<scans.Length;i++)scans[i].enabled=enabled[i];field.ClearPulses();if(cube!=null)UnityEngine.Object.Destroy(cube);if(lightningBody!=null)UnityEngine.Object.Destroy(lightningBody);
+            report.complete=true;System.IO.File.WriteAllText(Path,JsonUtility.ToJson(report,true));
+        }
+    }
+}

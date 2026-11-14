@@ -19,6 +19,10 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
     [Tooltip("Maximum collision sonar range, in metres. Never reduces the configured base range.")]
     [Min(1f)] public float maximumRange = 36f;
 
+    [Header("AI hearing")]
+    [Tooltip("Audible range at the base impact range; louder impacts scale this proportionally.")]
+    [Min(0)] public float hearingRange = 20;
+
     public int Emissions { get; private set; }
     public float LastImpactSpeed { get; private set; }
     public float LastEmissionRange { get; private set; }
@@ -62,6 +66,8 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
 
         float pulseRange = RangeForImpact(impactSpeed);
         if (!sonar.EmitWithRange(pulseRange)) return;
+        GameplayNoise.Emit(collision.GetContact(0).point, hearingRange * pulseRange / Mathf.Max(1, sonar.range),
+            GameplayNoiseKind.Impact, this);
         LastImpactSpeed = impactSpeed;
         LastEmissionRange = pulseRange;
         nextEmission = Time.time + emissionInterval;
