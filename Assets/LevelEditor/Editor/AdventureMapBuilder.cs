@@ -202,7 +202,7 @@ namespace Sound2.LevelEditing.Editor
                         else if(i==7||i==8){Put(f,i,"AdventureBed",-x,z-1);Put(f,i,"WritingDesk",x,z,180);Put(f,i,"PickupAlarmClock",x,z,0,DeskTop(f,i,x,z));}
                         else if(i==1||i==10){Put(f,i,"AdventureSofa",-x,2,90);Put(f,i,"Television",x,2,-90);TableSet(f,i,2,-3);}
                         else if(i==9){Put(f,i,"LibraryBookshelf",-x,z);Put(f,i,"WritingDesk",x,z,180);Put(f,i,"Computer",x,z,180,DeskTop(f,i,x,z));}
-                        else {TableSet(f,i,-x,z-1);Put(f,i,"WallCabinet",x,z,180,1.5f);}
+                        else {TableSet(f,i,-x,z-1);MountWallProp(f,i,"WallCabinet",new Vector2(x,z),Vector2.up,2.0075f);}
                         Put(f,i,"PickupWaterCup",x,-z);break;
                     case 2:
                         if(i==1||i==2||i==3||i==11)
@@ -323,15 +323,6 @@ namespace Sound2.LevelEditing.Editor
             Cube(cabin.transform,"Left jamb",new(-1.75f,1.5f,2.85f),new(.9f,3,.25f));
             Cube(cabin.transform,"Right jamb",new(1.75f,1.5f,2.85f),new(.9f,3,.25f));
             Cube(cabin.transform,"Lintel",new(0,2.9f,2.85f),new(3,.4f,.25f));
-            Cube(cabin.transform,"Back handrail",new(0,1.05f,-2.73f),new(3.6f,.055f,.08f));
-            foreach(float x in new[]{-1.985f,1.985f})
-            {
-                foreach(float y in new[]{.025f,1.05f,3.075f})Cube(cabin.transform,"Side ink rail",new(x,y,-.05f),new(.025f,.025f,5.5f)).GetComponent<Renderer>().sharedMaterial=blackInk;
-                foreach(float z in new[]{-2.77f,-1f,1f})Cube(cabin.transform,"Side ink seam",new(x,1.55f,z),new(.025f,3.1f,.025f)).GetComponent<Renderer>().sharedMaterial=blackInk;
-            }
-            foreach(float y in new[]{.025f,3.075f})Cube(cabin.transform,"Back ink edge",new(0,y,-2.77f),new(4,.025f,.025f)).GetComponent<Renderer>().sharedMaterial=blackInk;
-            foreach(float x in new[]{-1f,0,1f})Cube(cabin.transform,"Floor ink seam",new(x,.006f,0),new(.018f,.008f,5.5f)).GetComponent<Renderer>().sharedMaterial=blackInk;
-            for(int i=-1;i<=1;i++)Cube(cabin.transform,"Back panel "+i,new(i*1.3f,1.8f,-2.785f),new(1.27f,1.8f,.02f));
             lift.cabinLeft=Cube(cabin.transform,"Cabin door L",new(-.65f,1.35f,2.79f),new(1.3f,2.7f,.1f)).transform;
             lift.cabinRight=Cube(cabin.transform,"Cabin door R",new(.65f,1.35f,2.79f),new(1.3f,2.7f,.1f)).transform;
             var lower=new GameObject("Lower landing");lower.transform.SetParent(go.transform,false);

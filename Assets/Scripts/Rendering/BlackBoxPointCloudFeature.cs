@@ -240,6 +240,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     data.viewport = new Vector4(width, height, 1f / width, 1f / height);
                     data.crosshairClearZone = clearZone;
                     data.gridSize = new Vector4(columns, rows, 1f / columns, 1f / rows);
+                    if (index == 2) builder.AllowGlobalStateModification(true);
                     if (index == 0) builder.UseTexture(resources.cameraDepthTexture, AccessFlags.Read);
                     else { builder.UseTexture(grid, AccessFlags.Read); builder.UseTexture(dangerGrid, AccessFlags.Read); }
                     builder.SetRenderAttachment(index == 0 ? grid : resources.activeColorTexture, 0,
@@ -268,6 +269,13 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                         if (d.sharedDotRadius >= 0)
                             properties.SetFloat("_ScreenDotRadius", d.sharedDotRadius);
                         properties.SetMatrix("_StarViewProjection", d.starViewProjection);
+                        if (d.index == 2)
+                        {
+                            float spacing = Mathf.Max(1, d.material.GetFloat("_ScreenDotSpacing"));
+                            float radius = d.sharedDotRadius >= 0 ? d.sharedDotRadius : d.material.GetFloat("_ScreenDotRadius");
+                            context.cmd.SetGlobalVector("_ElevatorPointGrid", new Vector4(spacing,
+                                Mathf.Clamp(radius, 0, spacing * .75f), 720f / d.viewport.y, 0));
+                        }
                         if (d.grid.IsValid()) properties.SetTexture("_PointGrid", (RTHandle)d.grid);
                         if (d.dangerGrid.IsValid()) properties.SetTexture("_DangerPointGrid", (RTHandle)d.dangerGrid);
                         if (d.depth.IsValid()) properties.SetTexture("_PointDepth", (RTHandle)d.depth);

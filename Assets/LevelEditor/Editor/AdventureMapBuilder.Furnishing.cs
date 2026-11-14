@@ -133,16 +133,30 @@ namespace Sound2.LevelEditing.Editor
                 bool doorway=f.layout.corridors.Any(c=>new[]{c.start,c.end}.Any(e=>e.roomId==r.id && Vector2.Distance(r.Edge(e.edge,out _),p)<c.width*.5f+1.6f));
                 if(doorway)continue;
                 string name=r.use==RoomUse.Bathroom?"WallMirror":r.use==RoomUse.Kitchen?"WallCabinet":"WallMural";
-                var asset=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/"+name+".prefab");
-                var go=(GameObject)PrefabUtility.InstantiatePrefab(asset,f.gameObject.scene);
-                go.transform.SetParent(f.transform.Find("Props"),false);go.name=r.name+" · "+name;
-                go.transform.localRotation=Quaternion.LookRotation(new Vector3(-normal.x,0,-normal.y));
-                var prop=go.GetComponent<LevelProp>();
-                Vector2 face=p-normal*(f.layout.wallThickness*.5f+.015f);
-                go.transform.localPosition=new Vector3(face.x,1.9f,face.y)-go.transform.localRotation*prop.surfaceAnchor;
-                PrefabUtility.RecordPrefabInstancePropertyModifications(go.transform);
+                if (!MountWallProp(f,index,name,p-r.center-normal*.25f,normal,1.9f)) continue;
                 if(++count>=(r.size.x*r.size.y>150?3:1))break;
             }
+        }
+        static bool MountWallProp(AdventureFloor floor, int index, string name, Vector2 start, Vector2 outward, float height)
+        {
+            var layout = floor.layout;
+            var room = layout.rooms[index];
+            var wall = layout.generatedRoot.transform.Find("Walls").GetComponent<MeshCollider>();
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/" + name + ".prefab");
+            var prop = asset.GetComponent<LevelProp>();
+            var origin = layout.World(room.center + start, height);
+            var direction = layout.transform.TransformDirection(new Vector3(outward.x, 0, outward.y));
+            Physics.SyncTransforms();
+            if (!wall.Raycast(new Ray(origin, direction), out var hit, Mathf.Max(room.size.x, room.size.y))
+                || Vector3.Dot(hit.normal, -direction) < .95f) return false;
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(asset, floor.gameObject.scene);
+            go.transform.SetParent(floor.transform.Find("Props"), false);
+            go.name = room.name + " · " + name;
+            var rotation = Quaternion.LookRotation(hit.normal, layout.transform.up);
+            var anchor = rotation * Vector3.Scale(prop.surfaceAnchor, go.transform.lossyScale);
+            go.transform.SetPositionAndRotation(hit.point + hit.normal * prop.surfaceOffset - anchor, rotation);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(go.transform);
+            return true;
         }
     }
 }

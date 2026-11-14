@@ -20,6 +20,22 @@ namespace Sound2.LevelEditing
         Vector3 passengerOffset;
         readonly List<(Rigidbody body, Vector3 offset, bool kinematic, Transform parent)> cargo = new();
 
+        void Awake() => ConfigureCabinEdges();
+
+        void ConfigureCabinEdges()
+        {
+            if (cabin == null) return;
+            var properties = new MaterialPropertyBlock();
+            foreach (string part in new[] { "Floor", "Roof", "Back", "Left", "Right", "Left jamb", "Right jamb", "Lintel" })
+            {
+                var panel = cabin.Find(part);
+                if (panel == null || !panel.TryGetComponent<Renderer>(out var renderer)) continue;
+                properties.SetMatrix("_PanelToCabin", Matrix4x4.TRS(panel.localPosition, panel.localRotation, panel.localScale));
+                properties.SetFloat("_CabinEdges", 1);
+                renderer.SetPropertyBlock(properties);
+            }
+        }
+
         public bool Contains(Vector3 world)
         {
             var p = cabin.InverseTransformPoint(world);
