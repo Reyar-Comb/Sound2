@@ -17,13 +17,20 @@ namespace Sound2.LevelEditing
         public bool PermanentlyOpen => State == LiftState.Arrived && DoorOpen >= .999f;
         float elapsed;
         PlayerController passenger;
-        Vector3 passengerOffset;
+        const float DissolveSeconds = .85f;
+        readonly List<Renderer> arrivalPanels = new();
         readonly List<(Rigidbody body, Vector3 offset, bool kinematic, Transform parent)> cargo = new();
 
         readonly List<Renderer> cabinPanels = new();
         readonly MaterialPropertyBlock panelProperties = new();
 
-        void Awake() => ConfigureCabinEdges();
+        void Awake()
+        {
+            ConfigureCabinEdges();
+            if (cabin != null) cabin.GetComponentsInChildren<Renderer>(true, arrivalPanels);
+            if (upperLeft != null && upperLeft.parent != null)
+                arrivalPanels.AddRange(upperLeft.parent.GetComponentsInChildren<Renderer>(true));
+        }
 
         void SetCabinMotion(float height, float strength)
         {
@@ -50,6 +57,23 @@ namespace Sound2.LevelEditing
             }
         }
 
+        void SetArrivalDissolve(float progress)
+        {
+            foreach (var renderer in arrivalPanels)
+            {
+                renderer.GetPropertyBlock(panelProperties);
+                panelProperties.SetFloat("_ArrivalDissolve", progress);
+                renderer.SetPropertyBlock(panelProperties);
+            }
+        }
+
+        public bool ContainsPassenger(Vector3 world)
+        {
+            if (cabin == null) return false;
+            var p = cabin.InverseTransformPoint(world);
+            return Mathf.Abs(p.x) < 2 && p.z > -2.8f && p.z < 2.74f && p.y >= -.1f && p.y < 3.1f;
+        }
+
         public bool Contains(Vector3 world)
         {
             var p = cabin.InverseTransformPoint(world);
@@ -68,8 +92,6 @@ namespace Sound2.LevelEditing
             if (!inside) { State = LiftState.Boarding; elapsed = 0; return true; }
             if (!adventure.PrepareDestination(this)) return false;
             passenger = player.GetComponent<PlayerController>();
-            passengerOffset = cabin.InverseTransformPoint(passenger.transform.position);
-            passenger.TransportLocked = true;
             cargo.Clear();
             foreach (var body in FindObjectsByType<Rigidbody>())
             {
@@ -94,12 +116,22 @@ namespace Sound2.LevelEditing
             else if (State == LiftState.Closing)
             {
                 DoorOpen = 1 - doorT; Doors(lowerLeft, lowerRight, DoorOpen); Doors(cabinLeft, cabinRight, DoorOpen);
-                if (doorT >= 1) { State = LiftState.Ascending; elapsed = 0; if (motor != null && motor.clip != null) motor.Play(); }
+                if (passenger == null || !ContainsPassenger(passenger.transform.position))
+                {
+                    State = LiftState.Boarding;
+                    elapsed = DoorOpen * Mathf.Max(.1f, doorSeconds);
+                    ReleasePassenger();
+                }
+                else if (doorT >= 1) { State = LiftState.Ascending; elapsed = 0; if (motor != null && motor.clip != null) motor.Play(); }
             }
             else if (State == LiftState.Ascending)
             {
                 float t = Mathf.Clamp01(elapsed / Mathf.Max(.1f, travelSeconds));
+                Vector3 previousPosition = cabin.position;
                 cabin.localPosition = Vector3.up * (rise * Mathf.SmoothStep(0, 1, t));
+                if (passenger != null) passenger.FollowPlatform(cabin.position - previousPosition);
+                foreach (var item in cargo)
+                    if (item.body != null) item.body.position = cabin.TransformPoint(item.offset);
                 SetCabinMotion(cabin.localPosition.y, 4 * t * (1 - t));
                 if (t >= 1)
                 {
@@ -111,13 +143,15 @@ namespace Sound2.LevelEditing
             else if (State == LiftState.Opening)
             {
                 DoorOpen = doorT; Doors(upperLeft, upperRight, DoorOpen); Doors(cabinLeft, cabinRight, DoorOpen);
-                if (doorT >= 1) { State = LiftState.Arrived; ReleasePassenger(); }
+                if (doorT >= 1)
+                {
+                    State = LiftState.Arrived;
+                    elapsed = 0;
+                    ReleasePassenger();
+                }
             }
-            if (passenger != null)
-            {
-                passenger.Teleport(cabin.TransformPoint(passengerOffset));
-                foreach (var item in cargo) if (item.body != null) item.body.position = cabin.TransformPoint(item.offset);
-            }
+            if (State == LiftState.Arrived && elapsed - Time.deltaTime < DissolveSeconds)
+                SetArrivalDissolve(Mathf.Clamp01(elapsed / DissolveSeconds));
         }
         static void Doors(Transform left, Transform right, float open)
         {
@@ -126,9 +160,8 @@ namespace Sound2.LevelEditing
         }
         void ReleasePassenger()
         {
-            if (passenger != null) passenger.TransportLocked = false;
             passenger = null;
-            var floor = adventure != null ? adventure.FindFloor(destinationFloor) : null;
+            var floor = adventure != null ? adventure.FindFloor(State == LiftState.Arrived ? destinationFloor : sourceFloor) : null;
             foreach (var item in cargo) if (item.body != null)
             {
                 item.body.transform.SetParent(floor != null ? floor.transform.Find("Props") : item.parent, true);

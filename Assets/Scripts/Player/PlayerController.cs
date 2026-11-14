@@ -88,6 +88,13 @@ public sealed class PlayerController : MonoBehaviour
         ApplyCursorCapture(captured && isActiveAndEnabled);
     }
 
+    public void FollowPlatform(Vector3 displacement)
+    {
+        if (displacement.sqrMagnitude <= 0) return;
+        transform.position += displacement;
+        Physics.SyncTransforms();
+    }
+
     public void Teleport(Vector3 position)
     {
         bool wasEnabled = characterController.enabled;

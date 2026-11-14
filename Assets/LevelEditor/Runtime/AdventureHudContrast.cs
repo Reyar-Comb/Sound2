@@ -17,6 +17,7 @@ namespace Sound2.LevelEditing
         PlayerSubtitles subtitles;
         bool subtitleWasEnabled;
         bool floorLabelWasEnabled;
+        readonly MaterialPropertyBlock surfaceProperties = new();
         readonly RaycastHit[] hits=new RaycastHit[32];
         void Start()
         {
@@ -54,7 +55,10 @@ namespace Sound2.LevelEditing
             if(nearest==null || !nearest.TryGetComponent<Renderer>(out var renderer))return false;
             var material=renderer.sharedMaterial;
             // Thin ink seams sit on paper too; sampling a seam must not turn an entire caption white.
-            return material!=null && material.shader.name=="Sound2/Elevator White Ink" && !nearest.name.StartsWith("Shaft");
+            if (material == null || material.shader.name != "Sound2/Elevator White Ink" || nearest.name.StartsWith("Shaft"))
+                return false;
+            renderer.GetPropertyBlock(surfaceProperties);
+            return surfaceProperties.GetFloat("_ArrivalDissolve") < .2f;
         }
     }
 }

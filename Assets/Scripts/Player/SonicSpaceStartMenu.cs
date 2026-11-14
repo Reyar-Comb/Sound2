@@ -37,7 +37,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
 
     Canvas canvas,maskCanvas;
     UnityEngine.UI.RawImage image;
-    TextMeshProUGUI title;
+    TextMeshProUGUI title, hint;
     Material menuMaterial,glyphMaterial;
     RenderTexture mask;
     Camera view;
@@ -76,7 +76,9 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         var templates=new GameObject("Menu glyph templates",typeof(RectTransform),typeof(Canvas));templates.transform.SetParent(transform,false);
         maskCanvas=templates.GetComponent<Canvas>();maskCanvas.renderMode=RenderMode.WorldSpace;maskCanvas.enabled=false;
         title=MakeLabel("Main title","",118,0,Color.red);
-        labels=new[]{title};
+        hint=MakeLabel("Room controls","",30,-245,Color.green);
+        hint.font=TMP_Settings.defaultFontAsset ?? hint.font;
+        labels=new[]{title,hint};
         glyphProperties=new MaterialPropertyBlock();
         maskCommands=new CommandBuffer {name="Rasterize centered SECONDERSIGN menu glyphs"};
         RebuildMask();
@@ -135,7 +137,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
                 var character=text.textInfo.characterInfo[c];if(!character.isVisible)continue;
                 var meshInfo=text.textInfo.meshInfo[character.materialReferenceIndex];int v=character.vertexIndex;
                 float born=titleDelay+c*characterInterval;
-                float appear=Smooth01((age-born)/.26f);
+                float appear=text==title ? Smooth01((age-born)/.26f)*(1-Mathf.Clamp01(fallTime)) : 1;
                 for(int corner=0;corner<4;corner++)
                 {
                     meshInfo.vertices[v+corner]+=offset;
@@ -154,6 +156,45 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         Graphics.ExecuteCommandBuffer(command);
     }
 
+    const string roomHint = "WASD MOVE  /  SPACE JUMP  /  CLICK OR ENTER START";
+    Vector3 roomEye;
+    float jumpSpeed, fallTime, windowPush;
+    bool outsideWindow;
+
+    void UpdateRoomMovement(bool jump)
+    {
+        float dt = Mathf.Min(Time.unscaledDeltaTime, .05f);
+        var keys = Keyboard.current;
+        Vector2 move = Gamepad.current?.leftStick.ReadValue() ?? Vector2.zero;
+        if (keys != null)
+            move += new Vector2((keys.dKey.isPressed ? 1 : 0) - (keys.aKey.isPressed ? 1 : 0),
+                (keys.wKey.isPressed ? 1 : 0) - (keys.sKey.isPressed ? 1 : 0));
+        move = Vector2.ClampMagnitude(move, 1);
+        Vector3 step = Quaternion.Euler(0, lookAngles.x, 0) * new Vector3(move.x, 0, move.y) * (dt * (3.25f / Mathf.Max(1, roomSize * .5f)));
+
+        if (outsideWindow)
+        {
+            if (fallTime >= 1.5f) return;
+            fallTime += dt;
+            roomEye.x -= dt * .35f;
+            roomEye.y -= dt * fallTime * 2;
+            if (fallTime >= 1.5f && fallTime - dt < 1.5f)
+                hint.text = "WINDOW ENDING  /  CLICK OR ENTER TO RETURN";
+            return;
+        }
+
+        if (jump && roomEye.y <= 0) jumpSpeed = 1.35f;
+        jumpSpeed -= dt * 3;
+        roomEye.y = Mathf.Max(0, roomEye.y + jumpSpeed * dt);
+        Vector3 next = roomEye + step;
+        next.z = Mathf.Clamp(next.z, -.88f, .88f);
+        bool atWindow = next.x < -.82f && Mathf.Abs(next.z) < .39f;
+        windowPush = Mathf.MoveTowards(windowPush, atWindow && step.x < 0 ? 1 : 0, dt * 3);
+        if (atWindow && next.x < -1 && roomEye.y > .14f) outsideWindow = true;
+        else next.x = Mathf.Clamp(next.x, atWindow && roomEye.y > .14f ? -1 : -.88f, .88f);
+        roomEye = next;
+    }
+
     void Update()
     {
         if(!ownsPause || HasStarted)return;
@@ -163,22 +204,37 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         if(width!=Screen.width || height!=Screen.height)RebuildMask();
         else RenderGlyphs();
         UpdateRoomLook();
-        // Any fresh left click enters; keep the opening/held-input gate and consume the transition click.
-        if(inputArmed && IntroReady && !IsTransitioning && (Mouse.current?.leftButton.wasPressedThisFrame==true
-            || Keyboard.current?.enterKey.wasPressedThisFrame==true || Keyboard.current?.spaceKey.wasPressedThisFrame==true
-            || Gamepad.current?.buttonSouth.wasPressedThisFrame==true))BeginGame();
+        if (IntroReady && !outsideWindow && hint.text != roomHint) hint.text = roomHint;
+        if (IntroReady && !IsTransitioning)
+            UpdateRoomMovement(inputArmed && (Keyboard.current?.spaceKey.wasPressedThisFrame == true
+                || Gamepad.current?.buttonSouth.wasPressedThisFrame == true));
+        if (inputArmed && IntroReady && !IsTransitioning &&
+            (Mouse.current?.leftButton.wasPressedThisFrame == true || Keyboard.current?.enterKey.wasPressedThisFrame == true
+                || Gamepad.current?.startButton.wasPressedThisFrame == true))
+        {
+            if (!outsideWindow) BeginGame();
+            else if (fallTime >= 1.5f)
+            {
+                roomEye = Vector3.zero;
+                outsideWindow = false;
+                jumpSpeed = fallTime = 0;
+                hint.text = roomHint;
+            }
+        }
         // Opening a scene while a submit key/button is held must not skip its title screen.
         if(!inputArmed && Time.frameCount>openedFrame+1 && Mouse.current?.leftButton.isPressed!=true
             && Keyboard.current?.enterKey.isPressed!=true && Keyboard.current?.spaceKey.isPressed!=true
-            && Gamepad.current?.buttonSouth.isPressed!=true)inputArmed=true;
+            && Gamepad.current?.buttonSouth.isPressed!=true && Gamepad.current?.startButton.isPressed!=true)inputArmed=true;
         if(IsTransitioning)TransitionProgress=Mathf.Clamp01((Time.unscaledTime-startedAt)/Mathf.Max(.5f,transitionSeconds));
         menuMaterial.SetVector("_MenuSize",new Vector4(width,height,720f*width/height,720));
         menuMaterial.SetFloat("_GridPitch",BlackBoxPointCloudFeature.GetDotSpacing(view));
         menuMaterial.SetFloat("_DotRadius",BlackBoxPointCloudFeature.GetDotDiameter(view)*.5f);
         menuMaterial.SetFloat("_TitleDotScale",titleDotScale);menuMaterial.SetFloat("_TitleDensity",titlePointDensity);
         menuMaterial.SetFloat("_TitleShimmer",titleShimmer);menuMaterial.SetFloat("_MenuStarsEnabled",1);
-        menuMaterial.SetFloat("_RoomHalfSize",Mathf.Max(2,roomSize)*.5f);
         menuMaterial.SetFloat("_RoomTanHalfFov",Mathf.Tan(Mathf.Clamp(roomFieldOfView,50,110)*Mathf.Deg2Rad*.5f));
+        menuMaterial.SetVector("_RoomEye", roomEye);
+        menuMaterial.SetFloat("_WindowPush", windowPush);
+        menuMaterial.SetFloat("_WindowFall", fallTime);
         menuMaterial.SetMatrix("_RoomView",Matrix4x4.Rotate(RoomViewRotation));
         menuMaterial.SetFloat("_OpeningTime",OpeningElapsed);
         menuMaterial.SetFloat("_Transition",TransitionProgress);
@@ -208,7 +264,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
 
     public void BeginGame()
     {
-        if(!ownsPause || !IntroReady || IsTransitioning || HasStarted)return;
+        if(!ownsPause || !IntroReady || IsTransitioning || HasStarted || outsideWindow)return;
         IsTransitioning=true;startedAt=Time.unscaledTime;
     }
 

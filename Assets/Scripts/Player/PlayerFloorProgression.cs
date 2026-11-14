@@ -92,7 +92,7 @@ public sealed class PlayerFloorProgression : MonoBehaviour
             || elevator.State != OneWayElevator.LiftState.Ascending
             || elevator.sourceFloor != CurrentFloor || elevator.destinationFloor != CurrentFloor + 1
             || elevator.destinationFloor > 8 || elevator.cabin.localPosition.y < elevator.rise - .01f
-            || !elevator.Contains(transform.position)) return false;
+            || !elevator.ContainsPassenger(transform.position)) return false;
         AwaitingLanding = false;
         ApplyFloor(elevator.destinationFloor);
         Adventure.EnterFloor(CurrentFloor);
