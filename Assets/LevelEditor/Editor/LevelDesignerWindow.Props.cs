@@ -37,47 +37,8 @@ namespace Sound2.LevelEditing.Editor
         {
             var section = new Foldout { text = "道具 / Props", value = tool == Tool.Prop };
             area.Add(section);
-            var prefabs = new System.Collections.Generic.List<GameObject>();
-            var names = new System.Collections.Generic.Dictionary<GameObject, string>();
-            foreach (var entry in new[] {
-                ("TickingClock", "钟表"), ("PickupBouncyBall", "球"), ("PickupAlarmClock", "闹钟"),
-                ("PickupGlassMug", "玻璃杯"), ("ResizableTable", "桌子"), ("Chair", "椅子"),
-                ("ShoppingCart", "购物车"), ("LibraryBookshelf", "图书架"), ("WritingDesk", "书桌"),
-                ("Computer", "电脑"), ("PickupWaterCup", "水杯"), ("PickupDeskLamp", "台灯"),
-                ("Refrigerator", "冰箱"), ("Stove", "灶台"), ("TrashBin", "垃圾桶"),
-                ("PickupCoffeeMug", "咖啡杯"), ("PickupCeramicVase", "陶瓷花瓶"),
-                ("Television", "电视"), ("Radio", "收音机"), ("TapeRecorder", "录音机"),
-                ("ServiceBell", "餐铃"), ("GameConsole", "游戏机"), ("HeartRateMonitor", "心率仪"), ("Ring", "戒指"),
-                ("WallMural", "壁画"), ("WallMirror", "镜子"), ("WallFlowerBasket", "花篮"),
-                ("WallCabinet", "橱柜"), ("BarCounter", "吧台"),
-                ("AdventureBed", "床"), ("AdventureSofa", "沙发"), ("AdventureCounter", "工作台"),
-                ("AdventureShelf", "超市货架"), ("AdventureCheckout", "收银台"),
-                ("AdventureHospitalBed", "病床"), ("AdventureWardCurtain", "病房隔帘"),
-                ("AdventureBedside", "床头柜"), ("AdventureWardrobe", "衣柜"),
-                ("AdventureSink", "洗手池"), ("AdventureToilet", "马桶"),
-                ("AdventureWasher", "洗衣机"), ("AdventureProduceBin", "果蔬陈列台"),
-                ("AdventurePine", "雪松"), ("AdventureSnowRock", "雪石"),
-                ("AdventureBench", "长椅"), ("AdventurePillar", "竞技场立柱") })
-            {
-                var asset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/" + (entry.Item1.StartsWith("Adventure") ? "Adventure/" : "") + entry.Item1 + ".prefab");
-                if (asset == null) continue;
-                prefabs.Add(asset); names.Add(asset, entry.Item2);
-            }
-            if (propPrefab != null && !prefabs.Contains(propPrefab))
-            { prefabs.Add(propPrefab); names.Add(propPrefab, propPrefab.name); }
-            if (propPrefab == null && prefabs.Count > 0)
-            {
-                propPrefab = prefabs[0];
-                var metadata = propPrefab.GetComponent<LevelProp>();
-                propSurface = metadata != null ? metadata.surface : PropSurface.Floor;
-                propOffset = metadata != null ? metadata.surfaceOffset : .01f;
-                propAngle = 0;
-            }
-            if (prefabs.Count > 0)
-            {
-                var choice = new PopupField<GameObject>("道具", prefabs, prefabs.IndexOf(propPrefab), p => names[p], p => names[p]) { name = "prop-choice" };
-                choice.RegisterValueChangedCallback(e => ChooseProp(e.newValue)); section.Add(choice);
-            }
+            Button(section, "选择道具…", () => PropBrowserWindow.Open(prefab => { if (this != null) ChooseProp(prefab); })).name = "open-prop-browser";
+            section.Add(new Label("当前道具：" + PropCatalog.Name(propPrefab)) { name = "selected-prop-name" });
             var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)propSurface);
             surface.RegisterValueChangedCallback(e => { propSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); section.Add(surface);
             Float(section, "离表面距离", propOffset, v => { propOffset = Mathf.Max(0, v); SceneView.RepaintAll(); });
