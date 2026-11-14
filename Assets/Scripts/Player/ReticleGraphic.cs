@@ -5,6 +5,8 @@ using UnityEngine;
 public sealed class ReticleGraphic : UnityEngine.UI.MaskableGraphic
 {
     float radius = 2f, thickness = 4f;
+    public float Radius => radius;
+    public float Thickness => thickness;
 
     public void SetShape(float newRadius, float newThickness, float opacity)
     {

@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab8f18a14c684994d926a9b9471a2231, type: 3}
+  m_Name: FloorProgression
+  m_EditorClassIdentifier: Assembly-CSharp::FloorProgressionProfile
+  difficultyPerFloor: 0.15
+  sonarRangePerFloor: 0.96
+  sonarAfterglowPerFloor: 0.94
+  minimumSonarMultiplier: 0.4
+  applySonarDifficulty: 1
+  defaultEntryText: "F{floor} \xB7 \u7EE7\u7EED\u5411\u4E0B\u3002\u7559\u610F\u811A\u4E0B\uFF0C\u4E5F\u7559\u610F\u56DE\u58F0\u3002"
+  overrides:
+  - floor: 0
+    difficulty: 1
+    sonarRangeMultiplier: 1
+    sonarAfterglowMultiplier: 1
+    entrySubtitles:
+    - text: "F0 \xB7 \u8D77\u70B9\u3002"
+      duration: 4
+    - text: "\u9760\u8FD1\u7269\u4F53\uFF0C\u89C2\u5BDF\u767D\u8272\u5706\u73AF\u3002\u6309\u9F20\u6807\u5DE6\u952E\u4E0E\u5B83\u4EA4\u4E92\u3002"
+      duration: 5
+    - text: "\u627E\u5230\u5411\u4E0B\u7684\u7AD6\u4E95\u3002\u6BCF\u6B21\u4E0B\u884C\uFF0C\u90FD\u4F1A\u8FDB\u5165\u66F4\u6DF1\u7684\u4E00\u5C42\u3002"
+      duration: 5
+  - floor: 1
+    difficulty: 1.15
+    sonarRangeMultiplier: 0.96
+    sonarAfterglowMultiplier: 0.94
+    entrySubtitles:
+    - text: "F1 \xB7 \u56DE\u58F0\u5F00\u59CB\u53D8\u77ED\u3002"
+      duration: 4
+    - text: "\u653E\u6162\u811A\u6B65\uFF0C\u542C\u6E05\u524D\u65B9\uFF0C\u518D\u7EE7\u7EED\u5411\u4E0B\u3002"
+      duration: 5
+  - floor: 2
+    difficulty: 1.3
+    sonarRangeMultiplier: 0.9216
+    sonarAfterglowMultiplier: 0.8836
+    entrySubtitles:
+    - text: "F2 \xB7 \u66F4\u6DF1\u5904\u3002"
+      duration: 4
+    - text: "\u6BCF\u4E00\u6B21\u58F0\u97F3\uFF0C\u90FD\u53EF\u80FD\u7ED9\u51FA\u65B0\u7684\u65B9\u5411\u3002"
+      duration: 5

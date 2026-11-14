@@ -93,6 +93,7 @@ public class BouncePlaytest : MonoBehaviour
 
     void Update()
     {
+        PlayerUiPointMask.SetLegacyPanel(this, ControlPanel, true);
         balls.RemoveAll(ball => ball == null);
         RefreshAudioSettings();
         var keyboard = Keyboard.current;
@@ -390,7 +391,7 @@ public class BouncePlaytest : MonoBehaviour
     }
 
     void OnApplicationFocus(bool focus) { if (!focus) Capture(false); }
-    void OnDisable() { Capture(false); }
+    void OnDisable() { PlayerUiPointMask.SetLegacyPanel(this, ControlPanel, false); Capture(false); }
     void OnDestroy()
     {
         foreach (var ball in balls) if (ball != null) Destroy(ball);
@@ -400,6 +401,8 @@ public class BouncePlaytest : MonoBehaviour
 
     void OnGUI()
     {
+        var previousFont = GUI.skin.font;
+        if (GameUiTheme.Current != null && GameUiTheme.Current.legacyFont != null) GUI.skin.font = GameUiTheme.Current.legacyFont;
         GUI.enabled = !captured;
         var panel = ControlPanel;
         GUI.Box(panel, "SPATIAL AUDIO / FIVE SWITCHES");
@@ -450,6 +453,6 @@ public class BouncePlaytest : MonoBehaviour
 #endif
         }
         GUI.enabled = true;
-        GUI.Label(new Rect(Screen.width / 2f - 5, Screen.height / 2f - 10, 20, 24), "+");
+        GUI.skin.font = previousFont;
     }
 }

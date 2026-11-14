@@ -11,6 +11,27 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
     [Tooltip("Material using the Screen Grid Face And Corner Points shader.")]
     public Material settings;
     private PointPass pass;
+    static readonly System.Collections.Generic.Dictionary<ScriptableRenderer, BlackBoxPointCloudFeature> activeRenderers = new();
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetRenderers() => activeRenderers.Clear();
+
+    public static float GetDotDiameter(Camera camera, float fallback = 3)
+    {
+        if (camera == null || !camera.TryGetComponent<UniversalAdditionalCameraData>(out var data)) return fallback;
+        // Renderer features own the authoritative radius/spacing, including the non-sonar path.
+        if (activeRenderers.TryGetValue(data.scriptableRenderer, out var points) && points != null && points.isActive && points.settings != null)
+            {
+                Material alternate = points.settings;
+                if (camera.TryGetComponent<SphericalSonar>(out var sonar) && sonar.isActiveAndEnabled)
+                {
+                    if (sonar.renderingSettings != null) alternate = sonar.renderingSettings;
+                    float pitch = Mathf.Min(Mathf.Max(1, points.settings.GetFloat("_ScreenDotSpacing")), Mathf.Max(1, alternate.GetFloat("_ScreenDotSpacing")));
+                    return 2 * Mathf.Clamp(sonar.dotRadius, .25f, pitch * .75f);
+                }
+                return 2 * Mathf.Clamp(alternate.GetFloat("_ScreenDotRadius"), 0, Mathf.Max(1, alternate.GetFloat("_ScreenDotSpacing")) * .75f);
+            }
+        return fallback;
+    }
 
     public override void Create()
     {
@@ -20,6 +41,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
+        activeRenderers[renderer] = this;
         if (settings == null || renderingData.cameraData.cameraType == CameraType.Preview
             || renderingData.cameraData.cameraType == CameraType.Reflection) return;
         var cameraSettings = settings;
@@ -55,6 +77,8 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             public float sharedDotRadius;
             public Matrix4x4 starViewProjection;
             public Vector4 viewport, gridSize, crosshairClearZone;
+            public int uiCount;
+            public Vector4[] uiRects, uiOptions;
         }
 
         public override void RecordRenderGraph(RenderGraph graph, ContextContainer frameData)
@@ -63,14 +87,17 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             var camera = frameData.Get<UniversalCameraData>();
             if (!resources.cameraDepthTexture.IsValid()) return;
             bool separateFaces = faceMaterial != null && faceMaterial != material;
+            var uiRects = new Vector4[PlayerUiPointMask.Capacity];
+            var uiOptions = new Vector4[PlayerUiPointMask.Capacity];
+            int uiCount = PlayerUiPointMask.Collect(camera.camera, uiRects, uiOptions);
             if (separateFaces)
-                RecordPoints(graph, resources, camera, faceMaterial, true, false, false, sharedDotRadius);
-            RecordPoints(graph, resources, camera, material, !separateFaces, true, true, sharedDotRadius);
+                RecordPoints(graph, resources, camera, faceMaterial, true, false, false, sharedDotRadius, uiCount, uiRects, uiOptions);
+            RecordPoints(graph, resources, camera, material, !separateFaces, true, true, sharedDotRadius, uiCount, uiRects, uiOptions);
         }
 
         // Both groups use the original sampling and drawing passes. Only the material differs.
         static void RecordPoints(RenderGraph graph, UniversalResourceData resources, UniversalCameraData camera,
-            Material drawMaterial, bool faces, bool corners, bool stars, float sharedDotRadius)
+            Material drawMaterial, bool faces, bool corners, bool stars, float sharedDotRadius, int uiCount, Vector4[] uiRects, Vector4[] uiOptions)
         {
             int width = camera.cameraTargetDescriptor.width, height = camera.cameraTargetDescriptor.height;
             var interaction = camera.camera.GetComponentInParent<PlayerInteraction>();
@@ -91,6 +118,9 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                 using (var builder = graph.AddRasterRenderPass<Data>(name, out var data))
                 {
                     data.material = drawMaterial;
+                    data.uiCount = uiCount;
+                    data.uiRects = uiRects;
+                    data.uiOptions = uiOptions;
                     data.sharedDotRadius = sharedDotRadius;
                     data.grid = index == 0 ? TextureHandle.nullHandle : grid;
                     data.depth = index == 0 ? resources.cameraDepthTexture : TextureHandle.nullHandle;
@@ -110,6 +140,9 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                         var properties = new MaterialPropertyBlock();
                         properties.SetVector("_PointViewport", d.viewport);
                         properties.SetVector("_CrosshairClearZone", d.crosshairClearZone);
+                        properties.SetInt("_PlayerUiCount", d.uiCount);
+                        properties.SetVectorArray("_PlayerUiRects", d.uiRects);
+                        properties.SetVectorArray("_PlayerUiOptions", d.uiOptions);
                         properties.SetVector("_PointGridSize", d.gridSize);
                         properties.SetFloat("_PointAnimationTime", d.animationTime);
                         if (d.sharedDotRadius >= 0)

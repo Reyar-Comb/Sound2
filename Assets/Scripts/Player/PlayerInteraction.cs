@@ -17,7 +17,9 @@ public sealed class PlayerInteraction : MonoBehaviour
     [Min(0f)] public float pointClearRadius = 14f;
     [Min(.1f)] public float pointClearFeather = 6f;
     [Min(3f)] public float ringRadius = 18f;
-    [Min(.5f)] public float ringThickness = 2f;
+    [Tooltip("Fallback only when the camera has no point-cloud renderer. Normally follows the actual dot diameter.")]
+    [Min(.5f)] public float ringThickness = 3f;
+    public float EffectiveRingThickness { get; private set; } = 3;
     [Min(.05f)] public float revealTime = .28f;
     [Min(.05f)] public float hideTime = .18f;
 
@@ -164,7 +166,8 @@ public sealed class PlayerInteraction : MonoBehaviour
         Place(ring, screen);
         // Quintic smootherstep has zero speed and acceleration at both ends.
         float eased = progress * progress * progress * (progress * (progress * 6 - 15) + 10);
-        ring.SetShape(Mathf.Lerp(crosshairRadius, ringRadius, eased), ringThickness, eased);
+        EffectiveRingThickness = BlackBoxPointCloudFeature.GetDotDiameter(viewCamera, ringThickness);
+        ring.SetShape(Mathf.Lerp(crosshairRadius, Mathf.Max(ringRadius, EffectiveRingThickness + 3), eased), EffectiveRingThickness, eased);
     }
 
     void Place(ReticleGraphic graphic, Vector2 screen)

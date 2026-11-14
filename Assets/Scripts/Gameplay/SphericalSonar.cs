@@ -86,7 +86,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
     SonarCueSource cue;
     bool ownsCue;
     float nextEmission;
-    bool hud = true;
+    [SerializeField] bool hud = true;
     static readonly Rect HudRect = new Rect(16, 16, 480, 305);
     bool InputCaptured => player != null && player.isActiveAndEnabled && !player.InputSuspended;
 
@@ -112,6 +112,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
 
     void Update()
     {
+        PlayerUiPointMask.SetLegacyPanel(this, HudRect, hud);
         var style = GetComponent<BlackBoxProximitySource>();
         if (style.IsStyleEnabled(BlackBoxProximitySource.PointStyle.Face) != facePoints)
             style.SetStyleEnabled(BlackBoxProximitySource.PointStyle.Face, facePoints);
@@ -170,6 +171,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
     void OnApplicationFocus(bool focused) { if (!focused) Capture(false); }
     void OnDisable()
     {
+        PlayerUiPointMask.SetLegacyPanel(this, HudRect, false);
         Capture(false);
         if (PulseField != null) PulseField.enabled = false;
     }
@@ -182,6 +184,8 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
     void OnGUI()
     {
         if (!hud) return;
+        var previousFont = GUI.skin.font;
+        if (GameUiTheme.Current != null && GameUiTheme.Current.legacyFont != null) GUI.skin.font = GameUiTheme.Current.legacyFont;
         GUILayout.BeginArea(HudRect, GUI.skin.box);
         GUILayout.Label("SPHERICAL SONAR  |  BlackBox dots");
         GUILayout.Label("Click / Enter: pulse   WASD: move   Mouse: look");
@@ -202,5 +206,6 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         GUILayout.Label($"Auto {(automatic ? "ON" : "OFF")}   Pulses {Emissions}   Sample {LastSamplingMilliseconds:0.0} ms");
         if (GUILayout.Button("Emit spherical pulse")) Emit();
         GUILayout.EndArea();
+        GUI.skin.font = previousFont;
     }
 }

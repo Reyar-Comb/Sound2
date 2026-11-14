@@ -58,7 +58,7 @@ public static class VerifyInteraction
             Check(interaction.RingProgress > 0 && interaction.RingProgress < 1, "Ring did not animate from zero.");
             await Tick(400);
             Check(interaction.RingProgress > .99f, "Ring did not finish expanding.");
-            Check(interaction.GetComponentInChildren<Canvas>().enabled && interaction.PointClearZone.z >= 14, "HUD or per-camera mask missing.");
+            Check(interaction.transform.Find("InteractionHUD").GetComponent<Canvas>().enabled && interaction.PointClearZone.z >= 14, "HUD or per-camera mask missing.");
             checks.Add("focus + nonlinear ring expansion + HUD mask");
 
             mouse.MakeCurrent();
@@ -74,7 +74,7 @@ public static class VerifyInteraction
             controller.InputSuspended = true;
             await Tick();
             Check(interaction.FocusedTarget == null && interaction.PointClearZone == Vector4.zero
-                && !interaction.GetComponentInChildren<Canvas>().enabled && !interaction.TryInteractFocused(), "Menu suspension left HUD or interaction active.");
+                && !interaction.transform.Find("InteractionHUD").GetComponent<Canvas>().enabled && !interaction.TryInteractFocused(), "Menu suspension left HUD or interaction active.");
             controller.InputSuspended = false;
             await Tick(400);
             target.interactionEnabled = false;
@@ -149,7 +149,7 @@ public static class VerifyInteraction
             await Tick();
             Check(interaction.FocusedTarget == null && interaction.RingProgress == 0, "Destroyed target left stale focus.");
             interaction.enabled = false;
-            Check(interaction.PointClearZone == Vector4.zero && !interaction.GetComponentInChildren<Canvas>().enabled,
+            Check(interaction.PointClearZone == Vector4.zero && !interaction.transform.Find("InteractionHUD").GetComponent<Canvas>().enabled,
                 "Disabling the interaction component left HUD/mask active.");
             checks.Add("destroyed target + component cleanup");
             return new { passed = true, checks };

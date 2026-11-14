@@ -39,6 +39,26 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
         float4 _PointViewport, _PointGridSize;
         float4 _CrosshairClearZone; // xy: viewport centre; zw: clear radius/feather at 720p
+        int _PlayerUiCount;
+        float4 _PlayerUiRects[128], _PlayerUiOptions[128];
+        float PlayerUiVisibility(float2 pixel, float radius)
+        {
+            #if UNITY_UV_STARTS_AT_TOP
+                pixel.y=_PointViewport.y-pixel.y;
+            #endif
+            float2 p=pixel*(720.0/_PointViewport.y);
+            float visibility=1;
+            [loop] for(int i=0;i<_PlayerUiCount;i++)
+            {
+                float4 rect=_PlayerUiRects[i], options=_PlayerUiOptions[i];
+                float rounded=min(options.z,min(rect.z,rect.w));
+                float2 q=abs(p-rect.xy)-rect.zw+rounded;
+                float distance=length(max(q,0))+min(max(q.x,q.y),0)-rounded;
+                float mask=smoothstep(options.x+radius,options.x+radius+max(.1,options.y),distance);
+                visibility=min(visibility,lerp(1,mask,options.w));
+            }
+            return visibility;
+        }
         float CrosshairPointVisibility(float2 center, float radius)
         {
             if(_CrosshairClearZone.z<=0) return 1;
@@ -240,6 +260,8 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                     result=max(result,float4(sonarFace,contour,0,sonarFace>0 || contour>0?1:0));
                 }
             }
+            float radius=clamp(_ScreenDotRadius,0,max(_ScreenDotSpacing,1)*.75)+.70710678*720.0/_PointViewport.y;
+            result.rg*=PlayerUiVisibility(uv*_PointViewport.xy,radius);
             return result;
         }
         float DrawPoints(Varyings input,int channel)
@@ -302,7 +324,8 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             o.offset=corners[vertexID]*extent;
             float2 clipOffset=o.offset*(_PointViewport.y/720.0)*_PointViewport.zw*2;
             o.positionCS=float4(ndc+clipOffset,0,1);
-            o.brightness=brightness*CrosshairPointVisibility(uv*_PointViewport.xy*(720.0/_PointViewport.y),extent);
+            o.brightness=brightness*CrosshairPointVisibility(uv*_PointViewport.xy*(720.0/_PointViewport.y),extent)
+                *PlayerUiVisibility(uv*_PointViewport.xy,extent);
             return o;
         }
         half4 DrawStars(StarVaryings input):SV_Target
