@@ -1,6 +1,6 @@
 # 队友资产整合（2026-11-14）
 
-后续玩法调整：金币已改为物理道具，移除钱包及资源收集，HUD 只显示生命；球状闪电改为自主循环的体积点云。当前操作和验证以 [PhysicalItems.md](PhysicalItems.md)、[WorldObjects.md](WorldObjects.md) 为准。下文交易检查记录的是最初整合时的历史结果。
+后续玩法调整：金币已从场景及生成楼层移除，金币 prefab、钱包玩法及资源收集也已移除，HUD 只显示生命；球状闪电改为自主循环的体积点云。当前操作和验证以 [PhysicalItems.md](PhysicalItems.md)、[WorldObjects.md](WorldObjects.md) 为准。下文场景内容和交易检查记录的是最初整合时的历史结果。
 
 已将 Baiyu-Reyar-TS 交付包中的新增玩法接入当前项目。体验入口为 `Assets/Scenes/TeammateSonarHall.unity`，其中包含 1 个巡逻怪物、6 枚金币、1 个球状闪电。直接打开该场景并 Play 即可体验。
 
@@ -22,7 +22,7 @@
 
 - C# 编译：0 错误、0 警告；实际 GPU 渲染后的 shader 消息为空。
 - 演示场景：无丢失脚本，依赖 GUID 均由 AssetDatabase 解析；新增资产没有 GUID 冲突。
-- VerifyWorldObjects：28 项通过（金币、交易、闪电、伤害、避让）。
+- VerifyWorldObjects：28 项通过（金币、交易、闪电、伤害、避让；历史结果，脚本已随旧玩法清理删除）。
 - VerifyMonster：18 项通过（寻路、声音、扫描）。
 - VerifyColoredSonar：29 项通过（颜色、点位、密度、范围、波槽和四色 UI 避让）。
 - VerifyDangerSonar：13 项通过（红色渲染及白红重叠）。
