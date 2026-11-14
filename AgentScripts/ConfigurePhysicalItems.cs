@@ -34,7 +34,7 @@ public static class ConfigurePhysicalItems
         }
         finally{PrefabUtility.UnloadPrefabContents(lightningRoot);}
         int removed=0;
-        foreach(var path in new[]{"Assets/Scenes/BaiYu-Test.unity","Assets/Scenes/TeammateSonarHall.unity"})
+        foreach(var path in new[]{"Assets/Scenes/BaiYu-Test.unity","Assets/Scenes/TeammateSonarHall.unity","Assets/Scenes/SonarHall.unity"})
         {
             var scene=UnityEngine.SceneManagement.SceneManager.GetSceneByPath(path);bool opened=!scene.isLoaded;
             if(opened)scene=EditorSceneManager.OpenScene(path,OpenSceneMode.Additive);
