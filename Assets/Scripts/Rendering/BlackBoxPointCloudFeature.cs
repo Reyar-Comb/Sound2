@@ -168,7 +168,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             foreach(var vines in MonsterVines.Instances)
             {
                 if(vines==null || !vines.isActiveAndEnabled || (camera.camera.cullingMask & (1<<vines.gameObject.layer))==0
-                    || !GeometryUtility.TestPlanesAABB(planes,new Bounds(vines.transform.position,Vector3.one*10)))continue;
+                    || !GeometryUtility.TestPlanesAABB(planes,vines.WorldBounds))continue;
                 var snapshot=new Vector4[MonsterVines.Capacity];int count=vines.Collect(snapshot);if(count==0)continue;
                 for(int phase=0;phase<2;phase++)
                 {

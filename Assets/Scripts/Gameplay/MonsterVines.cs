@@ -15,16 +15,23 @@ public sealed class MonsterVines : MonoBehaviour
     readonly List<Point> points = new(Capacity);
     readonly RaycastHit[] hits = new RaycastHit[16];
     PatrolMonster monster;
+    Sound2.LevelEditing.MonsterVineArea area;
+    Matrix4x4 areaMatrix;
+    Vector3 areaSize;
     Vector3 previous, heading, targetHeading;
     float nextGrowth;
     int sequence;
     public int PointCount => points.Count;
     public Vector3 TravelDirection => heading;
+    public Bounds WorldBounds => area != null ? area.WorldBounds : new Bounds(transform.position, Vector3.one * 10);
+    public void BindArea(Sound2.LevelEditing.MonsterVineArea value) { area = value; ClearTrail(); }
+    public void ClearTrail() { points.Clear(); nextGrowth = Time.time; }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetInstances() => Instances.Clear();
     void OnEnable()
     {
         monster = GetComponent<PatrolMonster>(); previous = transform.position;
+        area = GetComponent<Sound2.LevelEditing.MonsterVineArea>();
         heading = targetHeading = transform.forward; nextGrowth = Time.time; points.Clear();
         if (!Instances.Contains(this)) Instances.Add(this);
     }
@@ -32,6 +39,17 @@ public sealed class MonsterVines : MonoBehaviour
     void LateUpdate()
     {
         if (monster != null && !monster.isActiveAndEnabled) { points.Clear(); return; }
+        if (area != null)
+        {
+            if (!area.isActiveAndEnabled) { points.Clear(); return; }
+            if (areaMatrix != transform.localToWorldMatrix || areaSize != area.Size)
+            { ClearTrail(); areaMatrix = transform.localToWorldMatrix; areaSize = area.Size; }
+            if (Time.deltaTime <= 0) return;
+            points.RemoveAll(p => Time.time - p.born > lifetime || !area.ContainsWorld(p.position));
+            if (Time.time < nextGrowth) return;
+            nextGrowth = Time.time + Mathf.Max(.1f, growthInterval);
+            GrowArea(); return;
+        }
         if (Time.deltaTime <= 0) return;
         Vector3 movement = transform.position - previous; previous = transform.position;
         movement.y = 0;
@@ -51,6 +69,41 @@ public sealed class MonsterVines : MonoBehaviour
         if (SurfaceRay(transform.position+Vector3.up*(.35f+(sequence%4)*.28f), wallDirection, 1.7f, out var wall)
             && Mathf.Abs(wall.normal.y)<.4f)
             Grow(wall, Vector3.ProjectOnPlane(heading,wall.normal)+Vector3.up*.65f, 23, Time.time+.1f, true);
+    }
+
+    static float Distributed(int index, int radix)
+    {
+        float value = 0, place = 1f / radix;
+        while (index > 0) { value += (index % radix) * place; index /= radix; place /= radix; }
+        return value;
+    }
+    void GrowArea()
+    {
+        for (int i = 0; i < Mathf.Clamp(area.growthSources, 1, 8); i++)
+        {
+            sequence++;
+            float x = (Distributed(sequence, 2) - .5f) * Mathf.Max(.01f, area.width - .08f);
+            float z = (Distributed(sequence, 3) - .5f) * Mathf.Max(.01f, area.depth - .08f);
+            var top = transform.TransformPoint(new Vector3(x, area.height, z));
+            var bottom = transform.TransformPoint(new Vector3(x, -.05f, z));
+            var direction = Quaternion.AngleAxis((sequence % 8) * 45, transform.up) * transform.forward;
+            if (SurfaceRay(top, (bottom - top).normalized, Vector3.Distance(top, bottom), out var floor) && area.ContainsWorld(floor.point))
+                Grow(floor, direction, 28, Time.time, true);
+            float y = Mathf.Lerp(.08f, Mathf.Max(.08f, area.height - .08f), Distributed(sequence, 5));
+            var origin = transform.TransformPoint(new Vector3(x, y, z));
+            var target = new Vector3(x, y, z);
+            switch (sequence % 4)
+            {
+                case 0: target.x = area.width * .5f; break;
+                case 1: target.z = area.depth * .5f; break;
+                case 2: target.x = -area.width * .5f; break;
+                default: target.z = -area.depth * .5f; break;
+            }
+            var toEdge = transform.TransformPoint(target) - origin;
+            if (toEdge.sqrMagnitude > .0001f && SurfaceRay(origin, toEdge.normalized, toEdge.magnitude, out var wall)
+                && Mathf.Abs(Vector3.Dot(wall.normal, transform.up)) < .4f && area.ContainsWorld(wall.point))
+                Grow(wall, transform.up + Vector3.ProjectOnPlane(direction, wall.normal) * .65f, 23, Time.time + .1f, true);
+        }
     }
 
     // Stable surface axes: X/Z on floors, horizontal/up on walls; never camera-relative.
@@ -83,6 +136,7 @@ public sealed class MonsterVines : MonoBehaviour
         float step=Mathf.Max(.04f,reach/28);
         for(int i=0;i<steps;i++)
         {
+            if (area != null && !area.ContainsWorld(p + normal * .025f)) break;
             if(points.Count>=Capacity)points.RemoveAt(0);
             points.Add(new Point {position=p+normal*.025f,born=born+i*.027f});
             // Straight runs with only 45/90 degree turns keep the trace on the eight-way surface grid.
@@ -105,16 +159,21 @@ public sealed class MonsterVines : MonoBehaviour
     }
     public int Collect(Vector4[] output)
     {
-        if(monster!=null && !monster.isActiveAndEnabled)return 0;
+        if (!isActiveAndEnabled || output == null || output.Length == 0 || (monster!=null && !monster.isActiveAndEnabled)
+            || (area != null && !area.isActiveAndEnabled)) return 0;
         int count=0;
         foreach(var point in points)
         {
+            if (area != null && (!area.ContainsWorld(point.position) || areaMatrix != transform.localToWorldMatrix || areaSize != area.Size)) continue;
             float age=Time.time-point.born;if(age<=0)continue;
             Vector3 relative=point.position-transform.position;
             float tail=Mathf.Max(0,-Vector3.Dot(relative,heading));
             float alpha=Mathf.SmoothStep(0,1,age/.18f)*(1-Mathf.SmoothStep(0,1,(age-lifetime*.45f)/(lifetime*.55f)));
-            alpha*=1-Mathf.SmoothStep(0,1,(tail-.6f)/2.4f);
-            alpha*=1-Mathf.SmoothStep(0,1,(relative.magnitude-3.3f)/1.5f);
+            if (area == null)
+            {
+                alpha*=1-Mathf.SmoothStep(0,1,(tail-.6f)/2.4f);
+                alpha*=1-Mathf.SmoothStep(0,1,(relative.magnitude-3.3f)/1.5f);
+            }
             if(alpha<.005f)continue;
             output[count++]=new Vector4(point.position.x,point.position.y,point.position.z,alpha*.9f);
             if(count>=output.Length)break;

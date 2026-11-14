@@ -143,6 +143,15 @@ namespace Sound2.LevelEditing.Editor
             DrawPropDimensions(area, instance.GetComponent<ResizableBar>(), "吧台尺寸", ("length", "长度（米）"));
             DrawPropDimensions(area, instance.GetComponent<ResizableWardCurtain>(), "病房隔帘尺寸（保持褶皱尺度）", ("length", "长度（米）"));
             DrawRingTableSettings(area, instance.GetComponent<DrapedRingTable>());
+            var vines = instance.GetComponent<MonsterVineArea>();
+            if (vines != null)
+            {
+                DrawPropDimensions(area, vines, "红色藤蔓矩形范围", ("width", "宽度（米）"), ("depth", "长度（米）"),
+                    ("height", "攀爬高度（米）"), ("growthSources", "每次生长源数量"));
+                DrawPropDimensions(area, instance.GetComponent<MonsterVines>(), "藤蔓生长", ("growthInterval", "生长间隔（秒）"),
+                    ("lifetime", "存活时间（秒）"), ("reach", "枝条长度（米）"), ("surfaces", "附着表面层"));
+                area.Add(new Label("红框为显示范围，运行时隐藏。藤蔓只附着范围内的真实表面，不产生碰撞。") { style = { whiteSpace = WhiteSpace.Normal } });
+            }
             area.SetEnabled(!Application.isPlaying);
             return true;
         }

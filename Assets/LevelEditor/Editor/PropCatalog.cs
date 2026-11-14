@@ -61,7 +61,8 @@ namespace Sound2.LevelEditing.Editor
             ("SchoolChalkBox", "粉笔盒"),
             ("SchoolSpeaker", "广播"),
             ("DrapedRingTable", "桌布圆环桌"),
-            ("RestaurantStage", "弧形舞台")
+            ("RestaurantStage", "弧形舞台"),
+            ("RedVineArea", "红色藤蔓区域")
         }.ToDictionary(e=>e.id,e=>e.label);
         public static readonly IReadOnlyList<string> Categories = System.Array.AsReadOnly(new[]
             { "家", "学校", "超市", "餐厅", "图书馆", "雪林", "医院", "通用" });
