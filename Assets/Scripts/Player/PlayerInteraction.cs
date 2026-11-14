@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -44,6 +45,8 @@ public sealed class PlayerInteraction : MonoBehaviour
     float progress;
     Collider[] candidates = new Collider[32];
     RaycastHit[] hits = new RaycastHit[16];
+    readonly List<InteractableObject> handlers = new();
+    readonly List<InteractableObject> clickHandlers = new();
 
     void Awake()
     {
@@ -100,14 +103,12 @@ public sealed class PlayerInteraction : MonoBehaviour
         dot.SetShape(crosshairRadius, crosshairRadius * 2, 1);
         RefreshFocus();
         UpdateRing();
-        prompt.text = pickup.HeldItem != null ? "左键 / E：抛出    右键：放下"
-            : FocusedTarget != null ? "鼠标左键：" + FocusedTarget.InteractionHint : "";
+        prompt.text = pickup.HeldItem != null ? "左键：抛出    右键：放下"
+            : FocusedTarget != null ? "鼠标左键：" + FocusHint() : "";
         prompt.rectTransform.anchoredPosition = dot.rectTransform.anchoredPosition + Vector2.down * 42;
         prompt.gameObject.SetActive(prompt.text.Length > 0);
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
-            && !Mouse.current.rightButton.wasPressedThisFrame
-            && !(Keyboard.current != null && pickup.interactionKey != Key.None
-                && Keyboard.current[pickup.interactionKey].wasPressedThisFrame))
+            && !Mouse.current.rightButton.wasPressedThisFrame)
         {
             if (pickup.HeldItem != null) pickup.TryThrow();
             else TryInteractFocused();
@@ -128,7 +129,7 @@ public sealed class PlayerInteraction : MonoBehaviour
         float bestScore = float.PositiveInfinity;
         for (int i = 0; i < count; i++)
         {
-            var target = candidates[i].GetComponentInParent<InteractableObject>();
+            var target = ResolveTarget(candidates[i]);
             if (target == null || target.transform.IsChildOf(transform) || !target.CanInteract(this)) continue;
             Vector3 viewport = viewCamera.WorldToViewportPoint(target.InteractionPosition);
             if (viewport.z <= viewCamera.nearClipPlane || viewport.x <= 0 || viewport.x >= 1 || viewport.y <= 0 || viewport.y >= 1) continue;
@@ -151,15 +152,54 @@ public sealed class PlayerInteraction : MonoBehaviour
             pickup.obstacleLayers, QueryTriggerInteraction.Ignore)) == hits.Length)
             Array.Resize(ref hits, hits.Length * 2);
         for (int i = 0; i < count; i++)
-            if (!hits[i].transform.IsChildOf(transform) && hits[i].collider.GetComponentInParent<InteractableObject>() != target) return false;
+            if (!hits[i].transform.IsChildOf(transform))
+            {
+                var owner = hits[i].collider.GetComponentInParent<InteractableObject>();
+                if (owner == null || owner.transform != target.transform) return false;
+            }
         return true;
+    }
+
+    InteractableObject ResolveTarget(Collider candidate)
+    {
+        // Use the nearest component-owning ancestor. A disabled child action must not route to a parent.
+        for (var parent = candidate.transform; parent != null; parent = parent.parent)
+        {
+            parent.GetComponents(handlers);
+            if (handlers.Count == 0) continue;
+            PickupItem item = null;
+            foreach (var handler in handlers)
+                if (handler.CanInteract(this))
+                {
+                    if (handler is PickupItem pickupItem) item = pickupItem;
+                    else return handler;
+                }
+            return item;
+        }
+        return null;
+    }
+
+    string FocusHint()
+    {
+        var item = FocusedTarget.GetComponent<PickupItem>();
+        return !(FocusedTarget is PickupItem) && item != null && item.CanInteract(this)
+            ? FocusedTarget.InteractionHint + "并拾取" : FocusedTarget.InteractionHint;
     }
 
     public bool TryInteractFocused()
     {
         RefreshFocus(); // Revalidate distance, availability and occlusion at the moment of the click.
         if (FocusedTarget == null || shownTarget != FocusedTarget || progress <= .05f) return false;
-        bool interacted = FocusedTarget.TryInteract(this);
+        // This path is for an empty-handed click only; throwing is handled above and never dispatches actions.
+        if (pickup.HeldItem != null) return false;
+        FocusedTarget.GetComponents(clickHandlers);
+        bool interacted = false;
+        foreach (var handler in clickHandlers)
+            if (handler != null && !(handler is PickupItem) && handler.CanInteract(this))
+                interacted |= handler.TryInteract(this);
+        foreach (var handler in clickHandlers)
+            if (handler is PickupItem item && item != null && item.CanInteract(this))
+                interacted |= item.TryInteract(this);
         RefreshFocus();
         return interacted;
     }

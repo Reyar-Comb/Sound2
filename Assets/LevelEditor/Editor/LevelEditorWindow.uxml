@@ -1,20 +1,32 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
     <ui:Style src="LevelEditorWindow.uss" />
-    <ui:ScrollView name="editor-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden" class="editor-scroll">
-      <ui:VisualElement class="level-editor">
+    <ui:VisualElement class="level-editor">
+      <ui:ScrollView name="controls-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden" class="controls-scroll">
         <ui:Label text="关卡工坊 / LEVEL BUILDER" class="title" />
-        <ui:Label text="在 Scene 视图中绘制 · XZ 平面 · 尺寸单位：米" class="hint" />
         <ui:VisualElement name="header" />
         <ui:VisualElement name="tools" class="toolbar-row" />
         <ui:Label name="instructions" class="hint" />
-        <ui:VisualElement>
-            <ui:VisualElement name="settings" />
-            <ui:Label text="布局对象 / 点击选择" class="section" />
-            <ui:VisualElement name="objects" />
-            <ui:VisualElement name="properties" class="properties" />
-        </ui:VisualElement>
+        <ui:Foldout name="settings-foldout" text="工具与生成设置" value="false" view-data-key="level-settings">
+            <ui:ScrollView mode="Vertical" horizontal-scroller-visibility="Hidden" class="settings-scroll">
+                <ui:VisualElement name="settings" />
+            </ui:ScrollView>
+        </ui:Foldout>
+      </ui:ScrollView>
+        <ui:TwoPaneSplitView name="workspace" fixed-pane-index="0" fixed-pane-initial-dimension="240" orientation="Horizontal" view-data-key="level-workspace" class="workspace">
+            <ui:VisualElement name="hierarchy-pane" class="hierarchy-pane">
+                <ui:Label text="层级 / Hierarchy" class="pane-title" />
+                <ui:ScrollView name="hierarchy-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden" view-data-key="level-hierarchy-scroll" class="pane-scroll">
+                    <ui:VisualElement name="objects" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+            <ui:VisualElement name="inspector-pane" class="inspector-pane">
+                <ui:Label text="地图属性 / Map Properties" class="pane-title" />
+                <ui:ScrollView name="inspector-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden" class="pane-scroll">
+                    <ui:VisualElement name="properties" class="properties" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:TwoPaneSplitView>
         <ui:Label name="status" class="status" />
         <ui:VisualElement name="footer" class="toolbar-row" />
-      </ui:VisualElement>
-    </ui:ScrollView>
+    </ui:VisualElement>
 </ui:UXML>

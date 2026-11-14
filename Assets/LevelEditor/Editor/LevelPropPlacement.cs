@@ -39,7 +39,8 @@ namespace Sound2.LevelEditing.Editor
             var props = PropsRoot(layout);
             if (props != null) surfaces.AddRange(props.GetComponentsInChildren<Collider>());
             foreach (var collider in surfaces)
-                if (collider.enabled && !collider.isTrigger && collider.Raycast(ray, out var hit, 10000)
+                if (!collider.transform.IsChildOf(prefab.transform)
+                    && collider.enabled && !collider.isTrigger && collider.Raycast(ray, out var hit, 10000)
                     && hit.distance < distance) { nearest = hit; distance = hit.distance; }
             if (nearest.collider == null) return false;
             var up = layout.transform.up;
@@ -50,9 +51,28 @@ namespace Sound2.LevelEditing.Editor
                 : Quaternion.FromToRotation(up, nearest.normal) * layout.transform.rotation * Quaternion.Euler(0, angle, 0);
             var metadata = prefab.GetComponent<LevelProp>();
             Vector3 anchor = metadata != null ? metadata.surfaceAnchor : BottomAnchor(prefab);
+            Vector3 scale = prefab.scene.IsValid() ? prefab.transform.lossyScale : prefab.transform.localScale;
             pose = new Pose(nearest.point + nearest.normal * Mathf.Max(0, offset)
-                - rotation * Vector3.Scale(anchor, prefab.transform.localScale), rotation);
+                - rotation * Vector3.Scale(anchor, scale), rotation);
             return true;
+        }
+
+        public static void Reposition(LevelLayout layout, GameObject instance, Pose pose)
+        {
+            if (Application.isPlaying || layout == null || instance == null
+                || !instance.scene.IsValid() || instance.transform.parent != PropsRoot(layout))
+                throw new InvalidOperationException("请选择当前布局 Props 下的道具实例。");
+            Undo.IncrementCurrentGroup();
+            int group = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("重新吸附关卡道具");
+            Undo.RecordObject(instance.transform, "重新吸附关卡道具");
+            instance.transform.SetPositionAndRotation(pose.position, pose.rotation);
+            PrefabUtility.RecordPrefabInstancePropertyModifications(instance.transform);
+            EditorSceneManager.MarkSceneDirty(instance.scene);
+            Undo.FlushUndoRecordObjects();
+            Undo.CollapseUndoOperations(group);
+            Undo.IncrementCurrentGroup();
+            Physics.SyncTransforms();
         }
 
         static Vector3 BottomAnchor(GameObject prefab)

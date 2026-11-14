@@ -156,6 +156,7 @@ public static class ConfigureBreakableProps
             // A compound collider keeps the front and feet usable without a hollow convex-hull enclosing other parts.
             Pickup(root,broken,7,.7f,new Vector3(0,.08f,.14f)).heldEulerAngles=new Vector3(0,180,0);
             var clock=root.AddComponent<TickingClock>();clock.longHand=longHand;clock.shortHand=shortHand;clock.tickInterval=1;
+            root.AddComponent<InteractableObject>();
             var alarm=root.AddComponent<PickupAlarm>();alarm.delayAfterPickup=5;alarm.ringInterval=.2f;alarm.ringRange=12;
             Presentation(root,new Vector3(0,-.411f,0));
             PrefabUtility.SaveAsPrefabAsset(root,path);

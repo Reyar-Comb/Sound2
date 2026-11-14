@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-/// <summary>Attach to a collider's parent, then wire On Interact or override TryInteract.</summary>
-[DisallowMultipleComponent]
+/// <summary>Independent object action. May coexist with PickupItem on the same object.</summary>
 public class InteractableObject : MonoBehaviour
 {
     [Tooltip("Optional world-space point for aiming and the interaction ring. Defaults to this transform.")]
@@ -18,7 +17,11 @@ public class InteractableObject : MonoBehaviour
     public virtual bool TryInteract(PlayerInteraction player)
     {
         if (player == null || !CanInteract(player)) return false;
+        OnInteract(player);
         onInteract.Invoke(player);
         return true;
     }
+
+    /// <summary>Override for the object's own action. The base component intentionally has no effect.</summary>
+    protected virtual void OnInteract(PlayerInteraction player) { }
 }

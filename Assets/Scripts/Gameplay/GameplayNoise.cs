@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public enum GameplayNoiseKind { Footstep, Impact }
+public enum GameplayNoiseKind { Footstep, Impact, Movement }
 
 /// <summary>AI hearing stimulus; independent of AudioClip assignment and visual reveal range.</summary>
 public readonly struct GameplayNoiseEvent

@@ -111,7 +111,11 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     public void EmitNow() => EmitWithRange(range);
 
     /// <summary>Emit one pulse with a range override; preserve the authored base range for later emissions.</summary>
-    public bool EmitWithRange(float pulseRange)
+    public bool EmitWithRange(float pulseRange) => EmitWithRange(pulseRange, null, false);
+
+    public bool EmitWithClip(float pulseRange, AudioClip clip) => EmitWithRange(pulseRange, clip, true);
+
+    bool EmitWithRange(float pulseRange, AudioClip clip, bool overrideClip)
     {
         if (!Application.isPlaying || !isActiveAndEnabled) return false;
         Initialize();
@@ -122,7 +126,11 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
         emitter.settings.maxDistance = Mathf.Max(1, soundRange) * pulseRange / Mathf.Max(1, range);
         emitter.volume = volume;
         emitter.Apply();
-        if (playSound) cue.Play();
+        if (playSound)
+        {
+            if (!overrideClip) cue.Play();
+            else if (clip != null) emitter.PlayOneShot(clip);
+        }
         LastOrigin = origin;
         LastEmissionRange = pulseRange;
         Emissions++;

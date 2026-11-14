@@ -11,13 +11,14 @@ public static class VerifyPropMeshPacking
 {
     const string Baseline = "Logs/MeshConsolidation/geometry-baseline.txt";
     static readonly List<string> lines = new();
+    static readonly string[] MigratedFolders = { "Assets/Models/BreakableProps", "Assets/Models/Clock", "Assets/Models/HouseholdProps" };
     static string Key(Transform t) => (t.parent == null ? "" : Key(t.parent) + "/") + t.GetSiblingIndex() + ":" + t.name;
     static void Collect(GameObject root, string path)
     {
         foreach (var component in root.GetComponentsInChildren<Component>(true))
         {
             Mesh mesh = component is MeshFilter f ? f.sharedMesh : component is MeshCollider c ? c.sharedMesh : null;
-            if (mesh == null || !AssetDatabase.GetAssetPath(mesh).StartsWith("Assets/Models/")) continue;
+            if (mesh == null || !MigratedFolders.Any(folder => AssetDatabase.GetAssetPath(mesh).StartsWith(folder + "/"))) continue;
             // Includes every vertex/index/normal/UV in the native serialized Mesh; GUID is external to this data.
             var json = Newtonsoft.Json.Linq.JObject.Parse(EditorJsonUtility.ToJson(mesh));
             // Compare with the original captured names when the two main assets were renamed.
@@ -62,7 +63,7 @@ public static class VerifyPropMeshPacking
         var before = File.ReadAllLines(Baseline); var after = Snapshot();
         File.WriteAllLines("Logs/MeshConsolidation/geometry-after.txt", after);
         if (!before.SequenceEqual(after)) throw new Exception("Mesh reference/geometry snapshot differs; inspect reference-before/after report.");
-        var paths = AssetDatabase.FindAssets("t:Mesh", new[] { "Assets/Models" }).Select(AssetDatabase.GUIDToAssetPath).Distinct().ToArray();
+        var paths = AssetDatabase.FindAssets("t:Mesh", MigratedFolders).Select(AssetDatabase.GUIDToAssetPath).Distinct().ToArray();
         var meshes = paths.SelectMany(p => AssetDatabase.LoadAllAssetsAtPath(p).OfType<Mesh>()).ToArray();
         if (paths.Length != 8 || meshes.Length != 196) throw new Exception("Unexpected mesh inventory");
         // Regeneration must preserve the same sub-assets/file IDs, never append duplicate meshes.

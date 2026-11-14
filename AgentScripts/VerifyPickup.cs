@@ -50,7 +50,7 @@ public static class VerifyPickup
             player.GetComponentInChildren<AudioListener>().enabled = false;
             var controller = player.GetComponent<PlayerController>();
             var picker = player.GetComponent<PlayerPickup>();
-            Check(picker != null && picker.enabled && picker.interactionKey == Key.E, "Player prefab not configured.");
+            Check(picker != null && picker.enabled, "Player prefab not configured.");
             Check(picker.pickupRange.isTrigger && picker.pickupRange.transform.parent == player.transform, "Range is not a separate trigger.");
             Vector3 origin = picker.viewTransform.position;
             var itemObject = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupItem.prefab"));
@@ -63,7 +63,8 @@ public static class VerifyPickup
             Physics.SyncTransforms();
             await Press(keyboard);
             await Press(keyboard, Key.E);
-            Check(picker.HeldItem == item && body.isKinematic && !item.GetComponent<Collider>().enabled, "E did not pick up the item.");
+            Check(picker.HeldItem == null, "Removed E binding still picks up items.");
+            Check(picker.TryPickUp(item) && body.isKinematic && !item.GetComponent<Collider>().enabled, "Explicit pickup failed.");
             await Press(keyboard);
             Vector3 local = picker.viewTransform.InverseTransformPoint(item.transform.position);
             Check(Mathf.Abs(local.x) < .001f && local.y < 0 && local.z > 0, "Held item is not lower-center.");
@@ -77,7 +78,8 @@ public static class VerifyPickup
             picker.throwSpeed = 0;
             picker.throwUpwardSpeed = 0;
             await Press(keyboard, Key.E);
-            Check(picker.HeldItem == null && !body.isKinematic && item.GetComponent<Collider>().enabled, "Second E did not throw/restore physics.");
+            Check(picker.HeldItem == item, "Removed E binding still throws items.");
+            Check(picker.TryThrow() && !body.isKinematic && item.GetComponent<Collider>().enabled, "Throw did not restore physics.");
             Check(!item.CanPickUp && !picker.TryPickUpNearest(), "Airborne item can be immediately picked up.");
             await Press(keyboard);
             await Press(keyboard, Key.E);
@@ -145,7 +147,7 @@ public static class VerifyPickup
             Check(Physics.GetIgnoreCollision(item.GetComponent<Collider>(), player.GetComponent<CharacterController>()), "Thrower collision was not ignored at release.");
             await Tick(150);
             Check(!Physics.GetIgnoreCollision(item.GetComponent<Collider>(), player.GetComponent<CharacterController>()), "Thrower collision was not restored after separation.");
-            return new { passed = true, checks = new[] { "prefab wiring", "E pickup/throw", "camera lower-center hold", "airborne cooldown", "wall unlock", "floor stays locked", "editable collider range", "no pickup through walls", "cooldown expiry in range", "blocked throw", "throw velocity", "thrower collision restoration" } };
+            return new { passed = true, checks = new[] { "prefab wiring", "E disabled; explicit pickup/throw", "camera lower-center hold", "airborne cooldown", "wall unlock", "floor stays locked", "editable collider range", "no pickup through walls", "cooldown expiry in range", "blocked throw", "throw velocity", "thrower collision restoration" } };
         }
         finally
         {

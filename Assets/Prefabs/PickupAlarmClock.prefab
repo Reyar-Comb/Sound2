@@ -726,6 +726,7 @@ GameObject:
   - component: {fileID: 767891812021453074}
   - component: {fileID: 3106204670203879756}
   - component: {fileID: 7279868106681152539}
+  - component: {fileID: 4771390007309392073}
   m_Layer: 0
   m_Name: PickupAlarmClock
   m_TagString: Untagged
@@ -1050,6 +1051,24 @@ MonoBehaviour:
   surfaceAnchor: {x: 0, y: -0.411, z: 0}
   surfaceOffset: 0.01
   gameplayMaterial: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}
+--- !u!114 &4771390007309392073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3445934700314754570}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e8703f2fede38a47b9effa5cae20b70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InteractableObject
+  interactionAnchor: {fileID: 0}
+  interactionEnabled: 1
+  interactionHint: "\u4EA4\u4E92"
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &4266711578329681677
 GameObject:
   m_ObjectHideFlags: 0

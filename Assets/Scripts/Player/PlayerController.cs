@@ -26,6 +26,7 @@ public sealed class PlayerController : MonoBehaviour
     private float fallSpeed;
     private float airborneTime;
     private InputAction jumpAction;
+    private Vector3 pushVelocity;
     public event System.Action<float> Landed;
     public bool InputSuspended { get; set; }
     public Transform ViewTransform => cameraTransform;
@@ -129,7 +130,9 @@ public sealed class PlayerController : MonoBehaviour
             fallSpeed = Mathf.Max(fallSpeed - gravity * Time.deltaTime, -terminalFallSpeed);
             velocity.y = fallSpeed;
         }
+        pushVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
         var collisions = characterController.Move(velocity * Time.deltaTime);
+        pushVelocity = Vector3.zero;
         if (useGravity)
         {
             bool grounded = (collisions & CollisionFlags.Below) != 0;
@@ -145,5 +148,13 @@ public sealed class PlayerController : MonoBehaviour
             if ((collisions & CollisionFlags.Above) != 0) fallSpeed = Mathf.Min(fallSpeed, 0);
         }
         else airborneTime = 0;
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (!isActiveAndEnabled || InputSuspended || SonicSpaceStartMenu.BlocksGameplay) return;
+        var body = hit.collider.attachedRigidbody;
+        if (body == null || !body.TryGetComponent<PushableProp>(out var prop)) return;
+        prop.RequestPush(pushVelocity, hit.point, hit.normal);
     }
 }

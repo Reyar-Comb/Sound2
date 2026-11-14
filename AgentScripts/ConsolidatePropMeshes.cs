@@ -76,7 +76,7 @@ public static class ConsolidatePropMeshes
         if (Application.isPlaying) throw new Exception("Exit Play mode before migrating mesh assets.");
         replacements.Clear(); report.Clear(); references = 0;
         backup = "Logs/MeshConsolidation/Backup-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
-        var sources = AssetDatabase.FindAssets("t:Mesh", new[] { "Assets/Models" })
+        var sources = AssetDatabase.FindAssets("t:Mesh", new[] { "Assets/Models/BreakableProps", "Assets/Models/Clock", "Assets/Models/HouseholdProps" })
             .Select(AssetDatabase.GUIDToAssetPath).Distinct().Where(p => p.EndsWith(".asset")).ToArray();
         var allAssets = AssetDatabase.GetAllAssetPaths().Where(p => p.StartsWith("Assets/")
             && (p.EndsWith(".prefab") || p.EndsWith(".unity") || p.EndsWith(".asset") || p.EndsWith(".mat"))).ToArray();

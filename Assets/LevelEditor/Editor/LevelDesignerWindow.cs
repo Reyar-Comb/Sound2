@@ -11,7 +11,7 @@ namespace Sound2.LevelEditing.Editor
 {
     public sealed partial class LevelDesignerWindow : EditorWindow
     {
-        enum Tool { Select, Rectangle, Circle, Line, Curve, Pit, Connect, Prop }
+        enum Tool { Select, Rectangle, Circle, Line, Curve, Pit, Connect, Prop, RepositionProp }
         enum Kind { None, Room, Corridor, Pit }
         [SerializeField] LevelLayout layout;
         [SerializeField] Tool tool;
@@ -25,6 +25,8 @@ namespace Sound2.LevelEditing.Editor
         [SerializeField] bool seededMode;
         [SerializeField] int previewFloor;
         [SerializeField] LevelMap seededMap;
+        [SerializeField] bool geometryExpanded = true;
+        [SerializeField] bool propsExpanded = true;
         readonly List<Vector2> pending = new List<Vector2>();
         Vector2 hover;
         string status = "新建布局，或选择已有 LevelLayout。";
@@ -34,14 +36,15 @@ namespace Sound2.LevelEditing.Editor
         public static void Open() => GetWindow<LevelDesignerWindow>("关卡编辑器");
         public void Bind(LevelLayout target)
         {
-            layout = target; selected = -1; kind = Kind.None; pending.Clear(); hasError = false;
+            if (tool == Tool.RepositionProp) tool = Tool.Select;
+            layout = target; selectedProp = null; selected = -1; kind = Kind.None; pending.Clear(); hasError = false;
             status = layout == null ? "新建布局，或选择已有 LevelLayout。" : $"已载入：{layout.rooms.Count} 房间 · {layout.corridors.Count} 走廊 · {layout.pits.Count} 竖井。";
             Refresh(); Frame();
         }
 
         void OnEnable()
         {
-            minSize = new Vector2(280, 240);
+            minSize = new Vector2(600, 440);
             SceneView.duringSceneGui += SceneGUI;
             Undo.undoRedoPerformed += OnUndo;
             Selection.selectionChanged += OnSelection;
@@ -56,6 +59,7 @@ namespace Sound2.LevelEditing.Editor
         }
         void OnPlayModeChanged(PlayModeStateChange state)
         {
+            if (tool == Tool.RepositionProp) tool = Tool.Select;
             if (state != PlayModeStateChange.EnteredEditMode && state != PlayModeStateChange.EnteredPlayMode) return;
             if (layout == null)
                 layout = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects()
@@ -65,6 +69,9 @@ namespace Sound2.LevelEditing.Editor
         }
         void OnSelection()
         {
+            if (tool == Tool.RepositionProp && (Selection.activeGameObject == null
+                || selectedProp == null || !Selection.activeGameObject.transform.IsChildOf(selectedProp.transform)))
+            { tool = Tool.Select; Refresh(); SceneView.RepaintAll(); }
             if (Selection.activeGameObject == null) return;
             var map = Selection.activeGameObject.GetComponentInParent<LevelMap>();
             if (map != null) { seededMap = map; seededMode = true; Refresh(); return; }
@@ -72,7 +79,7 @@ namespace Sound2.LevelEditing.Editor
             if (target != null && target != layout) Bind(target);
             if (target != null) SelectPropFromHierarchy();
         }
-        void OnUndo() { if (layout != null) { TryRebuild(); Refresh(); } }
+        void OnUndo() { if (tool == Tool.RepositionProp) tool = Tool.Select; if (layout != null) { TryRebuild(); Refresh(); } }
 
         public void CreateGUI()
         {
@@ -86,7 +93,9 @@ namespace Sound2.LevelEditing.Editor
             if (rootVisualElement.Q("header") == null) return;
             var header = rootVisualElement.Q("header"); header.Clear();
             var mode = new PopupField<string>("生成模式", new List<string> { "手工布局", "种子程序化" }, seededMode ? 1 : 0);
-            mode.RegisterValueChangedCallback(e => { seededMode = mode.index == 1; Refresh(); }); header.Add(mode);
+            mode.RegisterValueChangedCallback(e => { seededMode = mode.index == 1; if (tool == Tool.RepositionProp) tool = Tool.Select; Refresh(); }); header.Add(mode);
+            rootVisualElement.Q("workspace").SetEnabled(!seededMode);
+            rootVisualElement.Q<Foldout>("settings-foldout").text = seededMode ? "程序化设置" : "工具与生成设置";
             if (seededMode) { DrawSeededMode(); return; }
             var target = new ObjectField("编辑布局") { objectType = typeof(LevelLayout), allowSceneObjects = true, value = layout };
             target.RegisterValueChangedCallback(e => Bind((LevelLayout)e.newValue)); header.Add(target);
@@ -99,7 +108,12 @@ namespace Sound2.LevelEditing.Editor
             for (int i = 0; i < names.Length; i++)
             {
                 Tool value = (Tool)i;
-                var button = Button(tools, names[i], () => { tool = value; pending.Clear(); Refresh(); SceneView.RepaintAll(); });
+                var button = Button(tools, names[i], () =>
+                {
+                    tool = value; pending.Clear();
+                    if (value == Tool.Prop) rootVisualElement.Q<Foldout>("settings-foldout").value = true;
+                    Refresh(); SceneView.RepaintAll();
+                });
                 button.EnableInClassList("active-tool", tool == value);
             }
             tools.SetEnabled(layout != null && !Application.isPlaying);
@@ -110,6 +124,7 @@ namespace Sound2.LevelEditing.Editor
                 Tool.Connect => "先从对象列表选中走廊，选择起点/终点，再点击房间边缘。连接点会跟随房间移动和缩放。",
                 Tool.Pit => "点击地面放置竖井。橙色轮廓是实际开口；管壁必须完整位于关卡内部。",
                 Tool.Prop => "从下拉列表选择道具，在 Scene 点击放置。放置墙面道具时请切到 3D 检查。Esc 退出放置。",
+                Tool.RepositionProp => "重新吸附：在 Scene 指向新表面，左键确认移动原道具；Esc 取消。贴墙请切到 3D 检查。",
                 Tool.Rectangle or Tool.Circle => "点击 Scene 放置房间中心，切换选择工具后拖动中心与尺寸手柄。",
                 _ => "点击对象标记选择；拖动控制点调整形状。Ctrl+Z 撤销，Ctrl+Y 重做。"
             };
@@ -146,6 +161,7 @@ namespace Sound2.LevelEditing.Editor
 
         void DrawSeededMode()
         {
+            rootVisualElement.Q<Foldout>("settings-foldout").value = true;
             rootVisualElement.Q("tools").Clear(); rootVisualElement.Q("objects").Clear();
             rootVisualElement.Q("properties").Clear(); rootVisualElement.Q("footer").Clear();
             rootVisualElement.Q<Label>("instructions").text = "独立程序化模式：楼层编号 = 种子。相同楼层可复现，越深房间、分支与可搬运物品越多。手工布局不受影响。";
@@ -193,20 +209,27 @@ namespace Sound2.LevelEditing.Editor
         {
             var area = rootVisualElement.Q("objects"); area.Clear();
             if (layout == null) return;
+            var geometry = new Foldout { name = "geometry-objects", text = $"房间 / 走廊 / 竖井 ({layout.rooms.Count + layout.corridors.Count + layout.pits.Count})", value = geometryExpanded };
+            geometry.RegisterValueChangedCallback(e => { if (e.target == geometry) geometryExpanded = e.newValue; });
+            area.Add(geometry);
             void Item(Kind k, int i, string text)
             {
-                var b = Button(area, text, () => Select(k, i)); b.AddToClassList("item");
+                var b = Button(geometry, text, () => Select(k, i)); b.AddToClassList("item");
                 b.EnableInClassList("selected-item", kind == k && selected == i);
             }
             for (int i = 0; i < layout.rooms.Count; i++) Item(Kind.Room, i, "▣  " + layout.rooms[i].name);
             for (int i = 0; i < layout.corridors.Count; i++) Item(Kind.Corridor, i, "↝  " + layout.corridors[i].name + "  /  " + layout.corridors[i].width.ToString("0.##") + " m");
             for (int i = 0; i < layout.pits.Count; i++) Item(Kind.Pit, i, "□  " + layout.pits[i].name);
-            DrawPropObjects(area);
+            var propRoot = LevelPropPlacement.PropsRoot(layout);
+            var props = new Foldout { name = "prop-objects", text = $"道具 ({(propRoot != null ? propRoot.childCount : 0)})", value = propsExpanded };
+            props.RegisterValueChangedCallback(e => { if (e.target == props) propsExpanded = e.newValue; });
+            area.Add(props);
+            DrawPropObjects(props);
         }
 
         void DrawProperties()
         {
-            var area = rootVisualElement.Q("properties"); area.Clear();
+            var area = rootVisualElement.Q("properties"); area.Clear(); area.SetEnabled(!Application.isPlaying);
             if (DrawPropProperties(area)) return;
             if (layout == null || selected < 0) { area.Add(new Label("选择对象以编辑参数")); return; }
             if (kind == Kind.Room && selected < layout.rooms.Count)
@@ -265,7 +288,7 @@ namespace Sound2.LevelEditing.Editor
             }
         }
 
-        void Select(Kind k, int index) { selectedProp = null; kind = k; selected = index; Refresh(); SceneView.RepaintAll(); }
+        void Select(Kind k, int index) { if (tool == Tool.RepositionProp) tool = Tool.Select; selectedProp = null; kind = k; selected = index; Refresh(); SceneView.RepaintAll(); }
         void Change(Action action)
         {
             if (layout == null || Application.isPlaying) return;
@@ -354,7 +377,7 @@ namespace Sound2.LevelEditing.Editor
             if (plane.Raycast(ray, out float distance)) hover = Snap(layout.Local(ray.GetPoint(distance)));
             Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
             DrawOutlines();
-            if (tool == Tool.Prop)
+            if (tool == Tool.Prop || tool == Tool.RepositionProp)
             {
                 PropSceneGUI(view, ray, e);
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;

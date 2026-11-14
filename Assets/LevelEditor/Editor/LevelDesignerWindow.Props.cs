@@ -13,6 +13,9 @@ namespace Sound2.LevelEditing.Editor
         [SerializeField] PropSurface propSurface;
         [SerializeField] float propOffset = .01f;
         [SerializeField] float propAngle;
+        [SerializeField] PropSurface repositionSurface;
+        [SerializeField] float repositionOffset;
+        [SerializeField] float repositionAngle;
 
         void ChooseProp(GameObject prefab)
         {
@@ -25,6 +28,8 @@ namespace Sound2.LevelEditing.Editor
             propAngle = 0;
             tool = Tool.Prop;
             pending.Clear();
+            var settings = rootVisualElement.Q<Foldout>("settings-foldout");
+            if (settings != null) settings.value = true;
             Refresh(); SceneView.RepaintAll();
         }
 
@@ -40,7 +45,11 @@ namespace Sound2.LevelEditing.Editor
                 ("ShoppingCart", "购物车"), ("LibraryBookshelf", "图书架"), ("WritingDesk", "书桌"),
                 ("Computer", "电脑"), ("PickupWaterCup", "水杯"), ("PickupDeskLamp", "台灯"),
                 ("Refrigerator", "冰箱"), ("Stove", "灶台"), ("TrashBin", "垃圾桶"),
-                ("PickupCoffeeMug", "咖啡杯"), ("PickupCeramicVase", "陶瓷花瓶") })
+                ("PickupCoffeeMug", "咖啡杯"), ("PickupCeramicVase", "陶瓷花瓶"),
+                ("Television", "电视"), ("Radio", "收音机"), ("TapeRecorder", "录音机"),
+                ("ServiceBell", "餐铃"), ("GameConsole", "游戏机"), ("HeartRateMonitor", "心率仪"), ("Ring", "戒指"),
+                ("WallMural", "壁画"), ("WallMirror", "镜子"), ("WallFlowerBasket", "花篮"),
+                ("WallCabinet", "橱柜"), ("BarCounter", "吧台") })
             {
                 var asset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/" + entry.Item1 + ".prefab");
                 if (asset == null) continue;
@@ -94,6 +103,7 @@ namespace Sound2.LevelEditing.Editor
             var candidate = Selection.activeGameObject.transform;
             while (candidate != null && candidate.parent != props) candidate = candidate.parent;
             if (candidate == null) return;
+            if (tool != Tool.RepositionProp || selectedProp != candidate.gameObject) tool = Tool.Select;
             selectedProp = candidate.gameObject; kind = Kind.None; selected = -1;
             Refresh();
         }
@@ -103,28 +113,134 @@ namespace Sound2.LevelEditing.Editor
             if (layout == null || selectedProp == null || selectedProp.transform.parent != LevelPropPlacement.PropsRoot(layout)) return false;
             var instance = selectedProp;
             area.Add(new Label("道具：" + instance.name));
-            area.Add(new Label("位置、旋转、缩放及组件参数请在 Unity Inspector 中调整。") { style = { whiteSpace = WhiteSpace.Normal } });
+            bool moving = tool == Tool.RepositionProp;
+            Button(area, moving ? "取消重新吸附（Esc）" : "重新吸附到新位置", () =>
+            {
+                if (moving) CancelReposition(); else BeginReposition(instance);
+            }).AddToClassList("primary");
+            if (moving)
+            {
+                var surface = new PopupField<string>("吸附表面", new System.Collections.Generic.List<string> { "地面", "墙面" }, (int)repositionSurface);
+                surface.RegisterValueChangedCallback(e => { repositionSurface = (PropSurface)surface.index; SceneView.RepaintAll(); }); area.Add(surface);
+                Float(area, "离表面距离", repositionOffset, v => { repositionOffset = Mathf.Max(0, v); SceneView.RepaintAll(); });
+                Float(area, "面内旋转角度", repositionAngle, v => { repositionAngle = v; SceneView.RepaintAll(); });
+                area.Add(new Label("绿色线框为新位置。左键确认；Esc 取消，原道具保持不变。"));
+            }
             Button(area, "在 Scene 中框选", () => { Selection.activeGameObject = instance; SceneView.lastActiveSceneView?.FrameSelected(); });
             Button(area, "删除此道具", () =>
             {
+                if (tool == Tool.RepositionProp) tool = Tool.Select;
                 Undo.DestroyObjectImmediate(instance); selectedProp = null;
                 EditorSceneManager.MarkSceneDirty(layout.gameObject.scene); Refresh();
             });
+            var serializedInstance = new SerializedObject(instance);
+            var name = new PropertyField(serializedInstance.FindProperty("m_Name"), "名称");
+            name.Bind(serializedInstance);
+            name.RegisterValueChangeCallback(_ => DrawObjects()); area.Add(name);
+            var placement = new Foldout { text = "摆放", value = true };
+            area.Add(placement);
+            var transform = instance.transform;
+            var serializedTransform = new SerializedObject(transform);
+            AddPropField(placement, serializedTransform, "m_LocalPosition", "位置（局部）");
+            var rotation = new Vector3Field("旋转（度）") { value = transform.localEulerAngles };
+            rotation.RegisterValueChangedCallback(e =>
+            {
+                Undo.RecordObject(transform, "旋转道具");
+                transform.localEulerAngles = e.newValue;
+                PrefabUtility.RecordPrefabInstancePropertyModifications(transform);
+                EditorSceneManager.MarkSceneDirty(instance.scene);
+                SceneView.RepaintAll();
+            });
+            rotation.TrackPropertyValue(serializedTransform.FindProperty("m_LocalRotation"),
+                _ => rotation.SetValueWithoutNotify(transform.localEulerAngles));
+            placement.Add(rotation);
+            AddPropField(placement, serializedTransform, "m_LocalScale", "缩放");
+            DrawPropDimensions(area, instance.GetComponent<ResizableTable>(), "桌子尺寸",
+                ("width", "宽度（米）"), ("depth", "深度（米）"), ("height", "高度（米）"),
+                ("topThickness", "桌面厚度（米）"), ("legThickness", "桌腿粗细（米）"), ("legInset", "桌腿内缩（米）"));
+            DrawPropDimensions(area, instance.GetComponent<ResizableBar>(), "吧台尺寸", ("length", "长度（米）"));
             area.SetEnabled(!Application.isPlaying);
             return true;
         }
 
+        static void AddPropField(VisualElement area, SerializedObject target, string property, string label)
+        {
+            var field = new PropertyField(target.FindProperty(property), label);
+            field.Bind(target);
+            area.Add(field);
+        }
+
+        static void DrawPropDimensions(VisualElement area, Component component, string title,
+            params (string property, string label)[] fields)
+        {
+            if (component == null) return;
+            var section = new Foldout { text = title, value = true };
+            area.Add(section);
+            var target = new SerializedObject(component);
+            foreach (var field in fields) AddPropField(section, target, field.property, field.label);
+        }
+
+        void BeginReposition(GameObject instance)
+        {
+            if (Application.isPlaying || layout == null || instance == null
+                || instance.transform.parent != LevelPropPlacement.PropsRoot(layout)) return;
+            selectedProp = instance; selected = -1; kind = Kind.None;
+            Selection.activeGameObject = instance;
+            var metadata = instance.GetComponent<LevelProp>();
+            repositionSurface = metadata != null ? metadata.surface : PropSurface.Floor;
+            repositionOffset = metadata != null ? metadata.surfaceOffset : .01f;
+            var t = instance.transform;
+            if (repositionSurface == PropSurface.Wall)
+            {
+                var upright = Vector3.ProjectOnPlane(layout.transform.up, t.forward);
+                repositionAngle = upright.sqrMagnitude > .0001f ? Vector3.SignedAngle(upright, t.up, t.forward) : 0;
+            }
+            else
+            {
+                var forward = Quaternion.FromToRotation(layout.transform.up, t.up) * layout.transform.forward;
+                repositionAngle = Vector3.SignedAngle(forward, t.forward, t.up);
+            }
+            tool = Tool.RepositionProp; pending.Clear();
+            status = "正在重新吸附 " + instance.name + "：点击新表面确认，Esc 取消。"; hasError = false;
+            Refresh(); SceneView.RepaintAll();
+        }
+
+        void CancelReposition()
+        {
+            tool = Tool.Select;
+            status = "已取消重新吸附，原道具保持不变。"; hasError = false;
+            Refresh(); SceneView.RepaintAll();
+        }
+
         void PropSceneGUI(SceneView view, Ray ray, Event e)
         {
+            bool moving = tool == Tool.RepositionProp;
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
+            {
+                if (moving) CancelReposition();
+                else
+                {
+                    tool = Tool.Select;
+                    if (selectedProp != null) Selection.activeGameObject = selectedProp;
+                    Refresh();
+                }
+                e.Use(); return;
+            }
+            var source = moving ? selectedProp : propPrefab;
+            if (moving && (source == null || source.transform.parent != LevelPropPlacement.PropsRoot(layout)))
+            { CancelReposition(); return; }
             if (!e.alt) HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-            bool valid = LevelPropPlacement.TryPose(layout, propPrefab, ray, propSurface, propOffset, propAngle, out var pose);
+            bool valid = LevelPropPlacement.TryPose(layout, source, ray,
+                moving ? repositionSurface : propSurface, moving ? repositionOffset : propOffset,
+                moving ? repositionAngle : propAngle, out var pose);
             if (valid)
             {
-                var rootMatrix = Matrix4x4.TRS(pose.position, pose.rotation, propPrefab.transform.localScale);
-                if (e.type == EventType.Repaint) foreach (var filter in propPrefab.GetComponentsInChildren<MeshFilter>(true))
+                var scale = moving ? source.transform.lossyScale : source.transform.localScale;
+                var rootMatrix = Matrix4x4.TRS(pose.position, pose.rotation, scale);
+                if (e.type == EventType.Repaint) foreach (var filter in source.GetComponentsInChildren<MeshFilter>(true))
                 {
                     if (filter.sharedMesh == null) continue;
-                    var matrix = rootMatrix * propPrefab.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                    var matrix = rootMatrix * source.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
                     if (!filter.sharedMesh.isReadable)
                     {
                         using (new Handles.DrawingScope(new Color(.3f, 1, .65f), matrix))
@@ -142,25 +258,29 @@ namespace Sound2.LevelEditing.Editor
                         }
                     using (new Handles.DrawingScope(new Color(.3f, 1, .65f), matrix)) Handles.DrawLines(lines);
                 }
-                Handles.Label(pose.position, "点击放置 " + propPrefab.name);
+                Handles.Label(pose.position, (moving ? "点击重新吸附 " : "点击放置 ") + source.name);
             }
             if (e.type == EventType.MouseDown && e.button == 0 && !e.alt)
             {
                 if (valid)
                 {
-                    selectedProp = LevelPropPlacement.Place(layout, propPrefab, pose);
+                    if (moving)
+                    {
+                        LevelPropPlacement.Reposition(layout, source, pose);
+                        tool = Tool.Select;
+                        status = "已重新吸附 " + source.name + "；Ctrl+Z 撤销，Ctrl+Y 重做。";
+                    }
+                    else
+                    {
+                        selectedProp = LevelPropPlacement.Place(layout, propPrefab, pose);
+                        status = "已放置 " + selectedProp.name + "；继续点击放置，Esc 退出。";
+                    }
                     selected = -1; kind = Kind.None;
-                    status = "已放置 " + selectedProp.name + "；继续点击放置，Esc 退出。"; hasError = false;
+                    hasError = false;
                     Refresh();
                 }
                 else { status = "请指向布局中匹配的墙面或地面；贴墙时使用 3D 视图。"; hasError = true; UpdateStatus(); }
                 e.Use();
-            }
-            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
-            {
-                tool = Tool.Select;
-                if (selectedProp != null) Selection.activeGameObject = selectedProp;
-                Refresh(); e.Use();
             }
             if (e.type == EventType.MouseMove) view.Repaint();
         }

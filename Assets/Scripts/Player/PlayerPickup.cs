@@ -4,7 +4,6 @@ using UnityEngine.InputSystem;
 [DefaultExecutionOrder(30), DisallowMultipleComponent]
 public sealed class PlayerPickup : MonoBehaviour
 {
-    public Key interactionKey = Key.E;
     [Tooltip("A separate child SphereCollider, with Is Trigger enabled. Edit its radius/center to change pickup range.")]
     public SphereCollider pickupRange;
     public Transform viewTransform;
@@ -47,8 +46,6 @@ public sealed class PlayerPickup : MonoBehaviour
             if(HeldItem!=null && !TryPlace())GetComponent<PlayerSubtitles>()?.ShowImmediate("空间不足，无法放下",1.2f);
             return;
         }
-        if (Keyboard.current != null && interactionKey != Key.None && Keyboard.current[interactionKey].wasPressedThisFrame)
-            Interact();
     }
 
     void LateUpdate()
