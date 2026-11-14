@@ -64,6 +64,17 @@ namespace Sound2.LevelEditing.Editor
             return false;
         }
 
+        public static bool TryCenterPose(LevelLayout layout, GameObject source, string roomId, string partitionId, out Pose pose)
+        {
+            pose = default;
+            if (layout == null || source == null || source.GetComponent<EmbeddedDoor>() == null) return false;
+            var walls = Walls(layout);
+            if (!Resolve(layout, roomId, partitionId, .5f, 1, walls, out var attachment)
+                || Overlaps(layout, attachment, source.GetComponent<EmbeddedDoor>(), walls)) return false;
+            pose = attachment.pose;
+            return true;
+        }
+
         public static bool TryPose(LevelLayout layout, GameObject source, Ray ray, out Pose pose)
         {
             pose = default; float nearestDistance = float.PositiveInfinity; Collider nearest = null;

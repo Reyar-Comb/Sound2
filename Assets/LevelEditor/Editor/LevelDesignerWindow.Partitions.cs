@@ -40,10 +40,28 @@ namespace Sound2.LevelEditing.Editor
                 catch (System.Exception error) { hasError = true; status = error.Message; }
                 Refresh(); SceneView.RepaintAll();
             });
-            Button(area, "在隔板上放门", () => ChooseProp(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/WoodenDoor.prefab")));
+            Button(area, "在隔板中心放门", () => PlaceDoorAtPartitionCenter(p));
             area.Add(new Label("拖动中心可整体移动，拖动两端可改变长度和方向。删除隔板会同时删除嵌入的门，可撤销恢复。"));
             Button(area, "删除隔板及其门", Delete);
             return true;
+        }
+
+        void PlaceDoorAtPartitionCenter(RoomPartition partition)
+        {
+            if (Application.isPlaying || layout == null || !layout.partitions.Contains(partition)) return;
+            try
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/WoodenDoor.prefab");
+                if (prefab == null) throw new System.InvalidOperationException("未找到门道具 WoodenDoor.prefab。");
+                if (!EmbeddedDoorPlacement.TryCenterPose(layout, prefab, "", partition.id, out var pose))
+                    throw new System.InvalidOperationException("隔板中心无法放门：请检查隔板长度、高度，中心是否已有门，以及门洞是否被其他墙体或竖井占用。");
+                selectedProp = LevelPropPlacement.Place(layout, prefab, pose);
+                selected = -1; kind = Kind.None; tool = Tool.Select; pending.Clear();
+                Selection.activeGameObject = selectedProp;
+                hasError = false; status = "已在隔板中心放门并生成门洞；Ctrl+Z 撤销。";
+            }
+            catch (System.Exception error) { hasError = true; status = error.Message; }
+            Refresh(); SceneView.RepaintAll();
         }
 
         void PlacePartitionPoint()
