@@ -20,7 +20,20 @@ namespace Sound2.LevelEditing
         Vector3 passengerOffset;
         readonly List<(Rigidbody body, Vector3 offset, bool kinematic, Transform parent)> cargo = new();
 
+        readonly List<Renderer> cabinPanels = new();
+        readonly MaterialPropertyBlock panelProperties = new();
+
         void Awake() => ConfigureCabinEdges();
+
+        void SetCabinMotion(float height, float strength)
+        {
+            foreach (var renderer in cabinPanels)
+            {
+                renderer.GetPropertyBlock(panelProperties);
+                panelProperties.SetVector("_CabinMotion", new Vector4(height, strength, 0, 0));
+                renderer.SetPropertyBlock(panelProperties);
+            }
+        }
 
         void ConfigureCabinEdges()
         {
@@ -33,6 +46,7 @@ namespace Sound2.LevelEditing
                 properties.SetMatrix("_PanelToCabin", Matrix4x4.TRS(panel.localPosition, panel.localRotation, panel.localScale));
                 properties.SetFloat("_CabinEdges", 1);
                 renderer.SetPropertyBlock(properties);
+                cabinPanels.Add(renderer);
             }
         }
 
@@ -86,6 +100,7 @@ namespace Sound2.LevelEditing
             {
                 float t = Mathf.Clamp01(elapsed / Mathf.Max(.1f, travelSeconds));
                 cabin.localPosition = Vector3.up * (rise * Mathf.SmoothStep(0, 1, t));
+                SetCabinMotion(cabin.localPosition.y, 4 * t * (1 - t));
                 if (t >= 1)
                 {
                     // Authoritative floor change occurs exactly once, after the physical ascent.
@@ -121,6 +136,10 @@ namespace Sound2.LevelEditing
             }
             cargo.Clear();
         }
-        void OnDisable() => ReleasePassenger();
+        void OnDisable()
+        {
+            SetCabinMotion(0, 0);
+            ReleasePassenger();
+        }
     }
 }
