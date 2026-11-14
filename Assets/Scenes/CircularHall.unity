@@ -3796,6 +3796,7 @@ GameObject:
   - component: {fileID: 972972406}
   - component: {fileID: 972972407}
   - component: {fileID: 972972408}
+  - component: {fileID: 972972409}
   m_Layer: 2
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -3984,6 +3985,7 @@ MonoBehaviour:
   movementMin: {x: -6, y: -12}
   movementMax: {x: 12, y: 6}
   reverbLevel: 0.12
+  hud: 0
 --- !u!114 &972972406
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4082,6 +4084,43 @@ CharacterController:
   m_SkinWidth: 0.025
   m_MinMoveDistance: 0
   m_Center: {x: 0, y: -0.7, z: 0}
+--- !u!114 &972972409
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 972972401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d7985339859d4f49aa352bdf3af6094, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
+  pulseField: {fileID: 0}
+  emissionEnabled: 1
+  stepDistance: 1.5
+  minimumInterval: 0.18
+  minimumSpeed: 0.05
+  requireGrounded: 0
+  teleportDistance: 2
+  range: 3
+  waveSpeed: 8
+  afterglow: 0.3
+  originHeight: 0.12
+  distanceSettings:
+    enabled: 1
+    fadeStartDistance: 0.4
+    fadeEndDistance: 3
+    falloffPower: 2
+    pulseStrength: 0.6
+  hearingRange: 6
+  soundEnabled: 1
+  audioSource: {fileID: 0}
+  clips: []
+  volume: 0.4
+  onStep:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &987000470
 GameObject:
   m_ObjectHideFlags: 0

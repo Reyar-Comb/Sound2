@@ -127,6 +127,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2359752701424357332, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: stars
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359752701424357332, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: twinkle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359752701424357332, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: trackingPoint
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 2922623047068839807, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: useGravity
       value: 1
@@ -198,78 +210,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 784376300}
-    - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 784376299}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
---- !u!1 &784376298 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-  m_PrefabInstance: {fileID: 784376297}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &784376299
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 784376298}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 52f3ff38c9c8d42ad94f0c4cc0fb776a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SphericalSonar
-  range: 12
-  waveSpeed: 8
-  afterglow: 1.4
-  emissionInterval: 0.8
-  obstacleLayers:
-    serializedVersion: 2
-    m_Bits: 4294967291
-  automatic: 0
-  emissionSound: 1
-  distanceSettings:
-    enabled: 0
-    fadeStartDistance: 0.5
-    fadeEndDistance: 3
-    falloffPower: 2
-    pulseStrength: 0.65
-  distanceSettingsVersion: 1
-  legacyDistanceAttenuation: 0
-  legacyFadeStart: 0.5
-  legacyFadeEnd: 3
-  legacyFalloffPower: 2
-  legacyStrength: 0.65
-  renderingSettings: {fileID: 2100000, guid: a73c361c40a464571b33f735b1c6ae42, type: 2}
-  dotRadius: 1.5
-  facePoints: 1
-  edgePoints: 1
-  proximityRendering: 1
-  sonarRendering: 1
-  hud: 0
---- !u!114 &784376300
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 784376298}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8f6e59222b27044e842f1fb1c8a596c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BlackBoxProximitySource
-  trackingPoint: {fileID: 0}
-  facePoints: 1
-  edgePoints: 1
-  stars: 1
-  twinkle: 1
-  proximityRendering: 1
-  sonarRendering: 1
 --- !u!1 &1636570373
 GameObject:
   m_ObjectHideFlags: 0

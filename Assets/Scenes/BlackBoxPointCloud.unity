@@ -3358,6 +3358,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 416137931599503426, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359752701424357332, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2995332533543264252, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -3396,6 +3404,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2995332533543264252, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4387872608993582400, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
@@ -3446,6 +3458,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}
+    - target: {fileID: 8316862017151493178, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: pulseField
+      value: 
+      objectReference: {fileID: 2035204195}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3456,6 +3472,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2035204194}
+    - targetCorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2035204195}
   m_SourcePrefab: {fileID: 100100000, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
 --- !u!1 &2035204185 stripped
 GameObject:
@@ -3484,7 +3503,7 @@ MonoBehaviour:
   edgePoints: 1
   stars: 1
   twinkle: 1
-  proximityRendering: 1
+  proximityRendering: 0
   sonarRendering: 1
 --- !u!114 &2035204194
 MonoBehaviour:
@@ -3515,6 +3534,21 @@ MonoBehaviour:
   - {fileID: 4031405426404731426, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   menuAction: {fileID: 2412205961180883575, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   closeAction: {fileID: -3867436207749104921, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+--- !u!114 &2035204195
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2035204185}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a0dadcad8054bb0a176ca2f540409f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SonarPulseField
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967291
 --- !u!1 &2038203534
 GameObject:
   m_ObjectHideFlags: 0

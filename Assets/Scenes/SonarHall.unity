@@ -353,42 +353,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2995332533543264252, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
   m_PrefabInstance: {fileID: 1326449163}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &34768625
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 34768621}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d7985339859d4f49aa352bdf3af6094, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
-  pulseField: {fileID: 0}
-  emissionEnabled: 1
-  stepDistance: 2
-  minimumInterval: 0.18
-  minimumSpeed: 0.05
-  requireGrounded: 0
-  teleportDistance: 2
-  range: 10
-  waveSpeed: 8
-  afterglow: 1
-  originHeight: 0.12
-  distanceSettings:
-    enabled: 1
-    fadeStartDistance: 2
-    fadeEndDistance: 5
-    falloffPower: 2
-    pulseStrength: 0.6
-  hearingRange: 6
-  audioSource: {fileID: 0}
-  clips: []
-  volume: 0.4
-  onStep:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &34768628
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1498,7 +1462,7 @@ PrefabInstance:
     - target: {fileID: 118845501540813271, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: sonar
       value: 
-      objectReference: {fileID: 1326449167}
+      objectReference: {fileID: 1326449164}
     - target: {fileID: 6703033844639753018, guid: 3a89525efaea41f47b1f7df742d041f8, type: 3}
       propertyPath: m_Name
       value: PickupBouncyBall
@@ -5614,6 +5578,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: range
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: afterglow
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: waveSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: obstacleLayers.m_Bits
+      value: 51
+      objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: distanceSettings.enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: legacyDistanceAttenuation
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4313922769768325334, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_Layer
       value: 2
@@ -5682,6 +5670,26 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}
+    - target: {fileID: 8316862017151493178, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: range
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8316862017151493178, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: afterglow
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8316862017151493178, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: stepDistance
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8316862017151493178, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: distanceSettings.fadeEndDistance
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8316862017151493178, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: distanceSettings.fadeStartDistance
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_Layer
       value: 2
@@ -5690,9 +5698,6 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 34768625}
     - targetCorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       insertIndex: -1
       addedObject: {fileID: 34768628}
@@ -5704,19 +5709,19 @@ PrefabInstance:
       addedObject: {fileID: 1326449169}
     - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1326449168}
-    - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1326449167}
-    - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1326449166}
   m_SourcePrefab: {fileID: 100100000, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
---- !u!4 &1326449164 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4955884709853427845, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+--- !u!114 &1326449164 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
   m_PrefabInstance: {fileID: 1326449163}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1326449165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52f3ff38c9c8d42ad94f0c4cc0fb776a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SphericalSonar
 --- !u!1 &1326449165 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
@@ -5830,65 +5835,6 @@ MonoBehaviour:
   movementMax: {x: 12, y: 6}
   reverbLevel: 0.12
   hud: 0
---- !u!114 &1326449167
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1326449165}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 52f3ff38c9c8d42ad94f0c4cc0fb776a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SphericalSonar
-  range: 40
-  waveSpeed: 10
-  afterglow: 0.4
-  emissionInterval: 0.8
-  obstacleLayers:
-    serializedVersion: 2
-    m_Bits: 51
-  automatic: 0
-  emissionSound: 1
-  distanceSettings:
-    enabled: 1
-    fadeStartDistance: 0.5
-    fadeEndDistance: 3
-    falloffPower: 2
-    pulseStrength: 0.65
-  distanceSettingsVersion: 1
-  legacyDistanceAttenuation: 1
-  legacyFadeStart: 0.5
-  legacyFadeEnd: 3
-  legacyFalloffPower: 2
-  legacyStrength: 0.65
-  renderingSettings: {fileID: 2100000, guid: a73c361c40a464571b33f735b1c6ae42, type: 2}
-  dotRadius: 1.5
-  facePoints: 1
-  edgePoints: 1
-  proximityRendering: 0
-  sonarRendering: 1
-  hud: 0
---- !u!114 &1326449168
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1326449165}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8f6e59222b27044e842f1fb1c8a596c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BlackBoxProximitySource
-  trackingPoint: {fileID: 1326449164}
-  facePoints: 1
-  edgePoints: 1
-  stars: 0
-  twinkle: 0
-  proximityRendering: 1
-  sonarRendering: 1
 --- !u!114 &1326449169
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10004,7 +9950,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 270b6fba0dbb3418fa1da0b190a952df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SonarObjectEmitter
-  sonar: {fileID: 1326449167}
+  sonar: {fileID: 1326449164}
   pulseField: {fileID: 0}
   pulseKind: 0
   emissionOrigin: {fileID: 0}

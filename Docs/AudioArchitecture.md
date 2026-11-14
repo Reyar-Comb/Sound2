@@ -129,9 +129,11 @@ public void Reveal(Vector3 origin)
 
 两个都打开时，最终亮度取两种显影结果的最大值，同一点不会重复叠亮或变粗。两个都关闭时隐藏这两种显影，不改变玩家移动、声波发射、方块自动发射和声音。`R` 只清空声波，不会清除靠近显影。
 
-默认保持 SonarHall 原来的仅声波模式。按 `3` 即可加入靠近显影，按 `4` 可独立关闭声波显影。`1`、`2` 仍控制面点阵、轮廓点，作为两种显影共用的样式开关。Inspector 参数可保存进场景；Play 模式中的切换用于即时比较。
+所有现有场景统一关闭靠近显影，新建组件和种子地图也默认关闭。显式开关仍是玩家相机的 `SphericalSonar > Proximity Rendering`，按 `3` 可临时开启，按 `4` 可独立关闭声波显影。`1`、`2` 仍控制面点阵、轮廓点，作为两种显影共用的样式开关。Inspector 参数可保存进场景；Play 模式中的切换用于即时比较。
 
-底层参数由 `BlackBoxProximitySource.SetRevealModes(proximity, sonar)` 发布，Shader 使用 `_BlackBoxRevealModes.xy` 合并两种结果。原始 BlackBox 场景的组件默认开启靠近显影，无需挂 `SphericalSonar`。星点跟随靠近显影开关；SonarHall 仍维持原来的星点关闭设置。
+底层参数由 `BlackBoxProximitySource.SetRevealModes(proximity, sonar)` 发布，Shader 保留完整近处渲染分支，使用 `_BlackBoxRevealModes.xy` 合并两种结果。没有 `SphericalSonar` 的 BlackBoxPointCloud 场景直接使用 `BlackBoxProximitySource > Proximity Rendering`，并配置共享 `SonarPulseField` 接收脚步波。有 `SphericalSonar` 时它每帧同步底层开关，应从它的 Inspector 调整。背景星点有独立样式开关，不受近处表面显影开关控制；SonarHall 仍保持星点关闭。
+
+公共 `Player.prefab` 的 Main Camera 已显式包含 `SphericalSonar`、`BlackBoxProximitySource`、`SonarPulseField`，绑定现有 `SonarDots` 材质；根节点脚步组件直接引用同一波场。因此手动拖入玩家与地图导出使用同一套点云能力。旧场景的相机组件已迁移为预制体参数覆盖，外部声源引用保留。BlackBoxPointCloud 的原有根节点控制面板、样式和波场保持启用，并显式关闭继承来的相机点云组件，避免重复发布和按键冲突。
 
 ## 面点云与声波轮廓的材质
 
@@ -175,15 +177,29 @@ public void Reveal(Vector3 origin)
 
 `SonarPulseField.EmitFrom(origin, range, speed, afterglow, settings)` 在发射时打包配置，旧四参数入口仍关闭衰减，原八参数入口也保留。Shader 的 `_SonarSceneDistanceFalloffs` 为每个槽独立记录开始/终止距离、指数及强度。距离从固定发声原点计算，终止距离外硬裁剪；范围内将距离增益乘到原时间淡出上，多个波仍取 max。这是可视探索范围，与音频距离增益分别配置。
 
-`FootstepEmitter` 位于 SonarHall 的 Player 根物体，只读取 `PlayerController` 实际水平位移，不接管输入或移动。默认每 1.5m 一步，最小间隔 0.18s；停步、转头、纯升降、顶墙、输入暂停不触发。单帧位移超过 2m 重置累计，不补发传送脚步。Require Grounded 默认关闭以适配当前自由升降控制；正式贴地行走时可打开。
+`FootstepEmitter` 位于共享 `Assets/Prefabs/Player.prefab` 根物体，玩家场景继承它；原场景独有的步距和波参数保留为预制体覆盖。CubeRoom、MazeRoom、CircularHall 的旧版 `BouncePlaytest` 场景也显式配置了同一组件，不在运行时补建。组件只读取实际水平位移和控制器的输入暂停状态，不接管输入或移动。默认每 1.5m 一步，最小间隔 0.18s；停步、转头、纯升降、顶墙、输入暂停不触发。单帧位移超过 2m 重置累计，不补发传送脚步。重力玩家始终禁止空中脚步；`Require Grounded` 可额外约束调试用的自由升降模式。纯编辑场景不额外添加玩家。
 
 脚步调用 `EmitFootstepFrom`，起点为胶囊底部上方 0.12m，默认 3m 范围、8m/s、0.3s 余像、0.4–3m 距离衰减、指数 2、强度 0.6。波槽 0–3 供主波使用，4–7 供脚步使用，各自循环，不互相覆盖。8–11 供怪物危险波使用。Shader 共读取 24 槽；脚步使用 24×24×6 方向采样，主波使用 48×48×6，沿用同一首碰撞面纹理布局。局部脚步的角采样精度较低，薄小物体和边界可能存在误差。
 
-脚步的音效素材暂空，可选 AudioSource + Clips 轮流播放，或从 `onStep` / `Stepped` 收到世界坐标后接音效池。普通 AudioSource 随玩家移动，若希望尾音固定在脚步位置，使用已有 `ImpactSoundPool.PlayAt`。脚步开关在组件 `Emission Enabled` 和按键 6；按键 5 只控制主动探测波。BlackBox 原始场景与共享 Player prefab 未增加脚步行为。
+音频素材按用户要求暂留空：只播放显式指定的 `Audio Source` 和 `Clips`，不合成脚步音、不补建 AudioSource、不使用替代素材。`Sound Enabled` 和 `Volume` 控制已绑定音效；没有素材时仍发出声波和 AI 听觉事件。`Emission Enabled`（Sonar 场景按键 6）控制脚步和落地反馈，按键 5 只控制主动探测波。若需固定世界位置与空间反射，可从 `onStep` / `Stepped` 或 `onLand` / `Landed` 接入已有音效池。
+
+### 跳跃与落地
+
+公共 Player 默认启用 `Use Gravity`。`PlayerController` 从现有 Move 所属输入表读取已有 `Jump`（空格/手柄），仅在着地且按键刚按下时按 `sqrt(2 * gravity * jumpHeight)` 起跳；默认 `Jump Height` 为 1.2m。按住不会自动连跳，空中不能二段跳，碰顶清除上升速度。关闭 `Use Gravity` 仍保留原来的 Space/Shift 自由升降调试模式。旧版 BouncePlaytest 的 Space 保留发球用途，不接管该控制器的输入。
+
+`PlayerController.Landed(float impactSpeed)` 在一次真实空中→地面接触时触发；短于 0.08s 的接触变化或低于 `Minimum Landing Speed`（默认 2.5m/s）的轻微沉降不算落地冲击。`Teleport` 重置下落状态，直接传送至地面不会假触发，从空中继续下落则正常触发。`FootstepEmitter` 订阅该事件，复用 4–7 脚步波槽，落地当帧不重复发普通脚步。
+
+`Landing Multiplier` 默认 2：声波范围、距离衰减起止位置和 AI 可听范围为脚步的两倍，视觉强度乘二并封顶 1；AI 事件复用 `Impact` 类型。音频使用独立的 `Landing Clip` 与同一个显式 `Audio Source`，增益为 `clamp01(Volume * Landing Multiplier)`，默认 0.8 对比普通脚步 0.4。`Landing Clip` 留空时保持静音，不回退到脚步录音。
 
 ## 验证入口
 
 通过 Unity CLI 在对应场景 Play 模式运行 `script run --file <路径>`：
+
+- `AgentScripts/VerifyScenePlayerDefaults.cs`：在测试方启动的 Play 模式中逐个加载 11 个可移动场景（包含新增玩家的 test 场景），验证唯一脚步组件、近处显影默认关闭及可重新开启、真实 W 移动触发脚步波、静止与无音频兜底。测试结束停留在 SonarHall，退出 Play 模式还原编辑场景。
+- `AgentScripts/VerifyJumpLanding.cs`：SonarHall Play 模式；真实 Jump 输入、空中禁止二段跳和普通脚步、按住不连跳、碰顶、暂停、传送、落地波与听觉强度，以及临时显式绑定测试录音后的音频输出增益。测试录音仅用于运行时验证，不保存为游戏素材。
+- 同文件 `--entry VerifyScenePlayerDefaults.VerifyProximityPixels`：隔离近处墙体进行实际渲染检查，关闭→开启→关闭应恢复相同暗场；图片写入 `Logs/ProximityDefault/`。
+- `AgentScripts/AuditScenePlayerDefaults.cs`：Edit 模式只读检查所有场景的玩家和显影配置；`ConfigureScenePlayerDefaults.cs` 通过 Unity 序列化迁移预制体及场景，保留各场景步距与事件配置。
+- `AgentScripts/VerifyPlayerPointCloudPrefab.cs`：在 Play 模式直接实例化 Player 预制体，不调用地图配置助手，检查 Enter 实际显影像素、脚步波与显式组件绑定；`ConfigurePlayerPointCloudPrefab.cs` 迁移旧场景参数和外部引用，已有未保存场景修改保留在编辑器中。
 
 - `AgentScripts/VerifySonarFaces.cs`：SonarHall；14 项实际画面检查，验证远离玩家的面点激活、脚步槽、到达/消失/硬范围、混合独立性及开关，以及与原核心/外圈图案的逐像素一致性和实际点密度差异，以及脚步高度发波照到地面时的中心密/外圈疏。
 - `AgentScripts/VerifyFootsteps.cs`：SonarHall；真实输入下的移动/停步/顶墙/纯升降/传送/贴地选项、事件、按键开关及脚步槽隔离。

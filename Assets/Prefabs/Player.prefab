@@ -106,6 +106,7 @@ GameObject:
   - component: {fileID: 116377712960675080}
   - component: {fileID: 872924278679620629}
   - component: {fileID: 1730712013822685606}
+  - component: {fileID: 8316862017151493178}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -176,9 +177,11 @@ MonoBehaviour:
   ascendSpeed: 3
   descendSpeed: 3
   maxPitch: 89
-  useGravity: 0
+  useGravity: 1
   gravity: 20
   terminalFallSpeed: 40
+  jumpHeight: 1.2
+  minimumLandingSpeed: 2.5
 --- !u!114 &6148220066546946733
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -204,6 +207,10 @@ MonoBehaviour:
   throwSpeed: 10
   throwUpwardSpeed: 1
   throwDistance: 0.9
+  placeDistance: 2.5
+  rotationLag: 0.12
+  positionSmoothTime: 0.06
+  maximumLagAngle: 12
 --- !u!114 &4908591070415843194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -214,7 +221,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 38ea1e00ec0a13a47877c83c54db7112, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
   viewCamera: {fileID: 6939803567082866895}
   aimAngle: 8
@@ -236,7 +243,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dab77ce7bae18dc48b16622bc1cb3811, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSubtitles
   fadeTime: 0.3
   subtitleFontSize: 24
@@ -250,13 +257,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a129af00492a03b4286004fc70525916, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerFloorProgression
   profile: {fileID: 11400000, guid: 15fecc558b66c174ebad61a03a2512b5, type: 2}
   onFloorChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  onResourcesChanged:
     m_PersistentCalls:
       m_Calls: []
 --- !u!114 &1730712013822685606
@@ -269,7 +273,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 37959c461c6d6cb48afb5c87c97b9cce, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCameraMotion
   intensity: 1
   idleHeight: 0.006
@@ -284,6 +288,48 @@ MonoBehaviour:
   smoothingTime: 0.12
   minimumMoveSpeed: 0.05
   teleportDistance: 2
+--- !u!114 &8316862017151493178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4599028716362026551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d7985339859d4f49aa352bdf3af6094, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
+  pulseField: {fileID: 416137931599503426}
+  emissionEnabled: 1
+  stepDistance: 1.5
+  minimumInterval: 0.18
+  minimumSpeed: 0.05
+  requireGrounded: 0
+  teleportDistance: 2
+  range: 3
+  waveSpeed: 8
+  afterglow: 0.3
+  originHeight: 0.12
+  distanceSettings:
+    enabled: 1
+    fadeStartDistance: 0.4
+    fadeEndDistance: 3
+    falloffPower: 2
+    pulseStrength: 0.6
+  hearingRange: 6
+  soundEnabled: 1
+  audioSource: {fileID: 0}
+  clips: []
+  volume: 0.4
+  landingClip: {fileID: 0}
+  landingMultiplier: 2
+  onStep:
+    m_PersistentCalls:
+      m_Calls: []
+  onLand:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &6482992948592475382
 GameObject:
   m_ObjectHideFlags: 0
@@ -380,6 +426,9 @@ GameObject:
   - component: {fileID: 6939803567082866895}
   - component: {fileID: 2915294288556732270}
   - component: {fileID: 4387872608993582400}
+  - component: {fileID: 2359752701424357332}
+  - component: {fileID: 416137931599503426}
+  - component: {fileID: 3087854306390339009}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -412,8 +461,8 @@ Camera:
   m_GameObject: {fileID: 8680919659692471776}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -506,3 +555,77 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &2359752701424357332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8680919659692471776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8f6e59222b27044e842f1fb1c8a596c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BlackBoxProximitySource
+  trackingPoint: {fileID: 4955884709853427845}
+  facePoints: 1
+  edgePoints: 1
+  stars: 0
+  twinkle: 0
+  proximityRendering: 0
+  sonarRendering: 1
+--- !u!114 &416137931599503426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8680919659692471776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a0dadcad8054bb0a176ca2f540409f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SonarPulseField
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967291
+--- !u!114 &3087854306390339009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8680919659692471776}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52f3ff38c9c8d42ad94f0c4cc0fb776a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SphericalSonar
+  range: 12
+  waveSpeed: 8
+  afterglow: 1.4
+  emissionInterval: 0.8
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  automatic: 0
+  emissionSound: 1
+  distanceSettings:
+    enabled: 0
+    fadeStartDistance: 0.5
+    fadeEndDistance: 3
+    falloffPower: 2
+    pulseStrength: 0.65
+  distanceSettingsVersion: 1
+  legacyDistanceAttenuation: 0
+  legacyFadeStart: 0.5
+  legacyFadeEnd: 3
+  legacyFalloffPower: 2
+  legacyStrength: 0.65
+  renderingSettings: {fileID: 2100000, guid: a73c361c40a464571b33f735b1c6ae42, type: 2}
+  dotRadius: 1.5
+  facePoints: 1
+  edgePoints: 1
+  proximityRendering: 0
+  sonarRendering: 1
+  hud: 0

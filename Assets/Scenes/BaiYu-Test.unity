@@ -181,6 +181,18 @@ PrefabInstance:
       propertyPath: profile
       value: 
       objectReference: {fileID: 11400000, guid: 1334777a3db3c7f4486f1eb1bf29d23c, type: 2}
+    - target: {fileID: 2359752701424357332, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: stars
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359752701424357332, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: twinkle
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359752701424357332, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: trackingPoint
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 2922623047068839807, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: useGravity
       value: 1
@@ -255,19 +267,10 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1227687892}
-    - targetCorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1227687890}
     - targetCorrespondingSourceObject: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1227687889}
-    - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1227687885}
-    - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1227687884}
     - targetCorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1227687888}
@@ -277,65 +280,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8680919659692471776, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
   m_PrefabInstance: {fileID: 1227687882}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1227687884
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1227687883}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 52f3ff38c9c8d42ad94f0c4cc0fb776a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SphericalSonar
-  range: 12
-  waveSpeed: 8
-  afterglow: 1.4
-  emissionInterval: 0.8
-  obstacleLayers:
-    serializedVersion: 2
-    m_Bits: 4294967291
-  automatic: 0
-  emissionSound: 1
-  distanceSettings:
-    enabled: 0
-    fadeStartDistance: 0.5
-    fadeEndDistance: 3
-    falloffPower: 2
-    pulseStrength: 0.65
-  distanceSettingsVersion: 1
-  legacyDistanceAttenuation: 0
-  legacyFadeStart: 0.5
-  legacyFadeEnd: 3
-  legacyFalloffPower: 2
-  legacyStrength: 0.65
-  renderingSettings: {fileID: 2100000, guid: a73c361c40a464571b33f735b1c6ae42, type: 2}
-  dotRadius: 1.5
-  facePoints: 1
-  edgePoints: 1
-  proximityRendering: 1
-  sonarRendering: 1
-  hud: 0
---- !u!114 &1227687885
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1227687883}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c8f6e59222b27044e842f1fb1c8a596c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BlackBoxProximitySource
-  trackingPoint: {fileID: 0}
-  facePoints: 1
-  edgePoints: 1
-  stars: 1
-  twinkle: 1
-  proximityRendering: 1
-  sonarRendering: 1
 --- !u!114 &1227687886 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 872924278679620629, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
@@ -407,42 +351,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerVitality
   maximumHealth: 100
---- !u!114 &1227687892
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1227687887}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7d7985339859d4f49aa352bdf3af6094, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FootstepEmitter
-  pulseField: {fileID: 0}
-  emissionEnabled: 1
-  stepDistance: 1.5
-  minimumInterval: 0.18
-  minimumSpeed: 0.05
-  requireGrounded: 0
-  teleportDistance: 2
-  range: 3
-  waveSpeed: 8
-  afterglow: 0.3
-  originHeight: 0.12
-  distanceSettings:
-    enabled: 1
-    fadeStartDistance: 0.4
-    fadeEndDistance: 3
-    falloffPower: 2
-    pulseStrength: 0.6
-  hearingRange: 6
-  audioSource: {fileID: 0}
-  clips: []
-  volume: 0.4
-  onStep:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!114 &1227687902 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2922623047068839807, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
