@@ -28,7 +28,9 @@ public sealed class PlayerController : MonoBehaviour
     private InputAction jumpAction;
     private Vector3 pushVelocity;
     public event System.Action<float> Landed;
-    public bool InputSuspended { get; set; }
+    bool inputSuspended;
+    public bool DeathSequenceLocked { get; internal set; }
+    public bool InputSuspended { get => inputSuspended || DeathSequenceLocked; set => inputSuspended = value; }
     public bool TransportLocked { get; set; }
     public Transform ViewTransform => cameraTransform;
     public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);

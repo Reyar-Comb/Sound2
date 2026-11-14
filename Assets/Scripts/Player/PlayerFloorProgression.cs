@@ -26,10 +26,9 @@ public sealed class PlayerFloorProgression : MonoBehaviour
 
     PlayerVitality vitality;
     Coroutine respawn;
-    Material respawnMaterial;
-    Canvas respawnCanvas;
-    LevelElevator respawnLift;
-    bool inputWasSuspended;
+    PlayerDamageFeedback damageFeedback;
+    Vector3 initialPosition;
+    Quaternion initialRotation;
     public bool IsRespawning => respawn != null;
 
     void Start()
@@ -43,107 +42,118 @@ public sealed class PlayerFloorProgression : MonoBehaviour
         foreach(var world in FindObjectsByType<LevelWorld>())if(world.player==controller){World=world;Map=null;profile=world.profile;break;}
         if (profile == null) profile = Resources.Load<FloorProgressionProfile>("FloorProgression");
         previousPosition = transform.position;
+        initialPosition = transform.position;
+        initialRotation = transform.rotation;
         ApplyFloor(World != null ? World.levels.IndexOf(World.CurrentLevel)+1 : 0);
         vitality = GetComponent<PlayerVitality>();
-        if (World != null && vitality != null) vitality.Died += BeginRespawn;
+        damageFeedback = GetComponent<PlayerDamageFeedback>();
+        if (vitality != null) vitality.Died += BeginRespawn;
     }
 
     void BeginRespawn()
     {
         if (respawn != null || !isActiveAndEnabled) return;
-        inputWasSuspended = controller.InputSuspended;
-        controller.InputSuspended = true;
+        controller.DeathSequenceLocked = true;
+        damageFeedback?.BeginDeath();
         respawn = StartCoroutine(Respawn());
+    }
+
+    IEnumerator Animate(float seconds, Action<float> show, bool smooth = true)
+    {
+        float duration = Mathf.Max(.05f, seconds);
+        for (float elapsed = 0; elapsed < duration; elapsed += Time.unscaledDeltaTime)
+        {
+            show(smooth ? Mathf.SmoothStep(0, 1, elapsed / duration) : elapsed / duration);
+            yield return null;
+        }
+        show(1);
     }
 
     IEnumerator Respawn()
     {
-        yield return null;
-        // A lift already in motion finishes its floor transaction before choosing a checkpoint.
-        var menu = GetComponent<SonicSpaceStartMenu>() ?? FindAnyObjectByType<SonicSpaceStartMenu>();
-        Shader shader = menu != null ? menu.menuShader : Shader.Find("Sound2/SonicSpace Point Menu");
-        if (shader != null)
+        yield return null; // Ensure the coroutine handle is assigned before cleanup can run.
+        if (damageFeedback != null)
         {
-            var cover = new GameObject("Respawn point cover", typeof(RectTransform), typeof(Canvas));
-            cover.transform.SetParent(transform, false);
-            respawnCanvas = cover.GetComponent<Canvas>();
-            respawnCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            respawnCanvas.sortingOrder = 31999;
-            var panel = new GameObject("White points", typeof(RectTransform), typeof(UnityEngine.UI.RawImage));
-            panel.transform.SetParent(cover.transform, false);
-            var image = panel.GetComponent<UnityEngine.UI.RawImage>();
-            image.rectTransform.anchorMin = Vector2.zero;
-            image.rectTransform.anchorMax = Vector2.one;
-            image.rectTransform.offsetMin = image.rectTransform.offsetMax = Vector2.zero;
-            respawnMaterial = new Material(shader);
-            image.material = respawnMaterial;
+            yield return Animate(damageFeedback.engulfSeconds, damageFeedback.ShowEngulf);
+            yield return new WaitForSecondsRealtime(Mathf.Max(0, damageFeedback.deathHoldSeconds));
+            yield return Animate(damageFeedback.dissolveSeconds, damageFeedback.ShowDissolve, false);
         }
-
-        var camera = controller.GetComponentInChildren<Camera>();
-        if (respawnMaterial != null)
+        // Finish an in-flight level transaction before resolving this floor's checkpoint.
+        while (World != null && World.Travelling) yield return null;
+        ReturnToCheckpoint();
+        if (damageFeedback != null)
         {
-            for (float time = 0; time < .48f; time += Time.unscaledDeltaTime)
-            {
-                float height = Mathf.Max(1, Screen.height);
-                respawnMaterial.SetVector("_MenuSize", new Vector4(Screen.width, height, 720 * Screen.width / height, 720));
-                respawnMaterial.SetFloat("_GridPitch", BlackBoxPointCloudFeature.GetDotSpacing(camera));
-                respawnMaterial.SetFloat("_DotRadius", BlackBoxPointCloudFeature.GetDotDiameter(camera) * .5f);
-                respawnMaterial.SetFloat("_RespawnCover", Mathf.Max(.001f, time / .48f));
-                yield return null;
-            }
-            respawnMaterial.SetFloat("_RespawnCover", 1);
-            yield return null;
+            damageFeedback.ShowWake(0);
+            yield return new WaitForSecondsRealtime(Mathf.Max(0, damageFeedback.whiteHoldSeconds));
+            yield return Animate(damageFeedback.wakeSeconds, damageFeedback.ShowWake);
         }
-
-        while (World.Travelling) yield return null;
-
-        var level = World.CurrentLevel;
-        respawnLift = World.ArrivalCheckpoint;
-        if (respawnLift == null || respawnLift.Level != level)
-            respawnLift = level != null ? level.GetComponentInChildren<LevelElevator>() : null;
-        if (respawnLift != null)
-        {
-            var capsule = GetComponent<CharacterController>();
-            Vector3 local = respawnLift.interiorCenter;
-            local.y += capsule.height * .5f - capsule.center.y + capsule.skinWidth - respawnLift.interiorSize.y * .5f;
-            respawnLift.Open(true);
-            respawnLift.SetPaperEffect("_RespawnPaper", .001f);
-            controller.Teleport(respawnLift.transform.TransformPoint(local));
-            controller.FaceDirection(respawnLift.transform.forward);
-        }
-        else if (World.startingPoint != null && level == World.startingLevel)
-            controller.Teleport(World.startingPoint.position);
-
-        if (respawnCanvas != null) respawnCanvas.enabled = false;
-        if (respawnLift != null)
-        {
-            for (float time = 0; time < .65f; time += Time.unscaledDeltaTime)
-            {
-                respawnLift.SetPaperEffect("_RespawnPaper", Mathf.Max(.001f, time / .65f));
-                yield return null;
-            }
-            respawnLift.SetPaperEffect("_RespawnPaper", 1);
-        }
-
-        vitality.RestoreHealth();
+        vitality.RestoreAfterRespawn();
         if (CurrentRule != null) subtitles.Replace(CurrentRule.entrySubtitles);
         FinishRespawn();
         sonar?.Emit();
     }
 
+    void ReturnToCheckpoint()
+    {
+        var level = World != null ? World.CurrentLevel : null;
+        var lift = World != null ? World.ArrivalCheckpoint : null;
+        if (lift == null || lift.Level != level)
+            lift = level != null ? level.GetComponentInChildren<LevelElevator>() : null;
+        if (World == null)
+        {
+            foreach (var candidate in FindObjectsByType<LevelElevator>())
+                if (candidate.gameObject.scene == gameObject.scene) { lift = candidate; break; }
+        }
+        if (lift != null)
+        {
+            var capsule = GetComponent<CharacterController>();
+            Vector3 local = lift.interiorCenter;
+            local.y += capsule.height * .5f - capsule.center.y + capsule.skinWidth - lift.interiorSize.y * .5f;
+            lift.SetPaperEffect("_RespawnPaper", 0);
+            lift.Open(true);
+            controller.Teleport(lift.transform.TransformPoint(local));
+            controller.FaceDirection(lift.transform.forward);
+        }
+        else if (World != null && World.startingPoint != null && level == World.startingLevel)
+        {
+            controller.Teleport(World.startingPoint.position);
+            controller.FaceDirection(World.startingPoint.forward);
+        }
+        else if (Map != null && Map.FindFloor(CurrentFloor) != null)
+        {
+            var capsule = GetComponent<CharacterController>();
+            var floor = Map.FindFloor(CurrentFloor);
+            controller.Teleport(floor.transform.TransformPoint(new Vector3(0,
+                capsule.height * .5f - capsule.center.y + capsule.skinWidth + .05f, 0)));
+            controller.FaceDirection(floor.transform.forward);
+        }
+        else if (World == null)
+        {
+            controller.Teleport(initialPosition);
+            controller.FaceDirection(initialRotation * Vector3.forward);
+        }
+        else Debug.LogWarning("Current level has no elevator checkpoint; awakening in place.", this);
+        AwaitingLanding = false;
+        previousPosition = transform.position;
+    }
+
     void FinishRespawn()
     {
-        if (respawnCanvas != null) Destroy(respawnCanvas.gameObject);
-        if (respawnMaterial != null) Destroy(respawnMaterial);
-        if (controller != null) controller.InputSuspended = inputWasSuspended;
+        damageFeedback?.Clear();
+        if (controller != null) controller.DeathSequenceLocked = false;
         respawn = null;
     }
 
+    void OnDisable()
+    {
+        if (respawn == null) return;
+        StopCoroutine(respawn);
+        vitality?.RestoreAfterRespawn();
+        FinishRespawn();
+    }
     void OnDestroy()
     {
         if (vitality != null) vitality.Died -= BeginRespawn;
-        if (respawnLift != null) respawnLift.SetPaperEffect("_RespawnPaper", 0);
-        if (respawn != null) FinishRespawn();
     }
 
     void LateUpdate()
@@ -151,11 +161,6 @@ public sealed class PlayerFloorProgression : MonoBehaviour
         Vector3 position = transform.position;
         if (World != null)
         {
-            if (respawn == null && respawnLift != null && !respawnLift.Contains(position))
-            {
-                respawnLift.SetPaperEffect("_RespawnPaper", 0);
-                respawnLift = null;
-            }
             previousPosition = position;
             return;
         }

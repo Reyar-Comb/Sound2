@@ -24,6 +24,11 @@ public sealed class PatrolMonster : MonoBehaviour
     public LayerMask hearingObstacles = Physics.DefaultRaycastLayers;
     [Min(0)] public float soundPriorityMemory = 1.5f;
     public MonsterBehaviourState State { get; private set; }
+    [Header("Contact damage")]
+    [Min(0), InspectorName("接触伤害距离（米）")] public float contactDamageRadius = .65f;
+    [Min(.1f), InspectorName("接触攻击间隔（秒）")] public float contactDamageInterval = .5f;
+    PlayerVitality playerVitality;
+    float nextContactDamage;
     public Vector3 LastHeardPosition { get; private set; }
     public GameplayNoiseKind LastHeardKind { get; private set; }
     public int HeardSounds { get; private set; }
@@ -61,6 +66,7 @@ public sealed class PatrolMonster : MonoBehaviour
     }
     void Start()
     {
+        playerVitality = FindAnyObjectByType<PlayerVitality>();
         if (navigation == null) navigation = FindAnyObjectByType<RuntimePatrolNavigation>();
         agent.radius = navigation != null ? navigation.agentRadius : .35f;
         agent.height = navigation != null ? navigation.agentHeight : 1.8f;
@@ -78,6 +84,7 @@ public sealed class PatrolMonster : MonoBehaviour
             initialized = true; State = MonsterBehaviourState.Patrol;
         }
         if (!NavigationReady) return;
+        TryContactDamage();
         if (AvoidLightning()) return;
         if (State == MonsterBehaviourState.Search)
         {
@@ -107,6 +114,21 @@ public sealed class PatrolMonster : MonoBehaviour
         }
     }
     bool Arrived() => hasDestination && !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + .1f;
+    void TryContactDamage()
+    {
+        if (Time.time < nextContactDamage || contactDamageRadius <= 0 || playerVitality == null
+            || playerVitality.gameObject.scene != gameObject.scene || !playerVitality.isActiveAndEnabled
+            || playerVitality.IsDead || !playerVitality.TryGetComponent<CharacterController>(out var capsule)
+            || !capsule.enabled) return;
+        Vector3 origin = transform.position + Vector3.up * .9f;
+        if (Vector3.Distance(origin, capsule.ClosestPoint(origin)) > contactDamageRadius) return;
+        Vector3 delta = capsule.bounds.center - origin;
+        foreach (var hit in Physics.RaycastAll(origin, delta.normalized, delta.magnitude,
+            Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            if (!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(playerVitality.transform)) return;
+        nextContactDamage = Time.time + Mathf.Max(.1f, contactDamageInterval);
+        playerVitality.TakeDamage(1);
+    }
     bool NavigateTo(Vector3 position)
     {
         if (!NavigationReady || !NavMesh.SamplePosition(position, out var target, 2, agent.areaMask)) return false;

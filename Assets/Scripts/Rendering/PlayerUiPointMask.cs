@@ -36,6 +36,9 @@ public static class PlayerUiPointMask
         foreach (var canvas in canvases)
         {
             if (canvas == null || !canvas.isActiveAndEnabled) continue;
+            // This transparent full-screen effect must not erase the sonar scene beneath it.
+            var damage = canvas.GetComponentInParent<PlayerDamageFeedback>();
+            if (damage != null && damage.OverlayCanvas == canvas) continue;
             var root = canvas.rootCanvas;
             if (!root.isActiveAndEnabled || (root.renderMode == RenderMode.ScreenSpaceCamera && root.worldCamera != camera)) continue;
             var projection = root.renderMode == RenderMode.ScreenSpaceOverlay ? null : camera;

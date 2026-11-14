@@ -107,6 +107,8 @@ GameObject:
   - component: {fileID: 872924278679620629}
   - component: {fileID: 1730712013822685606}
   - component: {fileID: 8316862017151493178}
+  - component: {fileID: 3276300879165631713}
+  - component: {fileID: 3779898714081016350}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -329,6 +331,47 @@ MonoBehaviour:
   onLand:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3276300879165631713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4599028716362026551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4b9ff545dbe5854ea9c98a05e8da38f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDamageFeedback
+  engulfSeconds: 0.2
+  deathHoldSeconds: 1.5
+  dissolveSeconds: 1.8
+  whiteHoldSeconds: 0.35
+  wakeSeconds: 2.2
+  woundBorder: 0.24
+  vineSpawnInterval: 0.26
+  vineSpawnCount: 2
+  vineLifetime: 2.8
+  vineStepSeconds: 0.027
+  deathVineCount: 1000
+  whiteningDelay: 0
+  whiteningSeconds: 0.1
+--- !u!114 &3779898714081016350
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4599028716362026551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e754e4c1ad61d4306b66397d43e00979, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerVitality
+  maximumHealth: 100
+  invulnerabilitySeconds: 1.5
+  woundSeconds: 10
+  respawnProtectionSeconds: 2
 --- !u!1 &6482992948592475382
 GameObject:
   m_ObjectHideFlags: 0
@@ -588,6 +631,7 @@ MonoBehaviour:
   obstacleLayers:
     serializedVersion: 2
     m_Bits: 4294967291
+  batchRaycasts: 1
 --- !u!114 &3087854306390339009
 MonoBehaviour:
   m_ObjectHideFlags: 0
