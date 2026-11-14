@@ -234,3 +234,10 @@ public void Reveal(Vector3 origin)
 SonarObjectEmitter 新增 Pulse Kind、Emission Origin、Density Settings 和 Emitted 事件，旧白色物体保持默认 Main 类型。金币和闪电都组合这个正式组件：CoinPickup 负责浮动/自转、短暂本体显现和钱包交易；BallLightning 负责独立导航、状态配置、伤害及怪物避让信息。PlayerWallet、PlayerVitality 和 PlayerStatusHUD 分别处理经济、生命和展示，后续商店/奖励通过钱包接口调用，不直接修改显示计数。详见 [WorldObjects.md](WorldObjects.md)。
 
 SonarDensitySettings 经 `_SonarPulseDensityFalloffs` 保存每次发射的密度起止距离与指数，原亮度配置继续经 `_SonarPulseDistanceFalloffs` 发布。当前波场全局数组长度 52，新增金币/闪电槽与原三组隔离；彩色网格保存面/边的亮度及各自调色板编号，统一圆点绘制按黄、蓝、红顺序合成，保留危险红色优先级。
+
+
+## 可视声波射线批处理
+
+`SonarPulseField.batchRaycasts` 默认开启，使用持久缓冲和 `RaycastCommand.ScheduleBatch`，保持原有48/24角网格、首次命中平面、范围/层/Trigger/背面规则以及同帧发布。暂时关闭此开关可对照同步路径，不影响音频组件。
+
+任务在发射返回前完成，不增加一帧延迟；缓冲在停用时释放并在重新启用时重建。`Sonar.*` ProfilerMarker 分别覆盖准备、查询、编码、上传和发布。回归入口为 `AgentScripts/VerifyBatchedSonar.cs` 和 `AgentScripts/VerifyConcurrentSonar.cs`。实测与边界见 [AlarmClockProfiling.md](AlarmClockProfiling.md) 第二轮。

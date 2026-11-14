@@ -1,3 +1,5 @@
+using Unity.Collections;
+using Unity.Profiling;
 using UnityEngine;
 
 public enum SonarPulseKind { Main, Footstep, Danger, Coin, Lightning }
@@ -7,6 +9,8 @@ public enum SonarPulseKind { Main, Footstep, Danger, Coin, Lightning }
 public sealed class SonarPulseField : MonoBehaviour
 {
     public LayerMask obstacleLayers = Physics.DefaultRaycastLayers;
+    [Tooltip("Parallel occlusion queries at the original resolution. Disable only to compare the legacy synchronous path.")]
+    public bool batchRaycasts = true;
     public int Emissions { get; private set; }
     public int LastHitCount { get; private set; }
     public float LastSamplingMilliseconds { get; private set; }
@@ -24,6 +28,17 @@ public sealed class SonarPulseField : MonoBehaviour
     public const int LightningPulseOffset = CoinPulseOffset + CoinPulseCapacity;
     public const int MaxPulses = MainPulseCapacity + FootstepPulseCapacity + DangerPulseCapacity + CoinPulseCapacity + LightningPulseCapacity;
     const int FootstepMaskSize = 24;
+    const int RaysPerJob = 64;
+    static readonly Vector3[] mainDirections = BuildDirections(MaskSize);
+    static readonly Vector3[] localDirections = BuildDirections(FootstepMaskSize);
+    static readonly ProfilerMarker emitMarker = new ProfilerMarker("Sonar.Emit");
+    static readonly ProfilerMarker syncMarker = new ProfilerMarker("Sonar.SyncTransforms");
+    static readonly ProfilerMarker prepareMarker = new ProfilerMarker("Sonar.PrepareRays");
+    static readonly ProfilerMarker batchMarker = new ProfilerMarker("Sonar.RaycastBatch");
+    static readonly ProfilerMarker legacyMarker = new ProfilerMarker("Sonar.RaycastLegacy");
+    static readonly ProfilerMarker encodeMarker = new ProfilerMarker("Sonar.EncodePlanes");
+    static readonly ProfilerMarker uploadMarker = new ProfilerMarker("Sonar.UploadPlanes");
+    static readonly ProfilerMarker publishMarker = new ProfilerMarker("Sonar.Publish");
     readonly Vector4[] origins = new Vector4[MaxPulses];
     readonly Vector4[] parameters = new Vector4[MaxPulses];
     readonly Vector4[] distanceFalloffs = new Vector4[MaxPulses];
@@ -31,6 +46,8 @@ public sealed class SonarPulseField : MonoBehaviour
     readonly Color[] planes = new Color[MaskSize * MaskSize];
     Texture2DArray blockers;
     Texture2D blockerUpload;
+    NativeArray<RaycastCommand> rayCommands;
+    NativeArray<RaycastHit> rayHits;
     int pulseIndex, footstepIndex, dangerIndex, coinIndex, lightningIndex;
     static SonarPulseField activeField;
     public static int ActiveColoredPalettes => activeField != null ? activeField.ColoredPalettes() : 0;
@@ -57,6 +74,9 @@ public sealed class SonarPulseField : MonoBehaviour
         { name = "Sonar direct-path blocking planes", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
         blockerUpload = new Texture2D(MaskSize, MaskSize, TextureFormat.RGBAFloat, false, true)
         { name = "Sonar single-face upload", filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        // Full-size buffers also serve the coarser banks through subarrays. Never allocate per emission.
+        rayCommands = new NativeArray<RaycastCommand>(mainDirections.Length, Allocator.Persistent);
+        rayHits = new NativeArray<RaycastHit>(mainDirections.Length, Allocator.Persistent);
         ClearPulses();
         Publish();
     }
@@ -83,6 +103,44 @@ public sealed class SonarPulseField : MonoBehaviour
             case 3: return new Vector3(x, -1, y).normalized;
             case 4: return new Vector3(x, y, 1).normalized;
             default: return new Vector3(x, y, -1).normalized;
+        }
+    }
+
+    static Vector3[] BuildDirections(int size)
+    {
+        var directions = new Vector3[6 * size * size];
+        int index = 0;
+        for (int face = 0; face < 6; face++)
+            for (int y = 0; y < size; y++) for (int x = 0; x < size; x++)
+                directions[index++] = Direction(face, (x + .5f) * 2 / size - 1, (y + .5f) * 2 / size - 1);
+        return directions;
+    }
+
+    void SampleRays(Vector3 origin, float range, Vector3[] directions)
+    {
+        if (!batchRaycasts)
+        {
+            using (legacyMarker.Auto())
+                for (int i = 0; i < directions.Length; i++)
+                {
+                    Physics.Raycast(origin, directions[i], out var hit, range, obstacleLayers, QueryTriggerInteraction.Ignore);
+                    rayHits[i] = hit;
+                }
+            return;
+        }
+        using (prepareMarker.Auto())
+        {
+            var query = new QueryParameters(obstacleLayers, false, QueryTriggerInteraction.Ignore, Physics.queriesHitBackfaces);
+            var scene = Physics.defaultPhysicsScene;
+            for (int i = 0; i < directions.Length; i++)
+                rayCommands[i] = new RaycastCommand(scene, origin, directions[i], query, range);
+        }
+        using (batchMarker.Auto())
+        {
+            // Complete before publishing or returning: keep same-frame audio/visual triggers and
+            // never leave a job using these buffers when the field is disabled or destroyed.
+            RaycastCommand.ScheduleBatch(rayCommands.GetSubArray(0, directions.Length),
+                rayHits.GetSubArray(0, directions.Length), RaysPerJob, 1).Complete();
         }
     }
 
@@ -122,9 +180,10 @@ public sealed class SonarPulseField : MonoBehaviour
         pulseRange = Mathf.Max(1, pulseRange);
         pulseSpeed = Mathf.Max(.1f, pulseSpeed);
         pulseAfterglow = Mathf.Max(.05f, pulseAfterglow);
-        var timer = System.Diagnostics.Stopwatch.StartNew();
+        using var emissionScope = emitMarker.Auto();
+        long start = System.Diagnostics.Stopwatch.GetTimestamp();
         LastOrigin = origin;
-        Physics.SyncTransforms();
+        using (syncMarker.Auto()) Physics.SyncTransforms();
         bool footstep = bank == 1, danger = bank == 2;
         int slot = bank == 4 ? SelectSlot(LightningPulseOffset, LightningPulseCapacity, ref lightningIndex)
             : bank == 3 ? SelectSlot(CoinPulseOffset, CoinPulseCapacity, ref coinIndex)
@@ -136,30 +195,37 @@ public sealed class SonarPulseField : MonoBehaviour
         int hitCount = 0;
         float effectiveRange = falloff.z > 0 ? Mathf.Min(pulseRange, Mathf.Max(.01f, falloff.y)) : pulseRange;
         if (densityFalloff.w>.5f) effectiveRange=Mathf.Min(effectiveRange,densityFalloff.y);
+        SampleRays(origin, effectiveRange, bank == 0 ? mainDirections : localDirections);
+        int rayIndex = 0;
         for (int face = 0; face < 6; face++)
         {
-            for (int y = 0; y < sampleSize; y++) for (int x = 0; x < sampleSize; x++)
-            {
-                var direction = Direction(face, (x + .5f) * 2 / sampleSize - 1, (y + .5f) * 2 / sampleSize - 1);
-                Color plane;
-                if (Physics.Raycast(LastOrigin, direction, out var hit, effectiveRange, obstacleLayers, QueryTriggerInteraction.Ignore))
+            using (encodeMarker.Auto())
+                for (int y = 0; y < sampleSize; y++) for (int x = 0; x < sampleSize; x++)
                 {
-                    // The first surface plane gates reachability only. Visible contours
-                    // are detected and drawn entirely by BlackBoxScreenPoints.shader.
-                    var normal = hit.normal;
-                    plane = new Color(normal.x, normal.y, normal.z,
-                        Vector3.Dot(normal, hit.point - LastOrigin));
-                    hitCount++;
+                    var hit = rayHits[rayIndex++];
+                    Color plane;
+                    // Only hit presence is needed; avoid resolving thousands of managed Collider objects.
+                    if (hit.colliderEntityId != EntityId.None)
+                    {
+                        // The first surface plane gates reachability only. Visible contours
+                        // are detected and drawn entirely by BlackBoxScreenPoints.shader.
+                        var normal = hit.normal;
+                        plane = new Color(normal.x, normal.y, normal.z,
+                            Vector3.Dot(normal, hit.point - origin));
+                        hitCount++;
+                    }
+                    else plane = Color.clear;
+                    // Local waves keep the same replicated coarse grid and texture layout.
+                    for (int by = 0; by < blockSize; by++) for (int bx = 0; bx < blockSize; bx++)
+                        planes[(y * blockSize + by) * MaskSize + x * blockSize + bx] = plane;
                 }
-                else plane = Color.clear;
-                // Footsteps use a coarser angular grid in the same texture layout.
-                for (int by = 0; by < blockSize; by++) for (int bx = 0; bx < blockSize; bx++)
-                    planes[(y * blockSize + by) * MaskSize + x * blockSize + bx] = plane;
+            using (uploadMarker.Auto())
+            {
+                // Upload only this wave's six faces, not the entire expanded pulse pool.
+                blockerUpload.SetPixels(planes);
+                blockerUpload.Apply(false);
+                Graphics.CopyTexture(blockerUpload, 0, 0, blockers, slot * 6 + face, 0);
             }
-            // Upload only this wave's six faces, not the entire expanded pulse pool.
-            blockerUpload.SetPixels(planes);
-            blockerUpload.Apply(false);
-            Graphics.CopyTexture(blockerUpload, 0, 0, blockers, slot * 6 + face, 0);
         }
         origins[slot] = new Vector4(LastOrigin.x, LastOrigin.y, LastOrigin.z, Time.time);
         parameters[slot] = new Vector4(pulseRange, pulseSpeed, pulseAfterglow, 1);
@@ -167,13 +233,14 @@ public sealed class SonarPulseField : MonoBehaviour
         distanceFalloffs[slot] = new Vector4(Mathf.Clamp(falloff.x, 0, fadeEnd - .001f), fadeEnd,
             Mathf.Clamp(falloff.z, 0, 8), Mathf.Clamp01(falloff.w));
         densityFalloffs[slot] = densityFalloff;
-        Publish();
+        using (publishMarker.Auto()) Publish();
         Emissions++;
         if (footstep) FootstepEmissions++;
         if (danger) DangerEmissions++;
         LastRayCount = 6 * sampleSize * sampleSize;
         LastHitCount = hitCount;
-        timer.Stop(); LastSamplingMilliseconds = (float)timer.Elapsed.TotalMilliseconds;
+        LastSamplingMilliseconds = (float)((System.Diagnostics.Stopwatch.GetTimestamp() - start)
+            * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
         return true;
     }
 
@@ -211,6 +278,9 @@ public sealed class SonarPulseField : MonoBehaviour
         if (activeField == this) activeField = null;
         Shader.SetGlobalFloat("_SonarActive", 0);
         Shader.SetGlobalTexture("_SonarBlockingPlanes", null);
+        // SampleRays completes its batch synchronously, so no outstanding job can reference these.
+        if (rayCommands.IsCreated) rayCommands.Dispose();
+        if (rayHits.IsCreated) rayHits.Dispose();
         if (blockers != null) Destroy(blockers);
         if (blockerUpload != null) Destroy(blockerUpload);
         blockers = null;
