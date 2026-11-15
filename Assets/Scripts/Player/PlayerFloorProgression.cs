@@ -218,7 +218,7 @@ public sealed class PlayerFloorProgression : MonoBehaviour
             sonar.range = Mathf.Max(1, baseRange * CurrentRule.sonarRangeMultiplier);
             sonar.afterglow = Mathf.Max(.05f, baseAfterglow * CurrentRule.sonarAfterglowMultiplier);
         }
-        subtitles.SetFloor(floor); subtitles.Replace(CurrentRule.entrySubtitles);
+        subtitles.Replace(CurrentRule.entrySubtitles);
         onFloorChanged.Invoke(floor); FloorChanged?.Invoke(CurrentRule);
     }
 

@@ -12,6 +12,7 @@ namespace Sound2.LevelEditing.Editor
     {
         public static void Rebuild(LevelLayout layout)
         {
+            if (layout.manualGeometry) return;
             if (Application.isPlaying) throw new InvalidOperationException("请退出运行模式后编辑关卡。");
             var meshes = LevelGeometry.Build(layout); // Validate first; preserve the last valid preview on failure.
             EnsureMaterials(layout);
@@ -62,6 +63,7 @@ namespace Sound2.LevelEditing.Editor
 
         public static void Persist(LevelLayout layout, string scenePath)
         {
+            if (layout.manualGeometry) return;
             EmbeddedDoorEditorSync.EnsureCurrent(layout);
             if (layout.generatedRoot == null) Rebuild(layout);
             var filters = layout.generatedRoot.GetComponentsInChildren<MeshFilter>(true);

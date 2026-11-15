@@ -53,6 +53,8 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
         activeRenderers[renderer] = this;
         // Authoring/Scene cameras keep their ordinary materials and lighting; effects belong to the running game.
         if (settings == null || !Application.isPlaying || renderingData.cameraData.cameraType != CameraType.Game) return;
+        if (renderingData.cameraData.camera.TryGetComponent<SoundShellOpening>(out var opening)
+            && opening.isActiveAndEnabled && opening.InStartingRoom) return;
         if (renderingData.cameraData.camera.TryGetComponent<CreatorRoom>(out var creatorRoom)
             && creatorRoom.isActiveAndEnabled && !creatorRoom.PointCloud) return;
         var cameraSettings = settings;

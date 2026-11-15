@@ -31,7 +31,8 @@ public sealed class PlayerController : MonoBehaviour
     bool inputSuspended;
     public bool DeathSequenceLocked { get; internal set; }
     internal bool EncounterInputLocked { get; set; }
-    public bool InputSuspended { get => inputSuspended || DeathSequenceLocked || EncounterInputLocked; set => inputSuspended = value; }
+    internal bool OpeningSequenceLocked { get; set; }
+    public bool InputSuspended { get => inputSuspended || DeathSequenceLocked || EncounterInputLocked || OpeningSequenceLocked; set => inputSuspended = value; }
     public bool TransportLocked { get; set; }
     public Transform ViewTransform => cameraTransform;
     public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);

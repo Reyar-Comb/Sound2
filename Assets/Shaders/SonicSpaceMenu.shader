@@ -21,6 +21,7 @@ Shader "Sound2/SonicSpace Point Menu"
             float3 _RoomEye;
             float _WindowPush, _WindowFall;
             float _RespawnCover;
+            float _PlayerViewTitle;
             struct Input {float4 vertex:POSITION;float2 uv:TEXCOORD0;};
             struct Varyings {float4 vertex:SV_POSITION;float2 uv:TEXCOORD0;};
             Varyings Vert(Input v) {Varyings o;o.vertex=UnityObjectToClipPos(v.vertex);o.uv=v.uv;return o;}
@@ -195,6 +196,14 @@ Shader "Sound2/SonicSpace Point Menu"
                 float aa=.70710678*720/_MenuSize.y;
                 float2 cell=floor(p/pitch),centre=(cell+.5)*pitch;
                 uint2 id=(uint2)max(cell,0);
+                if (_PlayerViewTitle > .5)
+                {
+                    float coverage = Glyph(centre).r * TitleVisibility(id);
+                    float radius = min(pitch*.47, _DotRadius*_TitleDotScale);
+                    float dot = 1-smoothstep(radius-aa,radius+aa,length(p-centre));
+                    float dissolve = 1-Ease((_Transition-CellRandom(id,23u)*.3)/.7);
+                    return float4(0,0,0,dot*saturate(coverage*2)*step(OrderedRank(id),_TitleDensity)*dissolve);
+                }
                 if (_RespawnCover > 0)
                 {
                     float seed = CellRandom(id, 101u);

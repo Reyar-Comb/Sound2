@@ -79,7 +79,7 @@ public sealed class BlackBoxCenterControls : MonoBehaviour
         if (uiInputModule != null) uiInputModule.enabled = open;
         if (EventSystem.current != null)
             EventSystem.current.SetSelectedGameObject(open && styleToggles.Length > 0 ? styleToggles[0].gameObject : null);
-        if (hint != null) { hint.text = open ? menuHint : movementHint; hint.gameObject.SetActive(open); }
+        if (hint != null) hint.gameObject.SetActive(false);
         Cursor.lockState = open || SonicSpaceStartMenu.BlocksGameplay ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = open || SonicSpaceStartMenu.BlocksGameplay;
     }

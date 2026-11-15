@@ -9,6 +9,8 @@ using UnityEngine.Rendering;
 public sealed class SonicSpaceStartMenu : MonoBehaviour
 {
     public PlayerController player;
+    [Tooltip("Overlay the title on the real Player camera instead of the legacy simulated menu room.")]
+    public bool usePlayerView;
     public Shader menuShader, glyphMaskShader;
     [Min(.5f)] public float transitionSeconds=2.6f;
     [Header("Opening animation")]
@@ -26,7 +28,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
     public float OpeningElapsed => Mathf.Max(0,Time.unscaledTime-introStartedAt);
     public int VisibleTitleCharacters {get;private set;}
     public bool IntroReady => OpeningElapsed>=titleDelay+Title.Length*characterInterval+.55f;
-    const string Title="SONICSPACE";
+    const string Title="SOUND & SHELL";
     public bool IsTransitioning {get;private set;}
     public bool HasStarted {get;private set;}
     public float TransitionProgress {get;private set;}
@@ -156,7 +158,6 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         Graphics.ExecuteCommandBuffer(command);
     }
 
-    const string roomHint = "WASD MOVE  /  SPACE JUMP  /  CLICK OR ENTER START";
     Vector3 roomEye;
     float jumpSpeed, fallTime, windowPush;
     bool outsideWindow;
@@ -178,8 +179,6 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
             fallTime += dt;
             roomEye.x -= dt * .35f;
             roomEye.y -= dt * fallTime * 2;
-            if (fallTime >= 1.5f && fallTime - dt < 1.5f)
-                hint.text = "WINDOW ENDING  /  CLICK OR ENTER TO RETURN";
             return;
         }
 
@@ -203,12 +202,11 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         else if(!IsTransitioning)introStartedAt+=Mathf.Max(0,Time.unscaledDeltaTime-.05f);
         if(width!=Screen.width || height!=Screen.height)RebuildMask();
         else RenderGlyphs();
-        UpdateRoomLook();
-        if (IntroReady && !outsideWindow && hint.text != roomHint) hint.text = roomHint;
-        if (IntroReady && !IsTransitioning)
+        if (!usePlayerView) UpdateRoomLook();
+        if (!usePlayerView && IntroReady && !IsTransitioning)
             UpdateRoomMovement(inputArmed && (Keyboard.current?.spaceKey.wasPressedThisFrame == true
                 || Gamepad.current?.buttonSouth.wasPressedThisFrame == true));
-        if (inputArmed && IntroReady && !IsTransitioning &&
+        if (inputArmed && (usePlayerView || IntroReady) && !IsTransitioning &&
             (Mouse.current?.leftButton.wasPressedThisFrame == true || Keyboard.current?.enterKey.wasPressedThisFrame == true
                 || Gamepad.current?.startButton.wasPressedThisFrame == true))
         {
@@ -218,7 +216,6 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
                 roomEye = Vector3.zero;
                 outsideWindow = false;
                 jumpSpeed = fallTime = 0;
-                hint.text = roomHint;
             }
         }
         // Opening a scene while a submit key/button is held must not skip its title screen.
@@ -238,6 +235,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         menuMaterial.SetMatrix("_RoomView",Matrix4x4.Rotate(RoomViewRotation));
         menuMaterial.SetFloat("_OpeningTime",OpeningElapsed);
         menuMaterial.SetFloat("_Transition",TransitionProgress);
+        menuMaterial.SetFloat("_PlayerViewTitle",usePlayerView ? 1 : 0);
         if(TransitionProgress>=1 && !finishing){finishing=true;StartCoroutine(FinishAfterInputFrame());}
     }
 
@@ -264,7 +262,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
 
     public void BeginGame()
     {
-        if(!ownsPause || !IntroReady || IsTransitioning || HasStarted || outsideWindow)return;
+        if(!ownsPause || (!usePlayerView && !IntroReady) || IsTransitioning || HasStarted || outsideWindow)return;
         IsTransitioning=true;startedAt=Time.unscaledTime;
     }
 

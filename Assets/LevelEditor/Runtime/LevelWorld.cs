@@ -106,6 +106,8 @@ namespace Sound2.LevelEditing
             while(destination!=null&&destination.DoorOpen<.999f)yield return null;
             ArrivalCheckpoint = destination;
             Release(false);
+            // A shared arrival/departure cabin (e.g. Home) must remain visible and usable.
+            if (TryDestination(destination, out _, out _)) yield break;
             for (float time = 0; destination != null && !destination.Busy; time += Time.deltaTime)
             {
                 destination.SetPaperEffect("_ArrivalDissolve", Mathf.Clamp01(time / .85f));

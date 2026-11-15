@@ -126,6 +126,8 @@ namespace Sound2.LevelEditing
     [DefaultExecutionOrder(-300), DisallowMultipleComponent]
     public sealed class LevelLayout : MonoBehaviour
     {
+        [Tooltip("Use the authored scene geometry as-is. Disable to regenerate it from room/door definitions.")]
+        public bool manualGeometry;
         public List<RoomPartition> partitions = new();
         public List<LevelRoom> rooms = new List<LevelRoom>();
         public List<LevelCorridor> corridors = new List<LevelCorridor>();

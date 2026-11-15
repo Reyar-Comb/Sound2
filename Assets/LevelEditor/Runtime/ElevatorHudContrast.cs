@@ -13,20 +13,18 @@ namespace Sound2.LevelEditing
         Camera view;
         Transform player;
         LevelWorld world;
-        TMP_Text floorLabel;
         PlayerSubtitles subtitles;
         bool subtitleWasEnabled;
-        bool floorLabelWasEnabled;
-        readonly MaterialPropertyBlock surfaceProperties = new();
+        MaterialPropertyBlock surfaceProperties;
         readonly RaycastHit[] hits=new RaycastHit[32];
         void Start()
         {
+            surfaceProperties = new MaterialPropertyBlock();
             world=GetComponent<LevelWorld>();
             if(world==null||world.player==null){enabled=false;return;}
             player=world.player.transform;
-            subtitles=player.GetComponent<PlayerSubtitles>();floorLabel=subtitles.FloorText;
+            subtitles=player.GetComponent<PlayerSubtitles>();
             subtitleWasEnabled=subtitles.SubtitleText!=null && subtitles.SubtitleText.enabled;
-            if(floorLabel!=null)floorLabelWasEnabled=floorLabel.enabled;
             view=player.GetComponentInChildren<Camera>();
             labels=FindObjectsByType<TMP_Text>(FindObjectsInactive.Include).Where(t=>t.gameObject.scene==gameObject.scene && t.GetComponentInParent<Canvas>()!=null).ToArray();
             reticles=FindObjectsByType<ReticleGraphic>(FindObjectsInactive.Include).Where(t=>t.gameObject.scene==gameObject.scene).ToArray();
@@ -35,7 +33,6 @@ namespace Sound2.LevelEditing
         {
             if(view==null || SonicSpaceStartMenu.BlocksGameplay)return;
             bool inside=world.GetComponentsInChildren<LevelElevator>().Any(e=>e.Contains(player.position));
-            if(floorLabel!=null)floorLabel.enabled=floorLabelWasEnabled && !inside;
             if(subtitles.SubtitleText!=null)subtitles.SubtitleText.enabled=subtitleWasEnabled && !(inside && subtitles.CurrentText.StartsWith("第 "));
             foreach(var text in labels)if(text!=null && text.isActiveAndEnabled)
             {float value=OverPaper(text.rectTransform)?0:1;text.color=new Color(value,value,value,text.color.a);}
@@ -44,7 +41,6 @@ namespace Sound2.LevelEditing
         }
         void OnDisable()
         {
-            if(floorLabel!=null)floorLabel.enabled=floorLabelWasEnabled;
             if(subtitles!=null && subtitles.SubtitleText!=null)subtitles.SubtitleText.enabled=subtitleWasEnabled;
         }
         bool OverPaper(RectTransform rect)
@@ -60,6 +56,7 @@ namespace Sound2.LevelEditing
             if(nearest.GetComponentInParent<LevelElevatorButton>()!=null)
                 return material!=null && material.HasProperty("_BaseColor") && material.GetColor("_BaseColor").grayscale>.5f;
             // Thin ink seams sit on paper too; sampling a seam must not turn an entire caption white.
+            if (material != null && material.shader.name == "Sound2/Starting Room Paper") return true;
             if (material == null || material.shader.name != "Sound2/Elevator White Ink" || nearest.name.StartsWith("Shaft"))
                 return false;
             renderer.GetPropertyBlock(surfaceProperties);

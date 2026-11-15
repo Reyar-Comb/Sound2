@@ -20,7 +20,7 @@ public sealed class FloorProgressionProfile : ScriptableObject
     [Range(.5f, 1)] public float sonarAfterglowPerFloor = .94f;
     [Range(.1f, 1)] public float minimumSonarMultiplier = .4f;
     public bool applySonarDifficulty = true;
-    [TextArea] public string defaultEntryText = "F{floor} · 继续向下。留意脚下，也留意回声。";
+    [TextArea] public string defaultEntryText = "";
     public List<FloorRule> overrides = new();
 
     public FloorRule Evaluate(int floor)

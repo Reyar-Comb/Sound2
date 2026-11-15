@@ -10,14 +10,13 @@ public sealed class PlayerSubtitles : MonoBehaviour
     [Min(.01f)] public float fadeTime = .3f;
     [Min(10)] public float subtitleFontSize = 24;
     public TMP_Text SubtitleText => subtitle;
-    public TMP_Text FloorText => floorLabel;
     public int PendingCount => queue.Count;
     public string CurrentText => urgent?.text ?? current?.text ?? "";
 
     readonly Queue<SubtitleCue> queue = new();
     PlayerController controller;
     Canvas canvas;
-    TextMeshProUGUI subtitle, floorLabel;
+    TextMeshProUGUI subtitle;
     SubtitleCue current;
     SubtitleCue urgent;
     float urgentElapsed;
@@ -29,14 +28,8 @@ public sealed class PlayerSubtitles : MonoBehaviour
         canvas = SubtitleHud.CreateCanvas("NarrativeHUD", 25, transform);
         subtitle = SubtitleHud.CreateSubtitle(canvas.transform, subtitleFontSize);
         subtitle.color = new Color(1, 1, 1, 0);
-        floorLabel = SubtitleHud.CreateText("FloorIndicator", canvas.transform, 24);
-        floorLabel.alignment = TextAlignmentOptions.TopRight;
-        var rect = floorLabel.rectTransform; rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.one;
-        rect.anchoredPosition = new Vector2(-32, -28); rect.sizeDelta = new Vector2(200, 50);
-        SetFloor(0);
     }
 
-    public void SetFloor(int floor) { if (floorLabel != null) floorLabel.text = "F" + Mathf.Max(0, floor); }
     public void Enqueue(SubtitleCue cue)
     {
         if (cue == null || string.IsNullOrWhiteSpace(cue.text)) return;

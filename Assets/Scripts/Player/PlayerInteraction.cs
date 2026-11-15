@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -40,7 +39,6 @@ public sealed class PlayerInteraction : MonoBehaviour
     Canvas hud;
     RectTransform hudRect;
     ReticleGraphic dot, ring;
-    TextMeshProUGUI prompt;
     InteractableObject shownTarget;
     float progress;
     Collider[] candidates = new Collider[32];
@@ -70,16 +68,6 @@ public sealed class PlayerInteraction : MonoBehaviour
         dotRect.anchorMin = dotRect.anchorMax = dotRect.pivot = new Vector2(.5f, .5f);
         dotRect.anchoredPosition = Vector2.zero;
         ring.gameObject.SetActive(false);
-        var label = new GameObject("InteractionPrompt", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        label.transform.SetParent(hud.transform, false);
-        prompt = label.GetComponent<TextMeshProUGUI>();
-        if (GameUiTheme.Current != null) prompt.font = GameUiTheme.Current.textFont;
-        prompt.fontSize = 18;
-        prompt.alignment = TextAlignmentOptions.Center;
-        prompt.raycastTarget = false;
-        prompt.richText = false;
-        prompt.rectTransform.sizeDelta = new Vector2(440, 36);
-        prompt.gameObject.SetActive(false);
     }
 
     ReticleGraphic CreateGraphic(string objectName)
@@ -103,10 +91,6 @@ public sealed class PlayerInteraction : MonoBehaviour
         dot.SetShape(crosshairRadius, crosshairRadius * 2, 1);
         RefreshFocus();
         UpdateRing();
-        prompt.text = FocusedTarget != null ? "鼠标左键：" + FocusHint()
-            : pickup.HeldItem != null ? "左键：抛出    右键：放下" : "";
-        prompt.rectTransform.anchoredPosition = dot.rectTransform.anchoredPosition + Vector2.down * 42;
-        prompt.gameObject.SetActive(prompt.text.Length > 0);
         if (!controller.TransportLocked && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame
             && !Mouse.current.rightButton.wasPressedThisFrame)
         {
@@ -180,14 +164,6 @@ public sealed class PlayerInteraction : MonoBehaviour
             return item;
         }
         return null;
-    }
-
-    string FocusHint()
-    {
-        if (FocusedTarget is StoryCollectible) return FocusedTarget.InteractionHint;
-        var item = FocusedTarget.GetComponent<PickupItem>();
-        return !(FocusedTarget is PickupItem) && item != null && item.CanInteract(this)
-            ? FocusedTarget.InteractionHint + "并拾取" : FocusedTarget.InteractionHint;
     }
 
     public bool TryInteractFocused()
