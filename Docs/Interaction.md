@@ -21,6 +21,21 @@
 
 本批模型位于 `Assets/Models/InteractiveProps`，每个道具一个 `.asset`；按材质合并网格以减少渲染对象。编辑时显示预览色，运行时由 `LevelProp` 切换为黑色点云材质。心率仪屏幕曲线只是静态模型细节，没有动态监测逻辑。
 
+## 剧情收集品
+
+在关卡编辑器的道具列表搜索 `Collectible`，或从 `Assets/Prefabs/Collection` 拖入对应预制体。普通白色声波（包括脚步声）照到后可以调查或拾取。每种道具有一个固定的 `StoryCollectible` ID，关卡中为该剧情放置一个实例即可。字幕在 `StorySubtitleTrigger` 中调整，入包动画、交互录音和循环录音在 `CollectionItemSequence` 中调整。
+
+| 道具 | 预制体 | 行为 |
+| --- | --- | --- |
+| 发声玩偶 | `CollectibleTeddyBear` | 拾取时播放 `duck`，随后入包。 |
+| 玻璃水杯 | `CollectibleWaterCup` | 拿起后保持手持和金色轮廓。投掷撞碎后播放 `glass bottle crash2`，拾取金色碎片才登记收集。碎片由杯子自动生成。 |
+| 闹钟 | `CollectibleAlarmClock` | 循环 `alarm`，拾取即停，随后入包。 |
+| 耳罩 | `CollectibleEarmuffs` | 拾取后显示剧情并入包。 |
+| 婚礼音响 | `CollectibleWeddingSpeaker` | 调查时开始播放 `weddding`。模型入包后，原位置的录音继续播放。 |
+| 心率仪 | `CollectibleHeartRateMonitor` | 循环 `flat heart monitor`，调查即停，随后入包。 |
+
+需要记录整局收集进度时，可通过 `StoryCollectible.BindProgress` 接入当前局的 `ICollectibleProgress`。玻璃碎片会继承水杯的 ID 和进度接口。
+
 ## 验证
 
 `AgentScripts/VerifyInteractiveProps.cs` 验证七个模型配置、真实左键调用、E 无响应、双组件交互后拾取、抛出不重复交互、普通拾取兼容与遮挡。`AgentScripts/VerifyInteraction.cs` 验证准心、动画、范围、方向、遮挡、菜单暂停、真实鼠标输入、准确目标拾取、投掷冷却与销毁清理。`AgentScripts/VerifyPickup.cs` 验证 E 已移除及拾取物理行为。`AgentScripts/ConfigureInteraction.cs` 可幂等地把组件配置到共享玩家预制体。

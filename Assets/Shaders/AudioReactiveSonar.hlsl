@@ -31,9 +31,10 @@ float AudioSonarTrail(int slot,float time,float glow)
     float value=saturate((peak*curve.x-curve.z)/max(.001,curve.w-curve.z));
     return pow(value,curve.y);
 }
-float2 AudioReactiveVisibility(float3 positionWS,float3 normalWS,float orderedRank)
+float2 AudioReactiveVisibility(float3 positionWS,float3 normalWS,float orderedRank,out float2 gold)
 {
     float2 brightness=0;
+    gold=0;
     if(_AudioSonarActive<.5)return brightness;
     [loop]for(int slot=0;slot<AUDIO_SONAR_CAPACITY;slot++)
     {
@@ -73,7 +74,9 @@ float2 AudioReactiveVisibility(float3 positionWS,float3 normalWS,float orderedRa
         float referenceRange=max(.001,min(_RevealDistance,_DistanceBands.w));
         float density=FaceDensityAt(positionWS,normalWS,_AudioSonarOrigins[slot].xyz,max(.001,reach/referenceRange),true)
             *saturate(_FaceDensityScale)*densityGain;
-        brightness=max(brightness,float2(orderedRank<densityGain?reveal:0,orderedRank<density?reveal:0));
+        float2 visible=float2(orderedRank<densityGain?reveal:0,orderedRank<density?reveal:0);
+        if(settings.w>1.5) gold=max(gold,visible);
+        else brightness=max(brightness,visible);
     }
     return brightness;
 }

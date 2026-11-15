@@ -1,0 +1,208 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8122283749987978339
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6973247232243707648}
+  m_Layer: 0
+  m_Name: Collection Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6973247232243707648
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8122283749987978339}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.145, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 577476649767143005}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &4748279980095626807
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9121948818130311542, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      propertyPath: m_Name
+      value: CollectibleEarmuffs
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6973247232243707648}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 9121948818130311542, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2802253505498417083}
+    - targetCorrespondingSourceObject: {fileID: 9121948818130311542, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4549586555723982780}
+    - targetCorrespondingSourceObject: {fileID: 9121948818130311542, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1900016786513958300}
+  m_SourcePrefab: {fileID: 100100000, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+--- !u!4 &577476649767143005 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5325186086300211306, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+  m_PrefabInstance: {fileID: 4748279980095626807}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &4571975380830865217 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9121948818130311542, guid: 5da0155bf72b0c145ae75aeddfb3d5ab, type: 3}
+  m_PrefabInstance: {fileID: 4748279980095626807}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2802253505498417083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4571975380830865217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 232040c143bfcaf429b38f948464afbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StoryCollectible
+  interactionAnchor: {fileID: 6973247232243707648}
+  interactionEnabled: 1
+  interactionHint: "\u4EA4\u4E92"
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
+  collectibleId: supermarket.earmuffs
+  progressProvider: {fileID: 0}
+  scanAnchor: {fileID: 0}
+  discoveryGlowSeconds: 1.5
+  outlineRenderers: []
+  storySubtitles: {fileID: 4549586555723982780}
+  recording: {fileID: 0}
+  pulse: {fileID: 0}
+--- !u!114 &4549586555723982780
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4571975380830865217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2907654ef2cd4135aef7346c1c17ceb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StorySubtitleTrigger
+  charactersPerSecond: 22
+  lines:
+  - text: "\u6234\u5728\u5934\u4E0A\u4E16\u754C\u4F1A\u7ACB\u523B\u5B89\u9759\u4E0B\u6765"
+    duration: 2.7
+--- !u!114 &1900016786513958300
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4571975380830865217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e39a847ff8df49cfb2e36a6237920076, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CollectionItemSequence
+  action: 0
+  cup: {fileID: 0}
+  keepGoldAfterDiscovery: 0
+  idleLoop: {fileID: 0}
+  interactionClip: {fileID: 0}
+  volume: 0.75
+  spatial:
+    hrtf: 1
+    occlusion: 0
+    reflections: 0
+    reflectionMix: 0.65
+    distanceMode: 1
+    minDistance: 1
+    maxDistance: 9
+    decibelsPerMetre: 3
+    distanceCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: -0.05
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 20
+        value: 0
+        inSlope: -0.05
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    farEarGain: 1
+  interactionGoldRange: 5
+  stowSeconds: 0.7

@@ -79,6 +79,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60898eb98d80405489368309154f5604, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Sound2.LevelEditing.LevelLayout
+  partitions: []
   rooms:
   - id: f1-r0
     name: "\u7384\u5173"
@@ -189,7 +190,8 @@ MonoBehaviour:
     rotation: 0
     partitions: []
   corridors:
-  - name: "\u7384\u5173 \u2194 \u5BA2\u5385"
+  - id: 50a85d27062b4c6e9d4ccde73050fc23
+    name: "\u7384\u5173 \u2194 \u5BA2\u5385"
     curved: 0
     doorOnly: 0
     width: 2
@@ -203,7 +205,8 @@ MonoBehaviour:
     end:
       roomId: f1-r1
       edge: 0.625
-  - name: "\u5BA2\u5385 \u2194 \u9910\u5385"
+  - id: 979725bbe3694e929aa23db57737a9d0
+    name: "\u5BA2\u5385 \u2194 \u9910\u5385"
     curved: 0
     doorOnly: 0
     width: 2
@@ -217,7 +220,8 @@ MonoBehaviour:
     end:
       roomId: f1-r2
       edge: 0.625
-  - name: "\u9910\u5385 \u2194 \u53A8\u623F"
+  - id: f0de56e4e019464388affd28440771d8
+    name: "\u9910\u5385 \u2194 \u53A8\u623F"
     curved: 0
     doorOnly: 0
     width: 2
@@ -231,7 +235,8 @@ MonoBehaviour:
     end:
       roomId: f1-r3
       edge: 0.875
-  - name: "\u53A8\u623F \u2194 \u50A8\u85CF\u5BA4"
+  - id: 778d8c9e3ca04300bb7e438af9cc6e61
+    name: "\u53A8\u623F \u2194 \u50A8\u85CF\u5BA4"
     curved: 0
     doorOnly: 0
     width: 2
@@ -245,7 +250,8 @@ MonoBehaviour:
     end:
       roomId: f1-r4
       edge: 0.875
-  - name: "\u50A8\u85CF\u5BA4 \u2194 \u4E0A\u884C\u95E8\u5385"
+  - id: f5486b919ddd4d5dbac890c169630f8b
+    name: "\u50A8\u85CF\u5BA4 \u2194 \u4E0A\u884C\u95E8\u5385"
     curved: 0
     doorOnly: 0
     width: 2
@@ -259,7 +265,8 @@ MonoBehaviour:
     end:
       roomId: f1-r5
       edge: 0.875
-  - name: "\u4E0A\u884C\u95E8\u5385 \u2194 \u6D17\u8863\u623F"
+  - id: 22d59f81fab84009a0aaee93fe5da947
+    name: "\u4E0A\u884C\u95E8\u5385 \u2194 \u6D17\u8863\u623F"
     curved: 0
     doorOnly: 0
     width: 2
@@ -273,7 +280,8 @@ MonoBehaviour:
     end:
       roomId: f1-r6
       edge: 0.125
-  - name: "\u6D17\u8863\u623F \u2194 \u5BA2\u623F"
+  - id: 5b552412ee184d81acd388d5d10028d6
+    name: "\u6D17\u8863\u623F \u2194 \u5BA2\u623F"
     curved: 0
     doorOnly: 0
     width: 2
@@ -287,7 +295,8 @@ MonoBehaviour:
     end:
       roomId: f1-r7
       edge: 0.125
-  - name: "\u5BA2\u623F \u2194 \u4E3B\u5367"
+  - id: 0398bf9a353e4fdca6434ece2c8e4fa6
+    name: "\u5BA2\u623F \u2194 \u4E3B\u5367"
     curved: 0
     doorOnly: 0
     width: 2
@@ -301,7 +310,8 @@ MonoBehaviour:
     end:
       roomId: f1-r8
       edge: 0.375
-  - name: "\u4E3B\u5367 \u2194 \u4E66\u623F"
+  - id: e2ed9f782b0e41c881152512b7f5e40d
+    name: "\u4E3B\u5367 \u2194 \u4E66\u623F"
     curved: 0
     doorOnly: 0
     width: 2
@@ -315,7 +325,8 @@ MonoBehaviour:
     end:
       roomId: f1-r9
       edge: 0.375
-  - name: "\u4E66\u623F \u2194 \u7384\u5173"
+  - id: 987b25f4388440e091ae2c8e0e45ba52
+    name: "\u4E66\u623F \u2194 \u7384\u5173"
     curved: 0
     doorOnly: 0
     width: 2
@@ -329,7 +340,8 @@ MonoBehaviour:
     end:
       roomId: f1-r0
       edge: 0.375
-  - name: "\u5BA2\u5385 \u2194 \u5BB6\u5EAD\u6D3B\u52A8\u5BA4"
+  - id: 03ddc086bb1d474286e444d31d65c1c4
+    name: "\u5BA2\u5385 \u2194 \u5BB6\u5EAD\u6D3B\u52A8\u5BA4"
     curved: 0
     doorOnly: 0
     width: 2
@@ -343,7 +355,8 @@ MonoBehaviour:
     end:
       roomId: f1-r10
       edge: 0.875
-  - name: "\u5BB6\u5EAD\u6D3B\u52A8\u5BA4 \u2194 \u5185\u5EAD"
+  - id: f25d67d53a7d49cfb7fb45496022a80d
+    name: "\u5BB6\u5EAD\u6D3B\u52A8\u5BA4 \u2194 \u5185\u5EAD"
     curved: 0
     doorOnly: 0
     width: 2
@@ -357,7 +370,8 @@ MonoBehaviour:
     end:
       roomId: f1-r11
       edge: 0.875
-  - name: "\u5185\u5EAD \u2194 \u6D17\u8863\u623F"
+  - id: c1c5df5768d8466cb6918de18f29c07b
+    name: "\u5185\u5EAD \u2194 \u6D17\u8863\u623F"
     curved: 0
     doorOnly: 0
     width: 2
@@ -371,7 +385,8 @@ MonoBehaviour:
     end:
       roomId: f1-r6
       edge: 0.875
-  - name: "\u4E66\u623F \u2194 \u5BB6\u5EAD\u6D3B\u52A8\u5BA4"
+  - id: 520a0a7968534c7eb2930d57bb2db03d
+    name: "\u4E66\u623F \u2194 \u5BB6\u5EAD\u6D3B\u52A8\u5BA4"
     curved: 0
     doorOnly: 0
     width: 2
@@ -385,7 +400,8 @@ MonoBehaviour:
     end:
       roomId: f1-r10
       edge: 0.625
-  - name: "\u5185\u5EAD \u2194 \u50A8\u85CF\u5BA4"
+  - id: 72b73445eb434870b9c30be5904d739f
+    name: "\u5185\u5EAD \u2194 \u50A8\u85CF\u5BA4"
     curved: 0
     doorOnly: 0
     width: 2
@@ -399,7 +415,8 @@ MonoBehaviour:
     end:
       roomId: f1-r4
       edge: 0.625
-  - name: "\u7535\u68AF\u4E13\u7528\u95E8\u5ECA"
+  - id: 598804b9d50b45a2908cdd91e5446ac6
+    name: "\u7535\u68AF\u4E13\u7528\u95E8\u5ECA"
     curved: 0
     doorOnly: 0
     width: 2.6
@@ -895,8 +912,10 @@ MonoBehaviour:
   throughWallRangeMultiplier: 0.45
   hearingObstacles:
     serializedVersion: 2
-    m_Bits: 4294967291
+    m_Bits: 307
   soundPriorityMemory: 1.5
+  contactDamageRadius: 0.65
+  contactDamageInterval: 0.5
 --- !u!114 &8269712571869081691
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1425,7 +1444,7 @@ MonoBehaviour:
   geometryRoot: {fileID: 5447886369251429536}
   geometryLayers:
     serializedVersion: 2
-    m_Bits: 4294967291
+    m_Bits: 307
   agentRadius: 0.35
   agentHeight: 1.8
 --- !u!1 &8482696217547560618

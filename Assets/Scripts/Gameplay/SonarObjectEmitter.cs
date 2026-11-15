@@ -117,14 +117,16 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
 
     public bool EmitWithClip(float pulseRange, AudioClip clip, float clipVolume) => EmitWithRange(pulseRange, clip, true, clipVolume);
 
-    bool EmitWithRange(float pulseRange, AudioClip clip, bool overrideClip, float clipVolume)
+    public void EmitGold() => EmitWithRange(range, null, false, 1, SonarPulseKind.Gold);
+
+    bool EmitWithRange(float pulseRange, AudioClip clip, bool overrideClip, float clipVolume, SonarPulseKind? kind = null)
     {
         if (!Application.isPlaying || !isActiveAndEnabled) return false;
         Initialize();
         if (pulseField == null || source == null) return false;
         pulseRange = Mathf.Max(1, pulseRange);
         Vector3 origin = emissionOrigin != null ? emissionOrigin.position : transform.position;
-        if (!pulseField.EmitFrom(origin,pulseRange,waveSpeed,afterglow,pulseKind,distanceSettings,densitySettings)) return false;
+        if (!pulseField.EmitFrom(origin,pulseRange,waveSpeed,afterglow,kind ?? pulseKind,distanceSettings,densitySettings)) return false;
         emitter.settings.maxDistance = Mathf.Max(1, soundRange) * pulseRange / Mathf.Max(1, range);
         emitter.volume = volume;
         emitter.Apply();

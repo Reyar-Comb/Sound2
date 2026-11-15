@@ -46,6 +46,8 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
     SonarPulseField sampler;
     int nextMovingSlot;
     public int ActiveSourceCount { get; private set; }
+    public static bool HasGoldWaves => instance != null && instance.hasGold;
+    bool hasGold;
     public int Emissions { get; private set; }
     public int OcclusionCaptures { get; private set; }
     public int LastRayCount { get; private set; }
@@ -77,7 +79,7 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         Shader.SetGlobalTexture("_AudioSonarAnalysis", analysis);
         Shader.SetGlobalTexture("_AudioSonarBlockers", blockers);
     }
-    public bool Emit(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, ImpactSoundPool pool, float volume, float strength, bool looping, out ImpactSoundPool.Playback playback)
+    public bool Emit(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, ImpactSoundPool pool, float volume, float strength, bool looping, out ImpactSoundPool.Playback playback, bool gold = false)
     {
         playback = null;
         if (!Application.isPlaying || !isActiveAndEnabled || clip == null || !clip.IsReady || settings == null || strength <= 0
@@ -87,6 +89,7 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         bool played = looping ? pool.PlayLoopAt(position, volume, out playback) : pool.PlayAt(position, volume, out playback);
         if (!played) { voices[slot] = null; Refresh(); return false; }
         voice.playback = playback;
+        if (gold) voice.parameters.w = 2;
         PublishVoice(slot, voice);
         return true;
     }
@@ -180,6 +183,7 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         if (!isActiveAndEnabled || instance != this) return;
         using var scope = updateMarker.Auto();
         double now = AudioSettings.dspTime; int active = 0;
+        hasGold = false;
         for (int i = 0; i < Capacity; i++)
         {
             var voice = voices[i];
@@ -188,6 +192,7 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
             origins[i] = new Vector4(p.x, p.y, p.z, (float)(now - voice.Start));
             blockerOrigins[i] = voice.blockerOrigin;
             parameters[i] = voice.parameters; levels[i] = voice.settings.PackPeakLevels(); data[i] = voice.data;
+            hasGold |= voice.parameters.w > 1.5f;
             data[i].z = voice.data.w > 0 ? Mathf.Min(1e20f, (float)(voice.ContentEnd - voice.Start))
                 : Mathf.Min(voice.duration, (float)(voice.ContentEnd - voice.Start));
             falloffs[i] = voice.falloff; densities[i] = voice.density;
@@ -208,6 +213,7 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
     {
         for (int i = 0; i < Capacity; i++) { voices[i]?.moving?.Stop(); voices[i] = null; }
         ActiveSourceCount = 0;
+        hasGold = false;
         if (instance == this) Shader.SetGlobalFloat("_AudioSonarActive", 0);
     }
     void OnDisable()

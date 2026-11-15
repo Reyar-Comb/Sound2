@@ -1,0 +1,220 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6752823520336870489
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 287048663572405436}
+  m_Layer: 0
+  m_Name: Collection Anchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &287048663572405436
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6752823520336870489}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6173272413776832338}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &8246031322578322924
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Name
+      value: CollectibleWeddingSpeaker
+      objectReference: {fileID: 0}
+    - target: {fileID: 8988879547383252713, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: surface
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8988879547383252713, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: surfaceAnchor.y
+      value: -0.22
+      objectReference: {fileID: 0}
+    - target: {fileID: 8988879547383252713, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: surfaceAnchor.z
+      value: 0.135
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 287048663572405436}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3555275445899653772}
+    - targetCorrespondingSourceObject: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1173369460512402699}
+    - targetCorrespondingSourceObject: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4211988467547105505}
+  m_SourcePrefab: {fileID: 100100000, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+--- !u!1 &723863769972491933 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 8246031322578322924}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3555275445899653772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723863769972491933}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 232040c143bfcaf429b38f948464afbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StoryCollectible
+  interactionAnchor: {fileID: 287048663572405436}
+  interactionEnabled: 1
+  interactionHint: "\u4EA4\u4E92"
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
+  collectibleId: wedding.speaker
+  progressProvider: {fileID: 0}
+  scanAnchor: {fileID: 0}
+  discoveryGlowSeconds: 1.5
+  outlineRenderers: []
+  storySubtitles: {fileID: 1173369460512402699}
+  recording: {fileID: 0}
+  pulse: {fileID: 0}
+--- !u!114 &1173369460512402699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723863769972491933}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2907654ef2cd4135aef7346c1c17ceb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StorySubtitleTrigger
+  charactersPerSecond: 22
+  lines:
+  - text: "\u97F3\u54CD\u7684\u5FAE\u7F29\u6A21\u578B\uFF0C\u80FD\u611F\u53D7\u5230\u9707\u52A8\uFF0C\u65CB\u5F8B\u5374\u5F88\u6A21\u7CCA"
+    duration: 2.7
+--- !u!114 &4211988467547105505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723863769972491933}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e39a847ff8df49cfb2e36a6237920076, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CollectionItemSequence
+  action: 1
+  cup: {fileID: 0}
+  keepGoldAfterDiscovery: 0
+  idleLoop: {fileID: 0}
+  interactionClip: {fileID: 8300000, guid: 3a03ff8075f39a54db98a0991c004a67, type: 3}
+  volume: 0.75
+  spatial:
+    hrtf: 1
+    occlusion: 0
+    reflections: 0
+    reflectionMix: 0.65
+    distanceMode: 1
+    minDistance: 1
+    maxDistance: 15
+    decibelsPerMetre: 3
+    distanceCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: -0.05
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 20
+        value: 0
+        inSlope: -0.05
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    farEarGain: 1
+  interactionGoldRange: 5
+  stowSeconds: 0.7
+--- !u!4 &6173272413776832338 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 8246031322578322924}
+  m_PrefabAsset: {fileID: 0}

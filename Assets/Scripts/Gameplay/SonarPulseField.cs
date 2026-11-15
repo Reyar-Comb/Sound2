@@ -2,7 +2,7 @@ using Unity.Collections;
 using Unity.Profiling;
 using UnityEngine;
 
-public enum SonarPulseKind { Main, Footstep, Danger, Coin, Lightning }
+public enum SonarPulseKind { Main, Footstep, Danger, Coin, Lightning, Gold }
 
 /// <summary>Shared spherical arrival/occlusion data for BlackBox rendering. No input or audio ownership.</summary>
 [DisallowMultipleComponent]
@@ -28,6 +28,7 @@ public sealed class SonarPulseField : MonoBehaviour
     public const int LightningPulseOffset = CoinPulseOffset + CoinPulseCapacity;
     public const int MaxPulses = MainPulseCapacity + FootstepPulseCapacity + DangerPulseCapacity + CoinPulseCapacity + LightningPulseCapacity;
     const int FootstepMaskSize = 24;
+    const int BossWaveCapacity = 6;
     const int RaysPerJob = 64;
     static readonly Vector3[] mainDirections = BuildDirections(MaskSize);
     static readonly Vector3[] localDirections = BuildDirections(FootstepMaskSize);
@@ -45,12 +46,19 @@ public sealed class SonarPulseField : MonoBehaviour
     readonly Vector4[] densityFalloffs = new Vector4[MaxPulses];
     // cos/sin of accumulated doorway yaw; blocker textures stay in their sampled frame.
     readonly Vector4[] blockerRotations = new Vector4[MaxPulses];
+    readonly Vector4[] bossWaveOrigins = new Vector4[BossWaveCapacity];
+    readonly Vector4[] bossWaveShapes = new Vector4[BossWaveCapacity];
+    readonly Vector4[] bossWaveMotion = new Vector4[BossWaveCapacity];
+    readonly Vector4[] bossWaveArenas = new Vector4[BossWaveCapacity];
+    readonly uint[] pulseTokens = new uint[MaxPulses];
     readonly Color[] planes = new Color[MaskSize * MaskSize];
     Texture2DArray blockers;
     Texture2D blockerUpload;
     NativeArray<RaycastCommand> rayCommands;
     NativeArray<RaycastHit> rayHits;
     int pulseIndex, footstepIndex, dangerIndex, coinIndex, lightningIndex;
+    int bossWaveIndex;
+    bool bossWavesActive;
     static SonarPulseField activeField;
     public static int ActiveColoredPalettes => activeField != null ? activeField.ColoredPalettes() : 0;
     int ColoredPalettes()
@@ -58,7 +66,13 @@ public sealed class SonarPulseField : MonoBehaviour
         int mask = BallLightning.Instances.Count>0 ? 1<<2 : 0;
         for (int i=DangerPulseOffset;i<MaxPulses;i++)
             if (parameters[i].w>.5f && Time.time-origins[i].w < parameters[i].x/parameters[i].y+parameters[i].z)
-                mask |= 1 << (i<CoinPulseOffset ? 1 : i<LightningPulseOffset ? 3 : 2);
+                mask |= 1 << (i<CoinPulseOffset ? 1 : i<LightningPulseOffset ? (parameters[i].w > 1.5f ? 4 : 3) : 2);
+        for (int i = 0; bossWavesActive && i < BossWaveCapacity; i++)
+        {
+            var motion = bossWaveMotion[i];
+            if (motion.x > 0 && Time.time - bossWaveOrigins[i].w < motion.y / motion.x + motion.z)
+                return mask | (1 << 1);
+        }
         return mask;
     }
     public int FootstepEmissions { get; private set; }
@@ -94,6 +108,15 @@ public sealed class SonarPulseField : MonoBehaviour
         Shader.SetGlobalVectorArray("_SonarPulseDensityFalloffs", densityFalloffs);
         Shader.SetGlobalVectorArray("_SonarBlockerRotations", blockerRotations);
         Shader.SetGlobalTexture("_SonarBlockingPlanes", blockers);
+    }
+
+    void PublishBossWaves()
+    {
+        Shader.SetGlobalFloat("_BossWavesActive", bossWavesActive ? 1 : 0);
+        Shader.SetGlobalVectorArray("_BossWaveOrigins", bossWaveOrigins);
+        Shader.SetGlobalVectorArray("_BossWaveShapes", bossWaveShapes);
+        Shader.SetGlobalVectorArray("_BossWaveMotion", bossWaveMotion);
+        Shader.SetGlobalVectorArray("_BossWaveArenas", bossWaveArenas);
     }
     // Identical sampling on all six cube faces avoids excessive samples at sphere poles.
     static Vector3 Direction(int face, float x, float y)
@@ -155,6 +178,8 @@ public sealed class SonarPulseField : MonoBehaviour
         => Emit(origin, pulseRange, pulseSpeed, pulseAfterglow,
             distanceSettings != null ? distanceSettings.Pack(pulseRange) : new Vector4(0, pulseRange, 0, 1), 0);
 
+    internal bool IsWhitePulseCurrent(int slot, uint token) => isActiveAndEnabled && parameters[slot].w > .5f && pulseTokens[slot] == token;
+
     // Compatibility entry point; a zero power preserves the original brightness.
     public bool EmitFrom(Vector3 origin, float pulseRange, float pulseSpeed, float pulseAfterglow,
         float fadeStart, float fadeEnd, float falloffPower, float strength)
@@ -169,6 +194,20 @@ public sealed class SonarPulseField : MonoBehaviour
     public bool EmitDangerFrom(Vector3 origin, float range, float speed, float afterglow,
         SonarDistanceSettings distanceSettings, SonarDensitySettings densitySettings = null)
         => EmitFrom(origin,range,speed,afterglow,SonarPulseKind.Danger,distanceSettings,densitySettings);
+
+    internal void EmitBossGroundWave(Vector3 origin, Vector3 arenaCenter, float arenaRadius,
+        Vector3 forward, BossWaveSettings settings)
+    {
+        if (!isActiveAndEnabled || blockers == null) return;
+        int slot = bossWaveIndex;
+        bossWaveIndex = (slot + 1) % BossWaveCapacity;
+        bossWaveOrigins[slot] = new Vector4(origin.x, origin.y, origin.z, Time.time);
+        bossWaveArenas[slot] = new Vector4(arenaCenter.x, arenaCenter.z, arenaRadius, settings.height);
+        bossWaveShapes[slot] = new Vector4(forward.x, forward.z, settings.sweepWidth * .5f, settings.thickness * .5f);
+        bossWaveMotion[slot] = new Vector4(settings.speed, settings.range, Mathf.Max(.05f, settings.afterglow), 0);
+        bossWavesActive = true;
+        PublishBossWaves();
+    }
 
     public bool EmitFrom(Vector3 origin, float range, float speed, float afterglow, SonarPulseKind kind,
         SonarDistanceSettings distanceSettings, SonarDensitySettings densitySettings = null)
@@ -189,7 +228,7 @@ public sealed class SonarPulseField : MonoBehaviour
         using (syncMarker.Auto()) Physics.SyncTransforms();
         bool footstep = bank == 1, danger = bank == 2;
         int slot = bank == 4 ? SelectSlot(LightningPulseOffset, LightningPulseCapacity, ref lightningIndex)
-            : bank == 3 ? SelectSlot(CoinPulseOffset, CoinPulseCapacity, ref coinIndex)
+            : bank == 3 || bank == 5 ? SelectSlot(CoinPulseOffset, CoinPulseCapacity, ref coinIndex)
             : danger ? SelectSlot(DangerPulseOffset, DangerPulseCapacity, ref dangerIndex)
             : footstep ? SelectSlot(FootstepPulseOffset, FootstepPulseCapacity, ref footstepIndex)
             : SelectSlot(0, MainPulseCapacity, ref pulseIndex);
@@ -201,11 +240,15 @@ public sealed class SonarPulseField : MonoBehaviour
         hitCount = EncodePlanes(origin, sampleSize, blockers, slot * 6);
         origins[slot] = new Vector4(LastOrigin.x, LastOrigin.y, LastOrigin.z, Time.time);
         blockerRotations[slot] = new Vector4(1, 0, 0, 0);
-        parameters[slot] = new Vector4(pulseRange, pulseSpeed, pulseAfterglow, 1);
+        parameters[slot] = new Vector4(pulseRange, pulseSpeed, pulseAfterglow, bank == 5 ? 2 : 1);
         float fadeEnd = Mathf.Clamp(falloff.y, .01f, pulseRange);
         distanceFalloffs[slot] = new Vector4(Mathf.Clamp(falloff.x, 0, fadeEnd - .001f), fadeEnd,
             Mathf.Clamp(falloff.z, 0, 8), Mathf.Clamp01(falloff.w));
         densityFalloffs[slot] = densityFalloff;
+        uint token = ++pulseTokens[slot];
+        if (bank < (int)SonarPulseKind.Danger && falloff.w > 0 && StoryCollectible.Active.Count > 0
+            && (!TryGetComponent<SphericalSonar>(out var sonar) || sonar.sonarRendering))
+            StoryCollectible.ScheduleWhitePulse(this, slot, token, origin, effectiveRange, pulseSpeed);
         using (publishMarker.Auto()) Publish();
         Emissions++;
         if (footstep) FootstepEmissions++;
@@ -312,6 +355,10 @@ public sealed class SonarPulseField : MonoBehaviour
     public void ClearPulses()
     {
         for (int i = 0; i < MaxPulses; i++) parameters[i] = Vector4.zero;
+        for (int i = 0; i < BossWaveCapacity; i++) bossWaveMotion[i] = Vector4.zero;
+        bossWaveIndex = 0;
+        bossWavesActive = false;
+        PublishBossWaves();
         pulseIndex = footstepIndex = dangerIndex = coinIndex = lightningIndex = 0;
         if (blockers != null) Publish();
     }
@@ -319,6 +366,7 @@ public sealed class SonarPulseField : MonoBehaviour
     {
         if (activeField == this) activeField = null;
         Shader.SetGlobalFloat("_SonarActive", 0);
+        Shader.SetGlobalFloat("_BossWavesActive", 0);
         Shader.SetGlobalTexture("_SonarBlockingPlanes", null);
         // SampleRays completes its batch synchronously, so no outstanding job can reference these.
         if (rayCommands.IsCreated) rayCommands.Dispose();

@@ -15,9 +15,11 @@ public sealed class PickupItem : InteractableObject
 
     [Header("Breakage (opt-in)")]
     public bool breakable;
+    [Tooltip("Only a deliberate throw can arm breakage. Placing or dropping the item clears it.")]
+    public bool breakOnlyWhenThrown;
     [Min(.1f)] public float breakSpeed = 7;
     public LayerMask breakLayers = ~0;
-    [Tooltip("Physical remnants only: no PickupItem or InteractableObject on any fragment.")]
+    [Tooltip("Physical remnants. A collectible breakable can carry its designated shard in this prefab.")]
     public GameObject brokenPrefab;
     [Min(0)] public float fragmentSeparationSpeed = .35f;
     [Min(0), Tooltip("Zero keeps remnants until their scene or floor is unloaded.")]
@@ -35,7 +37,8 @@ public sealed class PickupItem : InteractableObject
     public bool IsHeld => holder != null;
     public override string InteractionHint => "拾取";
     public PlayerPickup Holder => holder;
-    public bool CanPickUp => isActiveAndEnabled && !IsBroken && !IsHeld && Time.time >= pickupAllowedAt;
+    public bool CanPickUp => isActiveAndEnabled && !IsBroken && !IsHeld && Time.time >= pickupAllowedAt
+        && (collectible == null || (collectible.isActiveAndEnabled && collectible.interactionEnabled && collectible.Discovered && !collectible.Collected));
     public override bool CanInteract(PlayerInteraction player) => base.CanInteract(player) && CanPickUp
         && player != null && player.Pickup != null && player.Pickup.HeldItem == null;
     public override bool TryInteract(PlayerInteraction player)
@@ -47,6 +50,7 @@ public sealed class PickupItem : InteractableObject
     public float CollisionRadius { get; private set; }
 
     Rigidbody body;
+    StoryCollectible collectible;
     Collider[] colliders;
     bool[] colliderEnabled;
     PlayerPickup holder;
@@ -56,6 +60,7 @@ public sealed class PickupItem : InteractableObject
     CollisionDetectionMode previousCollisionMode;
     float pickupAllowedAt;
     bool releasePending;
+    bool thrownForBreakage;
     readonly List<(Collider item, Collider player)> ignoredPairs = new();
 
     void Awake()
@@ -63,6 +68,7 @@ public sealed class PickupItem : InteractableObject
         // RequireComponent handles new items; this also upgrades already-authored scene/prefab instances.
         EnsureImpactFeedback();
         body = GetComponent<Rigidbody>();
+        collectible = GetComponent<StoryCollectible>();
         var owned = new List<Collider>();
         foreach (var candidate in GetComponentsInChildren<Collider>(true))
             if (candidate.attachedRigidbody == body && !candidate.isTrigger) owned.Add(candidate);
@@ -133,36 +139,37 @@ public sealed class PickupItem : InteractableObject
         body.rotation = rotation;
     }
 
-    public void Release(Vector3 position, Vector3 velocity,float cooldown=-1)
+    public void Release(Vector3 position, Vector3 velocity, float cooldown = -1, bool thrown = false)
     {
         if (!IsHeld) return;
         if (!Application.isPlaying || Application.exitCancellationToken.IsCancellationRequested) { holder = null; return; }
         if (!gameObject.activeInHierarchy)
         {
-            if (!releasePending) ReleaseAfterDeactivation(position, velocity, cooldown);
+            if (!releasePending) ReleaseAfterDeactivation(position, velocity, cooldown, thrown);
             return;
         }
-        ReleaseNow(position, velocity, cooldown);
+        ReleaseNow(position, velocity, cooldown, thrown);
     }
 
-    async void ReleaseAfterDeactivation(Vector3 position, Vector3 velocity, float cooldown)
+    async void ReleaseAfterDeactivation(Vector3 position, Vector3 velocity, float cooldown, bool thrown)
     {
         releasePending = true;
         try
         {
             // Unity forbids reparenting a child while its parent's activation state is changing.
             await Awaitable.NextFrameAsync(Application.exitCancellationToken);
-            if (this != null && Application.isPlaying && IsHeld) ReleaseNow(position, velocity, cooldown);
+            if (this != null && Application.isPlaying && IsHeld) ReleaseNow(position, velocity, cooldown, thrown);
         }
         catch (System.OperationCanceledException) { }
         finally { releasePending = false; }
     }
 
-    void ReleaseNow(Vector3 position, Vector3 velocity, float cooldown)
+    void ReleaseNow(Vector3 position, Vector3 velocity, float cooldown, bool thrown)
     {
         var playerColliders = holder.GetComponentsInChildren<Collider>();
         var releaseParent = ReleaseParent();
         holder = null;
+        thrownForBreakage = thrown;
         transform.SetParent(releaseParent, true);
         transform.position = position;
         body.position = position;
@@ -234,7 +241,7 @@ public sealed class PickupItem : InteractableObject
     public bool TryBreak(Collision collision, float impactSpeed)
     {
         if (IsBroken) return true;
-        if (!isActiveAndEnabled || !breakable || IsHeld || brokenPrefab == null || collision.contactCount == 0
+        if (!isActiveAndEnabled || !breakable || (breakOnlyWhenThrown && !thrownForBreakage) || IsHeld || brokenPrefab == null || collision.contactCount == 0
             || impactSpeed < Mathf.Max(.1f, breakSpeed)
             || (breakLayers.value & (1 << collision.collider.gameObject.layer)) == 0
             || collision.collider.GetComponentInParent<PlayerController>() != null) return false;
@@ -275,7 +282,7 @@ public sealed class PickupItem : InteractableObject
             fragment.angularVelocity = angularVelocity;
             fragment.WakeUp();
         }
-        // One break pulse uses the existing field; shards do not have emission or pickup components.
+        // The break creates one pulse; only an authored collectible shard can be investigated.
         var sonar = GetComponent<SonarObjectEmitter>();
         var field = sonar != null ? sonar.pulseField : null;
         if (field == null) field = FindAnyObjectByType<SonarPulseField>();

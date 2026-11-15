@@ -27,6 +27,8 @@ public sealed class PatrolMonster : MonoBehaviour
     [Header("Contact damage")]
     [Min(0), InspectorName("接触伤害距离（米）")] public float contactDamageRadius = .65f;
     [Min(.1f), InspectorName("接触攻击间隔（秒）")] public float contactDamageInterval = .5f;
+    [Min(0), Tooltip("0 uses the normal two-hit rule. Boss summons use the encounter's exact damage.")] public float exactContactDamage;
+    Vector3? spawnInvestigation;
     PlayerVitality playerVitality;
     float nextContactDamage;
     public Vector3 LastHeardPosition { get; private set; }
@@ -87,6 +89,12 @@ public sealed class PatrolMonster : MonoBehaviour
             agent.enabled = true;
             if (!agent.Warp(start.position)) return;
             initialized = true; State = MonsterBehaviourState.Patrol;
+            if (spawnInvestigation.HasValue)
+            {
+                var target = spawnInvestigation.Value;
+                spawnInvestigation = null;
+                Hear(new GameplayNoiseEvent(target, float.MaxValue, GameplayNoiseKind.Impact, null));
+            }
         }
         if (!NavigationReady) return;
         TryContactDamage();
@@ -125,8 +133,10 @@ public sealed class PatrolMonster : MonoBehaviour
         Vector3 origin = transform.position + Vector3.up * .9f;
         if (!playerVitality.CanReceiveContactFrom(transform, origin, contactDamageRadius)) return;
         nextContactDamage = Time.time + Mathf.Max(.1f, contactDamageInterval);
-        playerVitality.TakeDamage(1);
+        if (exactContactDamage > 0) playerVitality.TakeExactDamage(exactContactDamage);
+        else playerVitality.TakeDamage(1);
     }
+    internal void InvestigateOnSpawn(Vector3 position) => spawnInvestigation = position;
     bool NavigateTo(Vector3 position)
     {
         if (!NavigationReady || !NavMesh.SamplePosition(position, out var target, 2, agent.areaMask)) return false;

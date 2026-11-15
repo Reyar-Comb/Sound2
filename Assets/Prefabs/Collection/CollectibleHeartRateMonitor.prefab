@@ -1,0 +1,174 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &9009787829453806120
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 383340069086409968, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7029870910794669013, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      propertyPath: m_Name
+      value: CollectibleHeartRateMonitor
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7029870910794669013, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2654811076138952254}
+    - targetCorrespondingSourceObject: {fileID: 7029870910794669013, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6314658090877772831}
+    - targetCorrespondingSourceObject: {fileID: 7029870910794669013, guid: 40ca57acd80787549a2669448a960014, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6510374985251703789}
+  m_SourcePrefab: {fileID: 100100000, guid: 40ca57acd80787549a2669448a960014, type: 3}
+--- !u!1 &2055378741986574845 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7029870910794669013, guid: 40ca57acd80787549a2669448a960014, type: 3}
+  m_PrefabInstance: {fileID: 9009787829453806120}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2654811076138952254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2055378741986574845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 232040c143bfcaf429b38f948464afbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StoryCollectible
+  interactionAnchor: {fileID: 3774262641388939557}
+  interactionEnabled: 1
+  interactionHint: "\u4EA4\u4E92"
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
+  collectibleId: hospital.heart-monitor
+  progressProvider: {fileID: 0}
+  scanAnchor: {fileID: 0}
+  discoveryGlowSeconds: 1.5
+  outlineRenderers: []
+  storySubtitles: {fileID: 6314658090877772831}
+  recording: {fileID: 0}
+  pulse: {fileID: 0}
+--- !u!114 &6314658090877772831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2055378741986574845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2907654ef2cd4135aef7346c1c17ceb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StorySubtitleTrigger
+  charactersPerSecond: 22
+  lines:
+  - text: "\u7F20\u7ED5\u7740\u767D\u80F6\u5E03\u7684\u5BFC\u7EBF\uFF0C\u5851\u6599\u63A5\u5934\u5904\u6709\u4E00\u80A1\u5F88\u6DE1\u7684\u6D88\u6BD2\u6C34\u5473"
+    duration: 2.7
+--- !u!114 &6510374985251703789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2055378741986574845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e39a847ff8df49cfb2e36a6237920076, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CollectionItemSequence
+  action: 1
+  cup: {fileID: 0}
+  keepGoldAfterDiscovery: 0
+  idleLoop: {fileID: 8300000, guid: f22855a1c0fd45a4698873017e7124b8, type: 3}
+  interactionClip: {fileID: 0}
+  volume: 0.75
+  spatial:
+    hrtf: 1
+    occlusion: 0
+    reflections: 0
+    reflectionMix: 0.65
+    distanceMode: 1
+    minDistance: 1
+    maxDistance: 11
+    decibelsPerMetre: 3
+    distanceCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: -0.05
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 20
+        value: 0
+        inSlope: -0.05
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    farEarGain: 1
+  interactionGoldRange: 5
+  stowSeconds: 0.7
+--- !u!4 &3774262641388939557 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5290020558589178637, guid: 40ca57acd80787549a2669448a960014, type: 3}
+  m_PrefabInstance: {fileID: 9009787829453806120}
+  m_PrefabAsset: {fileID: 0}

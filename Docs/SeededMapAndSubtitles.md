@@ -37,8 +37,12 @@
 
 - `Show(text, duration)` / `Enqueue(SubtitleCue)`：加入队列。
 - `Replace(cues)`：替换旧队列，楼层切换使用此入口。
-- `Clear()`：清空字幕。
-- 打开菜单、禁用玩家或暂停时间时，字幕计时暂停；玩家输入暂停时隐藏 HUD。
+- `Clear()`：清空楼层提示和交互反馈。
+- 打开菜单、禁用玩家或暂停时间时，楼层提示和交互反馈暂停计时。玩家输入暂停时隐藏这一层 HUD。
+
+剧情字幕使用 `StorySubtitleTrigger`。在 Inspector 的 `Lines` 中设置逐行文本和打完后的停留时间，用 `Characters Per Second` 调整打字速度，可以从按钮 `OnClick` 或其他 UnityEvent 调用 `Trigger()`。`CollectibleTest` 收音机的剧情也配置在这个组件上。
+
+流程脚本也可以直接调用 `StorySubtitles.Play("文本", holdSeconds: 2)`，或者传入一组 `SubtitleCue`。剧情字幕独立显示在菜单和过场上方，暂停时间时仍可播放，并在切换场景时继续。需要结束旧剧情时调用 `StorySubtitles.Clear()`。楼层提示会等剧情字幕播完再继续。
 
 字体从 `E:/Downloads/Miscellaneous/SECONDERSIGN.ttf` 原样复制到 `Assets/UI/SECONDERSIGN.ttf`，SHA-256 已核对。`GameUiTheme.asset` 统一配置 TMP 和旧式 IMGUI/uGUI 字体。主 SDF 预烘焙常用字符；动态回退仍使用同一个 TTF，1024×1024、清除构建时动态数据；缺失中文可回退到项目原中文字体。当前入层字幕无缺字。
 

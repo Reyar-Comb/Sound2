@@ -46,12 +46,14 @@ public sealed class AudioReactiveSonarEmitter : MonoBehaviour
     }
     [ContextMenu("Trigger audio reactive sonar (Play mode)")]
     public void Trigger() => TriggerAt(emissionOrigin != null ? emissionOrigin.position : transform.position);
-    public bool TriggerAt(Vector3 position, float strength = 1)
+    public void TriggerGold() => TriggerAt(emissionOrigin != null ? emissionOrigin.position : transform.position, 1, true);
+    public bool TriggerAt(Vector3 position, float strength = 1) => TriggerAt(position, strength, false);
+    bool TriggerAt(Vector3 position, float strength, bool gold)
     {
         if (!Application.isPlaying || !isActiveAndEnabled || AudioSettings.dspTime < nextTrigger || strength <= 0 || !Preload()) return false;
         if (field == null || !field.isActiveAndEnabled) field = AudioReactiveSonarField.GetOrCreate();
         if (loop && IsLoopPlaying) playback.Stop();
-        if (!field.Emit(position, analysis, visual, AudioPool, volume, strength, loop, out playback)) return false;
+        if (!field.Emit(position, analysis, visual, AudioPool, volume, strength, loop, out playback, gold)) return false;
         pendingAutoStart = false; nextTrigger = AudioSettings.dspTime + Mathf.Max(0, cooldown); Triggers++; return true;
     }
     void OnCollisionEnter(Collision collision)

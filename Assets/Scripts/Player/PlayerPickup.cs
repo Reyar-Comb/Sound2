@@ -166,7 +166,7 @@ public sealed class PlayerPickup : MonoBehaviour
         foreach (var overlap in Physics.OverlapSphere(position, radius, obstacleLayers, QueryTriggerInteraction.Ignore))
             if (!overlap.transform.IsChildOf(transform)) return false;
         if(!ClearReleasePath(item.transform.position,position,radius))return false;
-        item.Release(position, direction * throwSpeed + Vector3.up * throwUpwardSpeed);
+        item.Release(position, direction * throwSpeed + Vector3.up * throwUpwardSpeed, thrown: true);
         heldItem = null;
         return true;
     }

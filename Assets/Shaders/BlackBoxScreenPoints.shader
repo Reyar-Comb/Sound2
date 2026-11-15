@@ -45,6 +45,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         float4 _LightningCloudParameters; // rotation phase, state brightness, number of 3D points
         float _PulsePalette;
         float4 _PulseColor;
+        float _HasCollectibleMask, _CollectibleMaskValue;
         float4 _CrosshairClearZone; // xy: viewport centre; zw: clear radius/feather at 720p
         int _PlayerUiCount;
         float4 _PlayerUiRects[128], _PlayerUiOptions[128];
@@ -75,6 +76,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                 _CrosshairClearZone.z+radius+max(.1,_CrosshairClearZone.w),distance);
         }
         TEXTURE2D(_PointGrid); TEXTURE2D(_DangerPointGrid); TEXTURE2D_X_FLOAT(_PointDepth);
+        TEXTURE2D(_CollectibleMask); TEXTURE2D_X_FLOAT(_CollectibleSceneDepth);
         float _RevealDistance, _WorldCircleRadius, _WorldCoreRadius;
         float _ScreenDotSpacing, _ScreenDotRadius;
         float4 _DistanceBands, _DensityLevels, _CoreDensityLevels, _WorldRadialBandEnds, _RadialDensityLevels;
@@ -93,6 +95,22 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         {
             Varyings o; UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
             o.positionCS=GetFullScreenTriangleVertexPosition(vertexID); return o;
+        }
+        Varyings CollectibleVert(float3 positionOS : POSITION)
+        {
+            Varyings o; UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+            o.positionCS=TransformObjectToHClip(positionOS); return o;
+        }
+        half4 CollectibleMask(Varyings i) : SV_Target
+        {
+            float scene=LOAD_TEXTURE2D_X(_CollectibleSceneDepth,(int2)i.positionCS.xy).r;
+            clip(.012-abs(LinearEyeDepth(scene,_ZBufferParams)-LinearEyeDepth(i.positionCS.z,_ZBufferParams)));
+            return _CollectibleMaskValue;
+        }
+        float CollectibleAt(int2 pixel)
+        {
+            if(any(pixel<0)||any(pixel>=int2(_PointViewport.xy)))return 0;
+            return LOAD_TEXTURE2D(_CollectibleMask,pixel).r;
         }
         bool WorldAtPixel(int2 pixel, out float3 p)
         {
@@ -265,10 +283,11 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                     && sonarRank<saturate(Tier(sonarDistance,_EdgeDensityLevels))?Corner(uv,p,n):0;
                 float2 red=float2(faces?pulseReveal.danger.y:0,edgeMask*pulseReveal.danger.x);
                 float2 blue=float2(faces?pulseReveal.lightning.y:0,edgeMask*pulseReveal.lightning.x);
-                float2 gold=float2(faces?pulseReveal.coin.y:0,edgeMask*pulseReveal.coin.x);
+                float2 coin=float2(faces?pulseReveal.coin.y:0,edgeMask*pulseReveal.coin.x);
+                float2 gold=float2(faces?pulseReveal.gold.y:0,edgeMask*pulseReveal.gold.x);
                 // Store brightness and palette separately for the two original styles.
-                float2 face=red.x>0?float2(red.x,1.0/3):blue.x>0?float2(blue.x,2.0/3):float2(gold.x,1);
-                float2 edge=red.y>0?float2(red.y,1.0/3):blue.y>0?float2(blue.y,2.0/3):float2(gold.y,1);
+                float2 face=red.x>0?float2(red.x,.25):blue.x>0?float2(blue.x,.5):gold.x>0?float2(gold.x,1):float2(coin.x,.75);
+                float2 edge=red.y>0?float2(red.y,.25):blue.y>0?float2(blue.y,.5):gold.y>0?float2(gold.y,1):float2(coin.y,.75);
                 samples.danger=float4(face.x,edge.x,face.y,edge.y);
             }
             if(surface)
@@ -287,6 +306,18 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                     result=float4(_FaceEnabled>.5 && _BlackBoxStyleVisibility.x>.5?points:0,0,0,1);
                     samples.danger=0;
                     break;
+                }
+            }
+            if(surface && _HasCollectibleMask>.5 && _EdgeEnabled>.5 && _BlackBoxStyleVisibility.y>.5)
+            {
+                int2 pixel=(int2)(uv*_PointViewport.xy);
+                float gold=CollectibleAt(pixel);
+                if(gold>.001 && (samples.danger.g<=0 || samples.danger.a>=.75))
+                {
+                    int width=max(1,(int)ceil(_EdgeWidth*_PointViewport.y/720.0));
+                    float neighbor=min(min(CollectibleAt(pixel+int2(width,0)),CollectibleAt(pixel-int2(width,0))),
+                        min(CollectibleAt(pixel+int2(0,width)),CollectibleAt(pixel-int2(0,width))));
+                    if(neighbor<.001 || Corner(uv,p,n)>.5) samples.danger.ga=float2(max(samples.danger.g,gold),1);
                 }
             }
             float radius=clamp(_ScreenDotRadius,0,max(_ScreenDotSpacing,1)*.75)+.70710678*720.0/_PointViewport.y;
@@ -312,7 +343,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                 if(any(candidate<0)||any(candidate>=int2(_PointGridSize.xy))) continue;
                 float4 gridSample=danger?LOAD_TEXTURE2D(_DangerPointGrid,candidate):LOAD_TEXTURE2D(_PointGrid,candidate);
                 float decision=gridSample[channel];
-                if(danger && abs(gridSample[channel+2]*3-_PulsePalette)>.25) decision=0;
+                if(danger && abs(gridSample[channel+2]*4-_PulsePalette)>.25) decision=0;
                 float mask=CrosshairPointVisibility((float2(candidate)+.5)*pitch,radius+aa);
                 float circle=1-smoothstep(radius-aa,radius+aa,length(screen-(float2(candidate)+.5)*pitch));
                 result.x=max(result.x,decision*mask*circle);
@@ -588,6 +619,15 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             HLSLPROGRAM
             #pragma vertex VineVert
             #pragma fragment DrawVines
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "CollectibleMask"
+            Cull Back
+            HLSLPROGRAM
+            #pragma vertex CollectibleVert
+            #pragma fragment CollectibleMask
             ENDHLSL
         }
     }

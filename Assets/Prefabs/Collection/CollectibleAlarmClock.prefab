@@ -1,0 +1,197 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &6311912153116316721
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 767891812021453074, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1616630845359143770, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1687917139929038505, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3106204670203879756, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3445934700314754570, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_Name
+      value: CollectibleAlarmClock
+      objectReference: {fileID: 0}
+    - target: {fileID: 6154171929165558421, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7224891340235170946, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8801722975506735753, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_UseGravity
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8801722975506735753, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      propertyPath: m_IsKinematic
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3445934700314754570, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6217535048293339838}
+    - targetCorrespondingSourceObject: {fileID: 3445934700314754570, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 931928646940308316}
+    - targetCorrespondingSourceObject: {fileID: 3445934700314754570, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3048359189005090909}
+  m_SourcePrefab: {fileID: 100100000, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+--- !u!1 &8667742576160008763 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3445934700314754570, guid: 085615e0cea903e40989d27c27bd7181, type: 3}
+  m_PrefabInstance: {fileID: 6311912153116316721}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6217535048293339838
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8667742576160008763}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 232040c143bfcaf429b38f948464afbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StoryCollectible
+  interactionAnchor: {fileID: 0}
+  interactionEnabled: 1
+  interactionHint: "\u4EA4\u4E92"
+  onInteract:
+    m_PersistentCalls:
+      m_Calls: []
+  collectibleId: home.alarm-clock
+  progressProvider: {fileID: 0}
+  scanAnchor: {fileID: 0}
+  discoveryGlowSeconds: 1.5
+  outlineRenderers: []
+  storySubtitles: {fileID: 931928646940308316}
+  recording: {fileID: 0}
+  pulse: {fileID: 0}
+--- !u!114 &931928646940308316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8667742576160008763}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2907654ef2cd4135aef7346c1c17ceb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StorySubtitleTrigger
+  charactersPerSecond: 22
+  lines:
+  - text: "\u5435\u95F9\u7684\u95F9\u949F\uFF0C\u4E0D\u65AD\u53D1\u51FA\u7740\u5C16\u9510\u7684\u58F0\u54CD"
+    duration: 2.7
+--- !u!114 &3048359189005090909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8667742576160008763}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e39a847ff8df49cfb2e36a6237920076, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CollectionItemSequence
+  action: 0
+  cup: {fileID: 0}
+  keepGoldAfterDiscovery: 0
+  idleLoop: {fileID: 8300000, guid: bc6846d51a1f55148acc20d68df64429, type: 3}
+  interactionClip: {fileID: 0}
+  volume: 0.75
+  spatial:
+    hrtf: 1
+    occlusion: 0
+    reflections: 0
+    reflectionMix: 0.65
+    distanceMode: 1
+    minDistance: 1
+    maxDistance: 14
+    decibelsPerMetre: 3
+    distanceCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: -0.05
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 20
+        value: 0
+        inSlope: -0.05
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    farEarGain: 1
+  interactionGoldRange: 5
+  stowSeconds: 0.7

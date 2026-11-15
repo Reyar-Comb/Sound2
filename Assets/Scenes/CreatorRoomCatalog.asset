@@ -85,6 +85,30 @@ MonoBehaviour:
     prefab: {fileID: 5171887291320567253, guid: 9c0c0db5474392449aa0e9e870e635cf, type: 3}
     mesh: {fileID: 0}
     modelOnly: 0
+  - label: CollectibleAlarmClock
+    prefab: {fileID: 8667742576160008763, guid: 210bc21bc29559f4b98c92e08144c7ed, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 0
+  - label: CollectibleEarmuffs
+    prefab: {fileID: 4571975380830865217, guid: 6db539294fa7fab45adeb43530cab589, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 0
+  - label: CollectibleHeartRateMonitor
+    prefab: {fileID: 2055378741986574845, guid: a943dcd2b87e68348a5a8ea8cd92ba9e, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 0
+  - label: CollectibleTeddyBear
+    prefab: {fileID: 8030961135564566424, guid: d6b663e0b25ff1949bd1c6eba0a1f795, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 0
+  - label: CollectibleWaterCup
+    prefab: {fileID: 5062574304948257138, guid: 18314272edca1bf449a66f7189639f8f, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 0
+  - label: CollectibleWeddingSpeaker
+    prefab: {fileID: 723863769972491933, guid: d8e81c0d670ca6044bc16d0cadec21f0, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 0
   - label: "\u7535\u8111"
     prefab: {fileID: 1622378260502389212, guid: 5eb1b3b669a0ae346a04d220e169557e, type: 3}
     mesh: {fileID: 0}

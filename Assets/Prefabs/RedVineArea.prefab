@@ -374,7 +374,7 @@ MonoBehaviour:
   reach: 2.8
   surfaces:
     serializedVersion: 2
-    m_Bits: 4294967291
+    m_Bits: 307
 --- !u!114 &6150896532018700981
 MonoBehaviour:
   m_ObjectHideFlags: 0

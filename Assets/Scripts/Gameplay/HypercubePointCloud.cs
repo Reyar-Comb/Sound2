@@ -12,6 +12,8 @@ public sealed class HypercubePointCloud : MonoBehaviour
     [Min(1)] public float loopSeconds = 16;
     [Range(0, 360)] public float phaseDegrees;
     readonly Vector3[] vertices = new Vector3[VertexCount];
+    float unfold, cellSize;
+    const int UnfoldEdgeSamples = 6;
     const float ProjectionDistance = 3.5f;
 
     public Bounds WorldBounds
@@ -20,6 +22,7 @@ public sealed class HypercubePointCloud : MonoBehaviour
         {
             var s = transform.lossyScale;
             float extent = Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z)) * Mathf.Max(.1f, radius);
+            if (unfold > 0) extent = Mathf.Max(extent, s.magnitude * cellSize * 2);
             return new Bounds(transform.position, Vector3.one * (extent * 2 + .1f));
         }
     }
@@ -27,6 +30,12 @@ public sealed class HypercubePointCloud : MonoBehaviour
     static void ResetInstances() => Instances.Clear();
     void OnEnable() { if (!Instances.Contains(this)) Instances.Add(this); }
     void OnDisable() => Instances.Remove(this);
+
+    public void SetUnfold(float progress, float size)
+    {
+        unfold = Mathf.Clamp01(progress);
+        cellSize = Mathf.Max(.1f, size);
+    }
 
     public void EvaluateVertices(float seconds, Vector3[] output)
     {
@@ -48,6 +57,7 @@ public sealed class HypercubePointCloud : MonoBehaviour
     {
         if (!isActiveAndEnabled || output==null || output.Length<PointCount) return 0;
         EvaluateVertices(Time.time,vertices);
+        if (unfold > 0) return CollectNet(output);
         int count=0;
         void Add(Vector3 p,float brightness) => output[count++]=new Vector4(p.x,p.y,p.z,brightness);
         foreach(var p in vertices) Add(p,1);
@@ -59,6 +69,47 @@ public sealed class HypercubePointCloud : MonoBehaviour
                 Add(Vector3.Lerp(vertices[i],vertices[other],k/(float)(InteriorPointsPerEdge+1)),.9f);
         }
         return count;
+    }
+
+    int CollectNet(Vector4[] output)
+    {
+        int count = 0;
+        for (int axis = 0; axis < 4; axis++)
+        for (int side = 0; side < 2; side++)
+        {
+            int fixedBit = 1 << axis;
+            int fixedValue = side << axis;
+            for (int vertex = 0; vertex < VertexCount; vertex++)
+            {
+                if ((vertex & fixedBit) != fixedValue) continue;
+                for (int edge = 0; edge < 4; edge++)
+                {
+                    if (edge == axis || (vertex & (1 << edge)) != 0) continue;
+                    int other = vertex | (1 << edge);
+                    Vector3 a = NetVertex(axis, side, vertex);
+                    Vector3 b = NetVertex(axis, side, other);
+                    for (int sample = 0; sample < UnfoldEdgeSamples; sample++)
+                    {
+                        Vector3 p = Vector3.Lerp(a, b, sample / (float)(UnfoldEdgeSamples - 1));
+                        output[count++] = new Vector4(p.x, p.y, p.z, 1);
+                    }
+                }
+            }
+        }
+        return count;
+    }
+
+    Vector3 NetVertex(int axis, int side, int vertex)
+    {
+        float Sign(int bit) => (vertex & (1 << bit)) == 0 ? -1 : 1;
+        var point = new Vector3(Sign(0), Sign(1), Sign(2)) * .5f;
+        if (axis < 3)
+            point[axis] = (side == 0 ? -1 : 1) * (1 - Sign(3) * .5f);
+        else if (side == 0)
+            point.x = 2 - point.x;
+        // Four cells along X, with the other four attached to the central cell along Y and Z.
+        point.x -= .5f;
+        return Vector3.Lerp(vertices[vertex], transform.TransformPoint(point * cellSize), unfold);
     }
     void OnDrawGizmos()
     {

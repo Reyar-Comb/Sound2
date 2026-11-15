@@ -30,7 +30,8 @@ public sealed class PlayerController : MonoBehaviour
     public event System.Action<float> Landed;
     bool inputSuspended;
     public bool DeathSequenceLocked { get; internal set; }
-    public bool InputSuspended { get => inputSuspended || DeathSequenceLocked; set => inputSuspended = value; }
+    internal bool EncounterInputLocked { get; set; }
+    public bool InputSuspended { get => inputSuspended || DeathSequenceLocked || EncounterInputLocked; set => inputSuspended = value; }
     public bool TransportLocked { get; set; }
     public Transform ViewTransform => cameraTransform;
     public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);
@@ -96,6 +97,16 @@ public sealed class PlayerController : MonoBehaviour
         pitch = 0;
         transform.rotation = Quaternion.Euler(0, yaw, 0);
         cameraTransform.localRotation = Quaternion.identity;
+    }
+
+    internal void FacePoint(Vector3 point)
+    {
+        Vector3 direction = point - cameraTransform.position;
+        Vector2 flat = new(direction.x, direction.z);
+        if (flat.sqrMagnitude > .001f) yaw = Mathf.Atan2(flat.x, flat.y) * Mathf.Rad2Deg;
+        pitch = Mathf.Clamp(-Mathf.Atan2(direction.y, flat.magnitude) * Mathf.Rad2Deg, -maxPitch, maxPitch);
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
 
     public void Teleport(Vector3 position)

@@ -12,7 +12,7 @@ public sealed class PlayerSubtitles : MonoBehaviour
     public TMP_Text SubtitleText => subtitle;
     public TMP_Text FloorText => floorLabel;
     public int PendingCount => queue.Count;
-    public string CurrentText => urgent != null ? urgent.text : current != null ? current.text : "";
+    public string CurrentText => urgent?.text ?? current?.text ?? "";
 
     readonly Queue<SubtitleCue> queue = new();
     PlayerController controller;
@@ -26,34 +26,14 @@ public sealed class PlayerSubtitles : MonoBehaviour
     void Awake()
     {
         controller = GetComponent<PlayerController>();
-        var root = new GameObject("NarrativeHUD", typeof(RectTransform), typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler));
-        root.transform.SetParent(transform, false);
-        canvas = root.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 25;
-        var scaler = root.GetComponent<UnityEngine.UI.CanvasScaler>();
-        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1280, 720); scaler.matchWidthOrHeight = 1;
-        subtitle = MakeText("Subtitle", root.transform, subtitleFontSize);
-        subtitle.alignment = TextAlignmentOptions.Center;
-        var rect = subtitle.rectTransform;
-        rect.anchorMin = new Vector2(.15f, 0); rect.anchorMax = new Vector2(.85f, 0);
-        rect.pivot = new Vector2(.5f, 0); rect.anchoredPosition = new Vector2(0, 44); rect.sizeDelta = new Vector2(0, 100);
+        canvas = SubtitleHud.CreateCanvas("NarrativeHUD", 25, transform);
+        subtitle = SubtitleHud.CreateSubtitle(canvas.transform, subtitleFontSize);
         subtitle.color = new Color(1, 1, 1, 0);
-        floorLabel = MakeText("FloorIndicator", root.transform, 24);
+        floorLabel = SubtitleHud.CreateText("FloorIndicator", canvas.transform, 24);
         floorLabel.alignment = TextAlignmentOptions.TopRight;
-        rect = floorLabel.rectTransform; rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.one;
+        var rect = floorLabel.rectTransform; rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.one;
         rect.anchoredPosition = new Vector2(-32, -28); rect.sizeDelta = new Vector2(200, 50);
         SetFloor(0);
-    }
-
-    static TextMeshProUGUI MakeText(string name, Transform parent, float size)
-    {
-        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        go.transform.SetParent(parent, false);
-        var text = go.GetComponent<TextMeshProUGUI>();
-        if (GameUiTheme.Current != null && GameUiTheme.Current.textFont != null) text.font = GameUiTheme.Current.textFont;
-        text.fontSize = size; text.enableAutoSizing = false; text.raycastTarget = false;
-        text.color = Color.white; text.richText = false;
-        return text;
     }
 
     public void SetFloor(int floor) { if (floorLabel != null) floorLabel.text = "F" + Mathf.Max(0, floor); }
@@ -63,6 +43,7 @@ public sealed class PlayerSubtitles : MonoBehaviour
         queue.Enqueue(new SubtitleCue(cue.text, Mathf.Max(.1f, cue.duration)));
     }
     public void Show(string text, float duration = 4) => Enqueue(new SubtitleCue(text, duration));
+
     // Interaction feedback takes priority without discarding the unfinished floor guidance.
     public void ShowImmediate(string text, float duration = 2)
     {
@@ -86,6 +67,11 @@ public sealed class PlayerSubtitles : MonoBehaviour
         bool visible = controller != null && controller.isActiveAndEnabled && !controller.InputSuspended;
         canvas.enabled = visible;
         if (!visible || Time.timeScale <= 0) return;
+        if (StorySubtitles.IsPlaying)
+        {
+            if (!string.IsNullOrEmpty(subtitle.text)) subtitle.text = "";
+            return;
+        }
         if (urgent == null && current == null && queue.Count > 0)
         {
             current = queue.Dequeue(); elapsed = 0; subtitle.text = current.text;
@@ -104,6 +90,7 @@ public sealed class PlayerSubtitles : MonoBehaviour
             subtitle.text = "";
         }
     }
+
     void OnDisable() { if (canvas != null) canvas.enabled = false; }
     void OnDestroy() { if (canvas != null) Destroy(canvas.gameObject); }
 }

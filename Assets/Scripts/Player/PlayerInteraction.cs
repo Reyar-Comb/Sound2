@@ -166,6 +166,8 @@ public sealed class PlayerInteraction : MonoBehaviour
         // Use the nearest component-owning ancestor. A disabled child action must not route to a parent.
         for (var parent = candidate.transform; parent != null; parent = parent.parent)
         {
+            if (parent.TryGetComponent<StoryCollectible>(out var collectible))
+                return collectible.CanInteract(this) ? collectible : null;
             parent.GetComponents(handlers);
             if (handlers.Count == 0) continue;
             PickupItem item = null;
@@ -182,6 +184,7 @@ public sealed class PlayerInteraction : MonoBehaviour
 
     string FocusHint()
     {
+        if (FocusedTarget is StoryCollectible) return FocusedTarget.InteractionHint;
         var item = FocusedTarget.GetComponent<PickupItem>();
         return !(FocusedTarget is PickupItem) && item != null && item.CanInteract(this)
             ? FocusedTarget.InteractionHint + "并拾取" : FocusedTarget.InteractionHint;
@@ -193,6 +196,12 @@ public sealed class PlayerInteraction : MonoBehaviour
         if (FocusedTarget == null || shownTarget != FocusedTarget || progress <= .05f) return false;
         // Only explicit hands-free actions (elevator controls) may override a held-item throw.
         if (pickup.HeldItem != null && !FocusedTarget.AllowWhileHolding) return false;
+        if (FocusedTarget is StoryCollectible storyCollectible)
+        {
+            bool collected = storyCollectible.TryInteract(this);
+            RefreshFocus();
+            return collected;
+        }
         FocusedTarget.GetComponents(clickHandlers);
         bool interacted = false;
         foreach (var handler in clickHandlers)
