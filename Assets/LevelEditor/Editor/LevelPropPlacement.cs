@@ -127,6 +127,7 @@ namespace Sound2.LevelEditing.Editor
                 parent = root.transform;
             }
             EnsureUniqueNames(layout);
+            prefab = LevelPropOptimizer.ForPlacement(prefab);
             string instanceName = GameObjectUtility.GetUniqueNameForSibling(parent, prefab.name);
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, layout.gameObject.scene);
             Undo.RegisterCreatedObjectUndo(instance, "放置关卡道具");

@@ -41,7 +41,7 @@ public static class VerifyRestaurantProps
         string source = "Assets/Scenes/__RestaurantSource_" + id + ".unity", destination = "Assets/Scenes/__RestaurantExport_" + id + ".unity", prefabPath = "Assets/Scenes/__RestaurantLayout_" + id + ".prefab";
         try
         {
-            Check(PropCatalog.All().Count == 60, "Catalog contains 60 props");
+            Check(PropCatalog.All().Count == 62, "Catalog contains 62 props");
             Check(PropCatalog.Category(Prefab("DrapedRingTable")) == "餐厅" && PropCatalog.Category(Prefab("RestaurantStage")) == "餐厅", "Both new props are in Restaurant");
             scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive); SceneManager.SetActiveScene(scene);
             var layout = new GameObject("Restaurant verification", typeof(LevelLayout)).GetComponent<LevelLayout>();

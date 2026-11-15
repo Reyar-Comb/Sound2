@@ -156,6 +156,7 @@ namespace Sound2.LevelEditing.Editor
             var footer = rootVisualElement.Q("footer"); footer.Clear();
             Button(footer, "重新生成", () => { TryRebuild(); Refresh(); }).SetEnabled(layout != null);
             Button(footer, "保存当前场景", Save).SetEnabled(layout != null);
+            Button(footer, "性能分析 / 优化", () => LevelPerformanceWindow.Open(layout)).SetEnabled(layout != null && !Application.isPlaying);
             Button(footer, "导出 .unity 场景", Export).AddToClassList("primary");
             Button(footer, "导出关卡 Prefab", ExportLevelPrefab).SetEnabled(layout != null && !Application.isPlaying);
             UpdateStatus();

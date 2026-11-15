@@ -125,6 +125,14 @@ MonoBehaviour:
     prefab: {fileID: 44984778842490144, guid: a6e50a5f84682104aa2131b0a809292f, type: 3}
     mesh: {fileID: 0}
     modelOnly: 0
+  - label: "\u79FB\u52A8\u533B\u7597\u8F66"
+    prefab: {fileID: 5767967891789587969, guid: f32e4cf0ba5de1a40887ec853354c37f, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 0
+  - label: "\u79FB\u52A8\u75C5\u5E8A"
+    prefab: {fileID: 2045109250262894097, guid: cc6fad7a2c5cdcc449c78e93ff27e768, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 0
   - label: "\u7ADE\u6280\u573A\u7ACB\u67F1"
     prefab: {fileID: 6365859819109153216, guid: 40300ef530b8fc8438480b9b6335b214, type: 3}
     mesh: {fileID: 0}
