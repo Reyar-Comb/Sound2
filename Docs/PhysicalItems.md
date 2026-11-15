@@ -2,7 +2,15 @@
 
 ## 学校道具与场景分类（2026-11-15）
 
-道具浏览器按“家、学校、超市、餐厅、图书馆、雪林、医院、通用”提供分类按钮与数量；“全部”按同一顺序分组展示。中文名称和 Prefab 名称搜索与当前分类共同筛选，未知道具默认归入“通用”。分类和中文名称统一维护在 `Assets/LevelEditor/Editor/PropCatalog.cs`，当前共 60 种：家 12、学校 5、超市 5、餐厅 4、图书馆 1、雪林 2、医院 3、通用 28。
+道具浏览器按“家、学校、超市、餐厅、图书馆、雪林、医院、通用”提供分类按钮与数量；“全部”按同一顺序分组展示。中文名称和 Prefab 名称搜索与当前分类共同筛选，未知道具默认归入“通用”。分类和中文名称统一维护在 `Assets/LevelEditor/Editor/PropCatalog.cs`，当前共 62 种：家 12、学校 5、超市 5、餐厅 4、图书馆 1、雪林 2、医院 5、通用 28。
+
+### 医院移动病床与移动医疗车
+
+“医院”分类新增 `MobileHospitalBed`（移动病床）与 `MedicalCart`（移动医疗车）。病床带床垫、枕头、两侧护栏、端部推手、升降支架造型和四脚轮；医疗车带工作托盘、双抽屉、下层置物盘、侧边收纳桶、推手和四脚轮，顶层支持吸附摆放其他道具。
+
+两者均使用购物车的 `PushableProp`：玩家走向并接触物体即可推动，离开后减速停止，保持直立并受实体墙阻挡。复用购物车的低摩擦物理材质、移动录音／连续声波配置及碰撞反馈，不作为可拾取物品。病床质量 45、最大推速 1.4 m/s；医疗车质量 20、最大推速 1.8 m/s。脚轮与升降架是模型结构，不单独模拟轮轴或调节床高。
+
+资产位于 `Assets/Prefabs` 和 `Assets/Models/HospitalMobileProps`；生成脚本为 `AgentScripts/ConfigureHospitalMobileProps.cs`，编辑器与运行验证分别为 `VerifyHospitalMobileProps.Edit`（26 项通过）、`VerifyHospitalMobilePhysics.Play`（40 项通过，保留 Steam Audio 服务的真实键盘推动测试）。报告及实际模型预览位于 `Logs/HospitalMobileProps`。
 
 ### 空货架与陈列道具
 

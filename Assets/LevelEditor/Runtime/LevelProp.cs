@@ -12,18 +12,26 @@ namespace Sound2.LevelEditing
         public Vector3 surfaceAnchor;
         [Min(0)] public float surfaceOffset = .01f;
         public Material gameplayMaterial;
+        [HideInInspector] public Mesh combinedGameplayMesh;
+        Mesh previewMesh;
         Renderer[] renderers;
         Material[][] previewMaterials;
 
         void OnEnable()
         {
             if (!Application.isPlaying || gameplayMaterial == null) return;
+            var filter = GetComponent<MeshFilter>();
+            if (combinedGameplayMesh != null && filter != null)
+            {
+                previewMesh = filter.sharedMesh;
+                filter.sharedMesh = combinedGameplayMesh;
+            }
             renderers = GetComponentsInChildren<Renderer>(true);
             previewMaterials = new Material[renderers.Length][];
             for (int i = 0; i < renderers.Length; i++)
             {
                 previewMaterials[i] = renderers[i].sharedMaterials;
-                var materials = new Material[previewMaterials[i].Length];
+                var materials = new Material[combinedGameplayMesh != null && renderers[i].gameObject == gameObject ? 1 : previewMaterials[i].Length];
                 for (int j = 0; j < materials.Length; j++) materials[j] = gameplayMaterial;
                 renderers[i].sharedMaterials = materials;
             }
@@ -31,6 +39,7 @@ namespace Sound2.LevelEditing
 
         void OnDisable()
         {
+            if (previewMesh != null) { GetComponent<MeshFilter>().sharedMesh = previewMesh; previewMesh = null; }
             if (previewMaterials == null) return;
             for (int i = 0; i < renderers.Length; i++)
                 if (renderers[i] != null) renderers[i].sharedMaterials = previewMaterials[i];

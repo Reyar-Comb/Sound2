@@ -32,7 +32,7 @@ public static class VerifyDisplayProps
         Scene scene=default,copy=default;string path="Assets/Scenes/__DisplayProps_"+Guid.NewGuid().ToString("N")+".unity";
         try
         {
-            Check(PropCatalog.All().Count==60,"Catalog contains all 60 props");
+            Check(PropCatalog.All().Count==62,"Catalog contains all 62 props");
             Check(PropCatalog.Category(Prefab(Names[0]))=="超市"&&PropCatalog.Category(Prefab(Names[1]))=="通用"&&PropCatalog.Category(Prefab(Names[2]))=="通用"&&PropCatalog.Category(Prefab(Names[3]))=="家","Four props appear in intended categories");
             foreach(var name in Names)
             {

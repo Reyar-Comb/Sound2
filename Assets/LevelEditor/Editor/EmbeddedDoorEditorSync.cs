@@ -13,7 +13,17 @@ namespace Sound2.LevelEditing.Editor
         static readonly Dictionary<LevelLayout, string> signatures = new();
         static readonly HashSet<LevelLayout> failed = new();
         static double nextCheck;
-        static EmbeddedDoorEditorSync() { EditorApplication.update += Update; }
+        static bool pending = true;
+        static EmbeddedDoorEditorSync()
+        {
+            EditorApplication.update += Update;
+            EditorApplication.hierarchyChanged += () => pending = true;
+            Undo.undoRedoPerformed += () => pending = true;
+            ObjectChangeEvents.changesPublished += OnChanges;
+            EditorSceneManager.sceneOpened += (_, _) => pending = true;
+            EditorApplication.playModeStateChanged += _ => pending = true;
+        }
+        static void OnChanges(ref ObjectChangeEventStream changes) => pending = true;
         public static void Remember(LevelLayout layout)
         {
             failed.Remove(layout);
@@ -44,8 +54,9 @@ namespace Sound2.LevelEditing.Editor
         }
         static void Update()
         {
-            if (Application.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling
+            if (!pending || Application.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling
                 || EditorApplication.timeSinceStartup < nextCheck) return;
+            pending = false;
             nextCheck = EditorApplication.timeSinceStartup + .25;
             var stale = new List<LevelLayout>();
             foreach (var entry in signatures) if (entry.Key == null) stale.Add(entry.Key);
