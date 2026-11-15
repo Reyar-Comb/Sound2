@@ -426,7 +426,8 @@ public sealed class LevelArenaBoss : MonoBehaviour
     {
         PlayEffect(revealSound);
         float range = revealWaveRange > 0 ? revealWaveRange : Mathf.Sqrt(Radius * Radius + level.wallHeight * level.wallHeight) + 2;
-        if (sonar != null) sonar.EmitDangerFrom(ToWorld(Vector2.zero, Mathf.Min(hoverHeight, level.wallHeight * .5f)), range, speed, afterglow, null);
+        if (sonar != null) sonar.EmitDangerFrom(ToWorld(Vector2.zero, Mathf.Min(hoverHeight, level.wallHeight * .5f)), range, speed, afterglow, null,
+            source: cube != null ? cube.transform : null);
     }
 
     void PlayEffect(AudioClip clip)

@@ -21,6 +21,18 @@ public sealed class PlayerPickup : MonoBehaviour
     [Range(0,30)] public float maximumLagAngle = 12;
 
     public PickupItem HeldItem => heldItem != null && heldItem.Holder == this ? heldItem : null;
+
+    public void ClearForRespawn()
+    {
+        var item = HeldItem;
+        heldItem = followingItem = null;
+        followingOffset = offsetVelocity = Vector3.zero;
+        if (item == null) return;
+        // Force release even when ordinary placing is blocked by surrounding geometry.
+        item.Release(item.transform.position, Vector3.zero);
+        item.gameObject.SetActive(false);
+        Destroy(item.gameObject);
+    }
     PickupItem heldItem;
     PlayerController controller;
     PickupItem followingItem;

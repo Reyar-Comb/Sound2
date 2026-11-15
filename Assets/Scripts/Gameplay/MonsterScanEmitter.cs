@@ -71,7 +71,7 @@ public sealed class MonsterScanEmitter : MonoBehaviour
         if (pulseField == null) pulseField = FindAnyObjectByType<SonarPulseField>();
         if (pulseField == null) return false;
         LastOrigin = transform.TransformPoint(localOrigin);
-        if (!pulseField.EmitDangerFrom(LastOrigin,range,waveSpeed,afterglow,distanceSettings,densitySettings)) return false;
+        if (!pulseField.EmitDangerFrom(LastOrigin,range,waveSpeed,afterglow,distanceSettings,densitySettings,transform)) return false;
         if (playSound && (layers == null || !layers.ReplacesScanSound))
         { EnsureCue(); spatial.volume = volume; cue.Play(); }
         Scans++; return true;

@@ -87,7 +87,7 @@ public sealed class StoryCollectible : InteractableObject
         Vector3 delta = (scanAnchor != null ? scanAnchor.position : InteractionPosition) - origin;
         float distance = delta.magnitude;
         if (distance > range) return;
-        if (distance > .001f && Physics.Raycast(origin, delta / distance, out var hit, distance, source.obstacleLayers, QueryTriggerInteraction.Ignore))
+        if (distance > .001f && source.TryGetPulseBlocker(origin, delta / distance, distance, out var hit))
         {
             if (!hit.collider.transform.IsChildOf(transform)) return;
             distance = hit.distance;

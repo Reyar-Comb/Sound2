@@ -166,7 +166,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
     {
         if (!isActiveAndEnabled || PulseField == null) return false;
         PulseField.obstacleLayers = obstacleLayers;
-        return PulseField.EmitFrom(origin, pulseRange, pulseSpeed, pulseAfterglow, distanceSettings);
+        return PulseField.EmitFrom(origin, pulseRange, pulseSpeed, pulseAfterglow, distanceSettings, player != null ? player.transform : transform);
     }
 
     public void ClearPulses() { if (PulseField != null) PulseField.ClearPulses(); }

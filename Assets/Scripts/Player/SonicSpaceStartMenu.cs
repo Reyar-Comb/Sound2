@@ -29,6 +29,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
     public int VisibleTitleCharacters {get;private set;}
     public bool IntroReady => OpeningElapsed>=titleDelay+Title.Length*characterInterval+.55f;
     const string Title="SOUND & SHELL";
+    string titleAmpersand="&";
     public bool IsTransitioning {get;private set;}
     public bool HasStarted {get;private set;}
     public float TransitionProgress {get;private set;}
@@ -78,6 +79,15 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         var templates=new GameObject("Menu glyph templates",typeof(RectTransform),typeof(Canvas));templates.transform.SetParent(transform,false);
         maskCanvas=templates.GetComponent<Canvas>();maskCanvas.renderMode=RenderMode.WorldSpace;maskCanvas.enabled=false;
         title=MakeLabel("Main title","",118,0,Color.red);
+        // Custom angular ampersand shares SECONDERSIGN's stem width, baseline,
+        // capital bounds and advance, so it uses the same size as the letters.
+        var symbolFont=Resources.Load<TMP_FontAsset>("SoundShellSymbols");
+        if(symbolFont!=null)
+        {
+            MaterialReferenceManager.AddFontAsset(symbolFont);
+            title.richText=true;
+            titleAmpersand="<font=\""+symbolFont.name+"\">&</font>";
+        }
         hint=MakeLabel("Room controls","",30,-245,Color.green);
         hint.font=TMP_Settings.defaultFontAsset ?? hint.font;
         labels=new[]{title,hint};
@@ -113,7 +123,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
     {
         float age=OpeningElapsed;
         int count=Mathf.Clamp(Mathf.FloorToInt((age-titleDelay)/Mathf.Max(.04f,characterInterval))+1,0,Title.Length);
-        if(count!=VisibleTitleCharacters){title.text=Title.Substring(0,count);VisibleTitleCharacters=count;}
+        if(count!=VisibleTitleCharacters){title.text=Title.Substring(0,count).Replace("&",titleAmpersand);VisibleTitleCharacters=count;}
         float referenceWidth=720f*width/height;
         var command=maskCommands;command.Clear();
         command.SetRenderTarget(mask);command.ClearRenderTarget(false,true,Color.clear);

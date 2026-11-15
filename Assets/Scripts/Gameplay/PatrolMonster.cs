@@ -66,6 +66,9 @@ public sealed class PatrolMonster : MonoBehaviour
     {
         GameplayNoise.Emitted -= Hear;
         if (NavigationReady) agent.isStopped = true;
+        // The floor's navigation may be rebuilding asynchronously on the next visit.
+        if (agent != null) agent.enabled = false;
+        initialized = false; hasDestination = false;
     }
     void Start()
     {

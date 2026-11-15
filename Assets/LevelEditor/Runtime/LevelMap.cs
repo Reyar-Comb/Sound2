@@ -130,6 +130,19 @@ namespace Sound2.LevelEditing
             foreach (var floor in GetComponentsInChildren<SeededFloor>(true)) Dispose(floor.gameObject);
             floors.Clear();
         }
+
+        public void ResetFloor(int index)
+        {
+            var floor = FindFloor(index);
+            if (floor == null) return;
+            Vector3 position = floor.transform.position;
+            Quaternion rotation = floor.transform.rotation;
+            floors.Remove(index);
+            Dispose(floor.gameObject);
+            var replacement = Generate(index, position);
+            replacement.transform.rotation = rotation;
+            replacement.Exit.destination = FindFloor(index + 1);
+        }
         static void Dispose(GameObject go)
         {
             go.SetActive(false);

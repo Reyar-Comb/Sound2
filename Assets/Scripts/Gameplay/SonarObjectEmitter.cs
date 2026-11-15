@@ -126,7 +126,7 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
         if (pulseField == null || source == null) return false;
         pulseRange = Mathf.Max(1, pulseRange);
         Vector3 origin = emissionOrigin != null ? emissionOrigin.position : transform.position;
-        if (!pulseField.EmitFrom(origin,pulseRange,waveSpeed,afterglow,kind ?? pulseKind,distanceSettings,densitySettings)) return false;
+        if (!pulseField.EmitFrom(origin,pulseRange,waveSpeed,afterglow,kind ?? pulseKind,distanceSettings,densitySettings,transform)) return false;
         emitter.settings.maxDistance = Mathf.Max(1, soundRange) * pulseRange / Mathf.Max(1, range);
         emitter.volume = volume;
         emitter.Apply();

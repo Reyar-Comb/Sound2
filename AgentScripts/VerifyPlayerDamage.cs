@@ -84,6 +84,7 @@ public static class VerifyPlayerDamage
             Check(world.Travelling && progression.IsRespawning && v.IsDead, "Full white safely waits for the ongoing elevator transaction");
             await Until(() => !world.Travelling);
             await Until(() => !progression.IsRespawning);
+            destination = connection.destination; // Respawn rebuilds the destination hierarchy.
             Check(world.CurrentLevel == destination.Level && world.ArrivalCheckpoint == destination
                 && destination.Contains(p.transform.position), "After travel, awakening uses the destination floor's exact arrival elevator");
             Check(progression.CurrentFloor == world.levels.IndexOf(destination.Level) + 1 && !p.InputSuspended,
@@ -98,10 +99,13 @@ public static class VerifyPlayerDamage
             if (wall != null) Object.DestroyImmediate(wall);
             connection.travelSeconds = travelSeconds;
             v.invulnerabilitySeconds = immunity;
-            monster.transform.position = monsterPosition;
-            agent.enabled = agentEnabled;
-            if (agentEnabled && agent.isOnNavMesh) agent.Warp(monsterPosition);
-            monster.enabled = monsterEnabled;
+            if (monster != null)
+            {
+                monster.transform.position = monsterPosition;
+                agent.enabled = agentEnabled;
+                if (agentEnabled && agent.isOnNavMesh) agent.Warp(monsterPosition);
+                monster.enabled = monsterEnabled;
+            }
             for (int i = 0; i < hazards.Length; i++) if (hazards[i] != null) hazards[i].enabled = hazardEnabled[i];
             File.WriteAllText("Logs/PlayerDamage/world-contact-report.json", Newtonsoft.Json.JsonConvert.SerializeObject(checks, Newtonsoft.Json.Formatting.Indented));
         }
@@ -172,9 +176,10 @@ public static class VerifyPlayerDamage
             Check(!v.IsDead && !v.IsWounded && v.Health == v.maximumHealth && !p.DeathSequenceLocked, "Awakening restores health and releases death input lock");
             Check(!f.SequenceActive && !f.OverlayCanvas.enabled && f.WhiteAmount == 0, "White veil fully clears after awakening");
             Check(v.IsInvulnerable && !v.TakeDamage(1), "Awakening protection prevents immediate spawn damage");
-            Check(progression.CurrentFloor == floor && (world == null || world.CurrentLevel == level), "Death never advances or resets the current floor");
+            Check(progression.CurrentFloor == floor && (world == null || world.CurrentLevel != level), "Death rebuilds the current floor without advancing progression");
             if (world != null)
             {
+                level = world.CurrentLevel;
                 var lift = world.ArrivalCheckpoint;
                 if (lift == null || lift.Level != level) lift = level.GetComponentInChildren<LevelElevator>();
                 Check(lift != null && lift.Contains(p.transform.position), "Player awakens inside this floor's elevator");

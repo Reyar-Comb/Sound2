@@ -54,6 +54,7 @@ public sealed class PlayerFloorProgression : MonoBehaviour
     {
         if (respawn != null || !isActiveAndEnabled) return;
         controller.DeathSequenceLocked = true;
+        GetComponent<PlayerPickup>()?.ClearForRespawn();
         damageFeedback?.BeginDeath();
         respawn = StartCoroutine(Respawn());
     }
@@ -80,6 +81,8 @@ public sealed class PlayerFloorProgression : MonoBehaviour
         }
         // Finish an in-flight level transaction before resolving this floor's checkpoint.
         while (World != null && World.Travelling) yield return null;
+        if (World != null) yield return World.ResetCurrentLevel();
+        else if (Map != null) Map.ResetFloor(CurrentFloor);
         ReturnToCheckpoint();
         if (damageFeedback != null)
         {

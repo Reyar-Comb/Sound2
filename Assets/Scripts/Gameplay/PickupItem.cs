@@ -288,7 +288,7 @@ public sealed class PickupItem : InteractableObject
         if (field == null) field = FindAnyObjectByType<SonarPulseField>();
         if (field != null && sonar != null)
             field.EmitFrom(point + normal * .04f, breakPulseRange, sonar.waveSpeed, sonar.afterglow,
-                sonar.pulseKind, sonar.distanceSettings, sonar.densitySettings);
+                sonar.pulseKind, sonar.distanceSettings, sonar.densitySettings, SpawnedRemains.transform);
         GameplayNoise.Emit(point, breakHearingRange, GameplayNoiseKind.Impact, this);
         if (breakClip != null)
         {

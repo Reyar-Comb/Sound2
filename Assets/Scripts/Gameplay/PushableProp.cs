@@ -180,7 +180,7 @@ public sealed class PushableProp : MonoBehaviour
             double now = AudioSettings.dspTime;
             if (!movingOnGround || now < nextWaveAttempt) return;
             nextWaveAttempt = now + .35;
-            movementWave = AudioReactiveSonarField.GetOrCreate().StartMovingLoop(origin, movementAnalysis, movementVisual, movementDspStart);
+            movementWave = AudioReactiveSonarField.GetOrCreate().StartMovingLoop(origin, movementAnalysis, movementVisual, movementDspStart, transform);
             waveAnalysis = movementAnalysis;
             if (movementWave == null) return;
         }

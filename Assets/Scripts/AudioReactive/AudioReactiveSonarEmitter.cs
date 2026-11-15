@@ -53,7 +53,7 @@ public sealed class AudioReactiveSonarEmitter : MonoBehaviour
         if (!Application.isPlaying || !isActiveAndEnabled || AudioSettings.dspTime < nextTrigger || strength <= 0 || !Preload()) return false;
         if (field == null || !field.isActiveAndEnabled) field = AudioReactiveSonarField.GetOrCreate();
         if (loop && IsLoopPlaying) playback.Stop();
-        if (!field.Emit(position, analysis, visual, AudioPool, volume, strength, loop, out playback, gold)) return false;
+        if (!field.Emit(position, analysis, visual, AudioPool, volume, strength, loop, out playback, gold, transform)) return false;
         pendingAutoStart = false; nextTrigger = AudioSettings.dspTime + Mathf.Max(0, cooldown); Triggers++; return true;
     }
     void OnCollisionEnter(Collision collision)

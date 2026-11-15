@@ -46,7 +46,7 @@ public static class VerifySoundShell
             Check(Vector3.Distance(pos,p.transform.position)<.001f&&Quaternion.Angle(rotation,p.ViewTransform.rotation)<.01f,"WASD and mouse cannot move the title view");
             InputSystem.QueueStateEvent(keyboard,new KeyboardState());InputSystem.QueueStateEvent(mouse,new MouseState());
             await Until(()=>menu.IntroReady);
-            Check(menu.GetComponentsInChildren<TMPro.TMP_Text>(true).Any(t=>t.text=="SOUND & SHELL"),"SOUND & SHELL is fully displayed in the existing font");
+            Check(menu.GetComponentsInChildren<TMPro.TMP_Text>(true).Any(t=>t.GetParsedText()=="SOUND & SHELL"),"SOUND & SHELL is fully displayed with its title symbol styling");
             await Capture("title");
             InputSystem.QueueStateEvent(mouse,new MouseState().WithButton(MouseButton.Left));await Task.Delay(70);
             InputSystem.QueueStateEvent(mouse,new MouseState());await Until(()=>menu.HasStarted);

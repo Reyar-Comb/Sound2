@@ -134,7 +134,7 @@ public sealed class FootstepEmitter : MonoBehaviour
     {
         if (pulseField == null) pulseField = GetComponentInChildren<SonarPulseField>();
         if (pulseField != null)
-            pulseField.EmitFootstepFrom(LastOrigin, range * multiplier, waveSpeed, afterglow, settings);
+            pulseField.EmitFootstepFrom(LastOrigin, range * multiplier, waveSpeed, afterglow, settings, transform);
     }
 
     void EmitLanding(float impactSpeed)

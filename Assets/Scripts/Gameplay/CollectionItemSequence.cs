@@ -125,7 +125,7 @@ public sealed class CollectionItemSequence : MonoBehaviour
 
         var sonar = player.GetComponentInChildren<SphericalSonar>();
         if (interactionGoldRange > 0 && sonar != null && sonar.PulseField != null)
-            sonar.PulseField.EmitFrom(origin, interactionGoldRange, 10, .45f, SonarPulseKind.Gold, null);
+            sonar.PulseField.EmitFrom(origin, interactionGoldRange, 10, .45f, SonarPulseKind.Gold, null, source: transform);
     }
 
     void LateUpdate()

@@ -149,6 +149,7 @@ namespace Sound2.LevelEditing
         public Material gameplayMaterial;
         [HideInInspector] public GameObject generatedRoot;
         [HideInInspector] public string geometryAsset;
+        public bool IsPreparing { get; internal set; }
 
         void OnEnable() => SetGameplayPresentation(Application.isPlaying);
         void OnDisable() => SetGameplayPresentation(false);

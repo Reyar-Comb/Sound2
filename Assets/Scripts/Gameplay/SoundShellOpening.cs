@@ -42,10 +42,23 @@ public sealed class SoundShellOpening : MonoBehaviour
         black.color = Color.clear;
         card = MakeGraphic<UnityEngine.UI.RawImage>("0 - The Fool", root.transform);
         card.texture = foolCard;
-        // Fit in both axes on narrow displays without distorting the supplied artwork.
-        float h = Mathf.Min(620, (720f * Screen.width / Screen.height - 48) * foolCard.height / foolCard.width);
-        card.rectTransform.sizeDelta = new Vector2(h * foolCard.width / foolCard.height, h);
+        card.rectTransform.anchorMin = card.rectTransform.anchorMax = new Vector2(.5f, .5f);
+        card.rectTransform.pivot = new Vector2(.5f, .5f);
+        card.rectTransform.anchoredPosition = Vector2.zero;
+        FitCard();
         card.gameObject.SetActive(false); canvas.enabled = false;
+    }
+
+    void LateUpdate() => FitCard();
+
+    void FitCard()
+    {
+        if (card == null || card.texture == null) return;
+        // Refit when the window changes size; the rush animation uses uniform scale only.
+        float aspect = (float)card.texture.width / card.texture.height;
+        float availableWidth = 720f * Mathf.Max(1, Screen.width) / Mathf.Max(1, Screen.height);
+        float height = Mathf.Min(620, Mathf.Max(1, availableWidth - 48) / aspect);
+        card.rectTransform.sizeDelta = new Vector2(height * aspect, height);
     }
 
     static T MakeGraphic<T>(string name, Transform parent) where T : UnityEngine.UI.Graphic
@@ -85,6 +98,7 @@ public sealed class SoundShellOpening : MonoBehaviour
         CurrentPhase = Phase.Covering;
         previousSuspended = player.InputSuspended; ownsInput = true;
         player.OpeningSequenceLocked = true; player.SetInputCaptured(false);
+        player.GetComponent<PlayerPickup>()?.ClearForRespawn();
         canvas.enabled = true;
         yield return Animate(.3f, t => black.color = new Color(0,0,0,Mathf.SmoothStep(0,1,t)));
         CurrentPhase = Phase.CardRush;
@@ -109,6 +123,7 @@ public sealed class SoundShellOpening : MonoBehaviour
         CurrentPhase = Phase.Returning;
         yield return Animate(.25f, t => card.color = new Color(1,1,1,1-t));
         card.gameObject.SetActive(false);
+        yield return world.ResetCurrentLevel();
         player.Teleport(spawn.position); player.FaceDirection(spawn.forward);
         player.GetComponent<PlayerFloorProgression>()?.ResetTraversalSample();
         Physics.SyncTransforms();
