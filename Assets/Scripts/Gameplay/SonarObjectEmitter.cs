@@ -111,11 +111,13 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     public void EmitNow() => EmitWithRange(range);
 
     /// <summary>Emit one pulse with a range override; preserve the authored base range for later emissions.</summary>
-    public bool EmitWithRange(float pulseRange) => EmitWithRange(pulseRange, null, false);
+    public bool EmitWithRange(float pulseRange) => EmitWithRange(pulseRange, null, false, 1);
 
-    public bool EmitWithClip(float pulseRange, AudioClip clip) => EmitWithRange(pulseRange, clip, true);
+    public bool EmitWithClip(float pulseRange, AudioClip clip) => EmitWithClip(pulseRange, clip, 1);
 
-    bool EmitWithRange(float pulseRange, AudioClip clip, bool overrideClip)
+    public bool EmitWithClip(float pulseRange, AudioClip clip, float clipVolume) => EmitWithRange(pulseRange, clip, true, clipVolume);
+
+    bool EmitWithRange(float pulseRange, AudioClip clip, bool overrideClip, float clipVolume)
     {
         if (!Application.isPlaying || !isActiveAndEnabled) return false;
         Initialize();
@@ -129,7 +131,7 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
         if (playSound)
         {
             if (!overrideClip) cue.Play();
-            else if (clip != null) emitter.PlayOneShot(clip);
+            else if (clip != null) emitter.PlayOneShot(clip, clipVolume);
         }
         LastOrigin = origin;
         LastEmissionRange = pulseRange;

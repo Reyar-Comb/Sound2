@@ -2,6 +2,7 @@
 #define AUDIO_SONAR_CAPACITY 4
 float _AudioSonarActive;
 float4 _AudioSonarOrigins[AUDIO_SONAR_CAPACITY], _AudioSonarParameters[AUDIO_SONAR_CAPACITY];
+float4 _AudioSonarBlockerOrigins[AUDIO_SONAR_CAPACITY];
 float4 _AudioSonarLevels[AUDIO_SONAR_CAPACITY], _AudioSonarData[AUDIO_SONAR_CAPACITY];
 float4 _AudioSonarFalloffs[AUDIO_SONAR_CAPACITY], _AudioSonarDensities[AUDIO_SONAR_CAPACITY];
 TEXTURE2D_ARRAY(_AudioSonarAnalysis);
@@ -61,13 +62,14 @@ float2 AudioReactiveVisibility(float3 positionWS,float3 normalWS,float orderedRa
         float reveal=AudioSonarTrail(slot,age,settings.z);
         reveal*=distanceGain;
         if(reveal<.0001)continue;
-        float3 magnitude=abs(delta);int face;float2 uv;
-        if(magnitude.x>=magnitude.y && magnitude.x>=magnitude.z){face=delta.x>=0?0:1;uv=delta.zy/magnitude.x;}
-        else if(magnitude.y>=magnitude.z){face=delta.y>=0?2:3;uv=delta.xz/magnitude.y;}
-        else{face=delta.z>=0?4:5;uv=delta.xy/magnitude.z;}
+        float3 blockerDelta=positionWS-_AudioSonarBlockerOrigins[slot].xyz;
+        float3 magnitude=max(abs(blockerDelta),.0001);int face;float2 uv;
+        if(magnitude.x>=magnitude.y && magnitude.x>=magnitude.z){face=blockerDelta.x>=0?0:1;uv=blockerDelta.zy/magnitude.x;}
+        else if(magnitude.y>=magnitude.z){face=blockerDelta.y>=0?2:3;uv=blockerDelta.xz/magnitude.y;}
+        else{face=blockerDelta.z>=0?4:5;uv=blockerDelta.xy/magnitude.z;}
         int2 cell=clamp((int2)((uv*.5+.5)*48),0,47);
         float4 plane=LOAD_TEXTURE2D_ARRAY(_AudioSonarBlockers,cell,slot*6+face);
-        if(dot(plane.xyz,plane.xyz)>.5 && dot(plane.xyz,delta)<plane.w-.06)continue;
+        if(dot(plane.xyz,plane.xyz)>.5 && dot(plane.xyz,blockerDelta)<plane.w-.06)continue;
         float referenceRange=max(.001,min(_RevealDistance,_DistanceBands.w));
         float density=FaceDensityAt(positionWS,normalWS,_AudioSonarOrigins[slot].xyz,max(.001,reach/referenceRange),true)
             *saturate(_FaceDensityScale)*densityGain;

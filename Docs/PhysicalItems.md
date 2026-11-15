@@ -87,15 +87,17 @@ PlayerPickup 的持物惯性由四元数指数追随和 SmoothDamp 位置平滑�
 | 最大推力 | 140N | 75N |
 | 停止阻力系数 | 3 | 7 |
 | 动/静摩擦 | 0.08 | 0.25 |
-| 移动声间隔 | 0.35s | 0.5s |
+| 移动声波和听觉事件间隔 | 0.35s | 0.5s |
 | 移动声波范围 | 5m | 4m |
 | 怪物听觉基础范围 | 12m | 9m |
 
-`PushableProp` 根据实际地面位移发出滚动/拖擦事件：速度至少 0.12m/s，累计移动至少 0.06m，并受上述时间间隔限制。停止、静止顶墙、悬空下落和瞬移均不会产生移动声。移动声使用原有 `SonarObjectEmitter` / `SonarPulseField`，同时发布 `GameplayNoiseKind.Movement`；怪物继续沿用距离、隔墙衰减和声音优先级规则，前往物体实际声源位置。视觉发声组件不可用时，AI 听觉仍独立生效。
+`PushableProp` 根据实际地面位移发出声波和听觉事件。速度至少 0.12m/s，累计移动至少 0.06m，并受上述时间间隔限制。静止顶墙、悬空下落和瞬移均不会触发移动反馈。移动声波使用原有 `SonarObjectEmitter` 和 `SonarPulseField`，同时发布 `GameplayNoiseKind.Movement`。视觉发声组件不可用时，AI 听觉仍独立生效。
+
+购物车的 `PushableProp` 已打开「循环播放移动录音」并绑定 `Assets/Audio/Experiments/ShoppingCartRoll.asset`。给该资源指定可无缝循环的轮声，再点 **Bake peak envelope**。购物车实际贴地移动时开始播放并生成跟车移动的连续声波，松手后仍在滑行时会继续，速度低于门槛后默认在 0.12 秒内淡出。完成烘焙后，滚动用连续声波，怪物听觉事件仍按原间隔发送。移动音量、淡入淡出时间、3D 距离衰减、混响和声波参数在同一组件上调节。垃圾桶继续沿用随移动声波触发的单次拖擦声。
 
 撞墙和落地复用 `CollisionSonarEmitter`，最低法向碰撞速度 0.6m/s，间隔 0.25s；基础声波 6m，每增加 1m/s 扩展 2m，最多 14m；基础听觉范围 16m，随碰撞强度比例扩展。玩家身体碰撞仍不重复触发撞击声，两个物体均关闭自动计时与快捷键发波。
 
-滚动/拖擦录音绑定 `PushableProp.Movement Clip`；撞击录音绑定 `SonarCueSource.Clip`，两者互不替代。目前未提供对应录音，槽位留空，不合成占位音；声波与怪物听觉不依赖录音。录音通过现有 `SpatialAudioEmitter` 播放，沿用空间定位与距离衰减。
+滚动或拖擦录音绑定 `PushableProp.Movement Clip`。撞击录音和音量在 `CollisionSonarEmitter` 上设置，录音槽为空时沿用 `SonarCueSource`。现有未配置录音的推挤道具仍会发出声波与怪物听觉事件。录音通过 `SpatialAudioEmitter` 播放，沿用空间定位与距离衰减。
 
 `AgentScripts/ConfigurePushableProps.cs` 配置两个原有预制体并保留 GUID，已放置的正常 Prefab 实例会继承组件。`AgentScripts/VerifyPushableProps.cs` 在 Play Mode 通过虚拟键盘驱动真实 PlayerController，验证推动、静止/停下/顶墙静音、速度与碰撞限制、落地、近远怪物听觉、缺失视觉发声时的听觉、原有道具隔离和录音输出。报告位于 `Logs/PushableProps/play.txt`。
 
@@ -142,13 +144,13 @@ PickupItem 新增可选的 Breakage 配置，原有球默认关闭：
 | Fragment Separation Speed | 碎片附加的轻微分离速度，默认 0.35m/s |
 | Fragment Lifetime | 碎片保留秒数；0 表示随场景/楼层卸载，不自动清理 |
 | Break Pulse Range / Break Hearing Range | 一次性破碎声波与怪物听觉范围，默认 10m / 16m |
-| Break Clip | 可选破碎录音，当前留空 |
+| Break Clip / 粉碎音量 | 可选粉碎录音及播放音量 |
 
 破坏速度复用 CollisionSonarEmitter 的接触法线计算，不以刚体总速度代替。低速落地与高速擦墙不会因总速度较大而误碎。碰撞发声和 PickupItem 共用幂等破坏入口，破坏时只发一次破碎声波，不再叠加普通碰撞声波。
 
 `AlarmClockBroken.prefab` 包含 13 个独立物理零件，包括外壳、表盘、四段外圈、两根指针、两只铃、两只脚和按钮；指针碎片继承打碎瞬间的位置与角度。`CoffeeMugBroken.prefab` 复用原杯子的 33 个预切碎片：24 块杯壁、6 块杯底、3 段把手。高脚杯使用 `WineGlassBroken.prefab`，包含 49 个杯碗、细柄和底座碎片。碎片继承打碎时的运动并参与物理碰撞，不包含 PickupItem、InteractableObject、TickingClock 或重复发声组件，因此不能拾取，也不会在落地时连续发波。
 
-闹钟上的独立 `PickupAlarm` 组件监听成功拾取事件：首次拿起后开始倒计时，默认 `Delay After Pickup = 5` 秒。放下、扔出和再次拾取都不重置倒计时。到时暂停 TickingClock，按 `Ring Interval = 0.2` 秒快速发波；默认 `Ring Range = 12m`、`Hearing Range = 16m`。菜单暂停玩法时同步暂停倒计时。`Alarm Clip` 是快速响铃录音，普通 tick 录音仍在 SonarCueSource.Clip；两者及破碎录音目前全部留空，Generate Default Ping 关闭，无合成音兜底。
+闹钟上的 `PickupAlarm` 在首次拿起后开始倒计时，默认 `Delay After Pickup = 5` 秒。放下、扔出和再次拾取都不重置倒计时。到时暂停 `TickingClock`，按 `Ring Interval = 0.2` 秒快速发波，默认 `Ring Range = 12m`、`Hearing Range = 16m`。菜单暂停玩法时同步暂停倒计时。`Alarm Clip` 是快速响铃录音。普通滴答使用 `TickingClock` 的「滴答录音列表」，每次选中顺序中的下一条有效录音，每条音量独立。列表为空时仍使用原有 `SonarCueSource`。
 
 打碎会停止全部闹钟音频并销毁完整物体，倒计时和快速响铃随之终止。已经发出的视觉波按原有余辉自然结束。手持物体在玩家层级停用时，会在层级切换完成后安全释放；退出 Play 时不尝试在正在关闭的层级内重设父节点。
 

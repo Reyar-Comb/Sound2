@@ -1711,6 +1711,8 @@ MonoBehaviour:
   rangePerSpeed: 2
   maximumRange: 36
   hearingRange: 20
+  impactClip: {fileID: 8300000, guid: 2a6f6dc7e1af8db4c99b8f2533051d0e, type: 3}
+  impactVolume: 1
 --- !u!114 &6631396214576385155
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1745,7 +1747,8 @@ MonoBehaviour:
   fragmentLifetime: 0
   breakPulseRange: 10
   breakHearingRange: 16
-  breakClip: {fileID: 0}
+  breakClip: {fileID: 8300000, guid: b082010dba1b0f346bdd03a4fc8d5824, type: 3}
+  breakVolume: 1
 --- !u!114 &2195147230276266304
 MonoBehaviour:
   m_ObjectHideFlags: 0

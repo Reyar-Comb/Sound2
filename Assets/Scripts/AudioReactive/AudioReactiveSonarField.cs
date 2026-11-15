@@ -1,7 +1,7 @@
 using Unity.Profiling;
 using UnityEngine;
 
-/// <summary>Four independent audio-wave slots. A clip uses one occlusion snapshot, never one snapshot per analysis frame.</summary>
+/// <summary>Four independent audio-wave slots with cached source-to-surface occlusion.</summary>
 [DefaultExecutionOrder(200), DisallowMultipleComponent]
 public sealed class AudioReactiveSonarField : MonoBehaviour
 {
@@ -9,22 +9,42 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
     static AudioReactiveSonarField instance;
     static readonly ProfilerMarker triggerMarker = new ProfilerMarker("AudioSonar.Trigger");
     static readonly ProfilerMarker updateMarker = new ProfilerMarker("AudioSonar.Update");
+
+    public sealed class MovingLoop
+    {
+        internal MovingLoop() { }
+        internal Vector3 position;
+        internal float gain;
+        internal double start;
+        public bool IsActive { get; internal set; } = true;
+        public void Update(Vector3 origin, float envelope) { position = origin; gain = Mathf.Clamp01(envelope); }
+        public void Stop() => IsActive = false;
+    }
+
     sealed class Voice
     {
         public ImpactSoundPool.Playback playback;
+        public MovingLoop moving;
         public AudioReactiveVisualSettings settings;
         public float range, speed, glow, duration;
-        public Vector3 position;
+        public Vector3 position, blockerOrigin;
+        public float occlusionRange;
+        public bool highQuality;
+        public double nextOcclusion;
         public Vector4 parameters, data, falloff, density;
-        public double End => playback.ContentEndDspTime + range / speed + glow;
+        public double Start => moving != null ? moving.start : playback.ContentDspTime;
+        public double ContentEnd => moving != null
+            ? (moving.IsActive ? double.PositiveInfinity : double.NegativeInfinity) : playback.ContentEndDspTime;
+        public double End => ContentEnd + range / speed + glow;
     }
     readonly Voice[] voices = new Voice[Capacity];
-    readonly Vector4[] origins = new Vector4[Capacity], parameters = new Vector4[Capacity], levels = new Vector4[Capacity],
+    readonly Vector4[] origins = new Vector4[Capacity], blockerOrigins = new Vector4[Capacity], parameters = new Vector4[Capacity], levels = new Vector4[Capacity],
         data = new Vector4[Capacity], falloffs = new Vector4[Capacity], densities = new Vector4[Capacity];
     readonly float[] pixels = new float[AudioReactiveClip.TextureWidth];
     Texture2DArray analysis, blockers;
     Texture2D upload;
     SonarPulseField sampler;
+    int nextMovingSlot;
     public int ActiveSourceCount { get; private set; }
     public int Emissions { get; private set; }
     public int OcclusionCaptures { get; private set; }
@@ -60,13 +80,37 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
     public bool Emit(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, ImpactSoundPool pool, float volume, float strength, bool looping, out ImpactSoundPool.Playback playback)
     {
         playback = null;
-        if (!Application.isPlaying || !isActiveAndEnabled || clip == null || !clip.IsReady || settings == null
-            || pool == null || !pool.isActiveAndEnabled || pool.clip != clip.clip || strength <= 0) return false;
+        if (!Application.isPlaying || !isActiveAndEnabled || clip == null || !clip.IsReady || settings == null || strength <= 0
+            || pool == null || !pool.isActiveAndEnabled || pool.clip != clip.clip || !pool.Preload(looping)) return false;
         using var scope = triggerMarker.Auto();
+        if (!TryPrepareVoice(position, clip, settings, strength, looping, out int slot, out var voice)) return false;
+        bool played = looping ? pool.PlayLoopAt(position, volume, out playback) : pool.PlayAt(position, volume, out playback);
+        if (!played) { voices[slot] = null; Refresh(); return false; }
+        voice.playback = playback;
+        PublishVoice(slot, voice);
+        return true;
+    }
+
+    public MovingLoop StartMovingLoop(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, double dspStart)
+    {
+        using var scope = triggerMarker.Auto();
+        if (!TryPrepareVoice(position, clip, settings, 1, true, out int slot, out var voice)) return null;
+        voice.moving = new MovingLoop { position = position, start = dspStart };
+        voice.nextOcclusion = AudioSettings.dspTime + .25;
+        PublishVoice(slot, voice);
+        return voice.moving;
+    }
+
+    bool TryPrepareVoice(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, float strength, bool looping,
+        out int slot, out Voice voice)
+    {
+        slot = -1;
+        voice = null;
+        if (!Application.isPlaying || !isActiveAndEnabled || clip == null || !clip.IsReady || settings == null || strength <= 0) return false;
         if (sampler == null || !sampler.isActiveAndEnabled) sampler = FindAnyObjectByType<SonarPulseField>();
-        if (sampler == null || !sampler.isActiveAndEnabled || !pool.Preload(looping)) return false;
+        if (sampler == null || !sampler.isActiveAndEnabled) return false;
         EnsureResources(); double now = AudioSettings.dspTime;
-        int slot = -1; double earliest = double.PositiveInfinity;
+        double earliest = double.PositiveInfinity;
         for (int i = 0; i < Capacity; i++)
         {
             if (voices[i] == null || voices[i].End <= now) { slot = i; break; }
@@ -78,23 +122,59 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         Vector4 density = settings.density != null ? settings.density.Pack(range) : Vector4.zero;
         float effective = falloff.z > 0 ? Mathf.Min(range, falloff.y) : range;
         if (density.w > .5f) effective = Mathf.Min(effective, density.y);
-        if (!sampler.CaptureBlockingPlanes(position, effective, blockers, slot * 6, settings.highQualityOcclusion)) return false;
-        OcclusionCaptures++; LastRayCount = settings.highQualityOcclusion ? 13824 : 3456;
+        if (!CaptureOcclusion(slot, position, effective, settings.highQualityOcclusion)) return false;
         clip.PackTexture(pixels); upload.SetPixelData(pixels, 0); upload.Apply(false);
         Graphics.CopyTexture(upload, 0, 0, analysis, slot, 0);
-        bool played = looping ? pool.PlayLoopAt(position, volume, out playback) : pool.PlayAt(position, volume, out playback);
-        if (!played) { voices[slot] = null; Refresh(); return false; }
-        if (voices[slot] != null && voices[slot].End > now) Replacements++;
         falloff.w *= Mathf.Max(0, strength);
-        voices[slot] = new Voice {
-            playback = playback, settings = settings, position = position, range = range, speed = speed, duration = clip.Duration,
+        voice = new Voice {
+            settings = settings, position = position, blockerOrigin = position, range = range, speed = speed, duration = clip.Duration,
+            occlusionRange = effective, highQuality = settings.highQualityOcclusion,
             glow = Mathf.Clamp(settings.afterglow, 0, 2),
             parameters = new Vector4(range, speed, Mathf.Clamp(settings.afterglow, 0, 2), 1),
             data = new Vector4(clip.FrameCount, clip.FrameRate, clip.Duration, looping ? clip.Duration : 0), falloff = falloff, density = density
         };
-        Emissions++; Refresh(); return true;
+        return true;
     }
-    void LateUpdate() => Refresh();
+
+    bool CaptureOcclusion(int slot, Vector3 position, float range, bool highQuality)
+    {
+        if (!sampler.CaptureBlockingPlanes(position, range, blockers, slot * 6, highQuality)) return false;
+        OcclusionCaptures++;
+        LastRayCount = highQuality ? 13824 : 3456;
+        return true;
+    }
+
+    void PublishVoice(int slot, Voice voice)
+    {
+        if (voices[slot] != null && voices[slot].End > AudioSettings.dspTime) Replacements++;
+        voices[slot] = voice;
+        Emissions++;
+        Refresh();
+    }
+
+    void LateUpdate()
+    {
+        if (sampler != null && sampler.isActiveAndEnabled) RefreshMovingOcclusion(AudioSettings.dspTime);
+        Refresh();
+    }
+
+    void RefreshMovingOcclusion(double now)
+    {
+        // At most one moving occlusion refresh per frame across all active carts.
+        for (int offset = 0; offset < Capacity; offset++)
+        {
+            int slot = (nextMovingSlot + offset) % Capacity;
+            var voice = voices[slot];
+            if (voice?.moving == null || !voice.moving.IsActive || voice.moving.gain <= 0 || now < voice.nextOcclusion
+                || (voice.moving.position - voice.blockerOrigin).sqrMagnitude < .75f * .75f) continue;
+            voice.nextOcclusion = now + .25;
+            if (CaptureOcclusion(slot, voice.moving.position, voice.occlusionRange, voice.highQuality))
+                voice.blockerOrigin = voice.moving.position;
+            nextMovingSlot = (slot + 1) % Capacity;
+            return;
+        }
+    }
+
     public void Refresh()
     {
         if (!isActiveAndEnabled || instance != this) return;
@@ -104,17 +184,20 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         {
             var voice = voices[i];
             if (voice == null || now > voice.End) { voices[i] = null; parameters[i] = Vector4.zero; continue; }
-            active++; var p = voice.position;
-            origins[i] = new Vector4(p.x, p.y, p.z, (float)(now - voice.playback.ContentDspTime));
+            active++; var p = voice.moving != null ? voice.moving.position : voice.position;
+            origins[i] = new Vector4(p.x, p.y, p.z, (float)(now - voice.Start));
+            blockerOrigins[i] = voice.blockerOrigin;
             parameters[i] = voice.parameters; levels[i] = voice.settings.PackPeakLevels(); data[i] = voice.data;
-            data[i].z = voice.data.w > 0 ? Mathf.Min(1e20f, (float)(voice.playback.ContentEndDspTime - voice.playback.ContentDspTime))
-                : Mathf.Min(voice.duration, (float)(voice.playback.ContentEndDspTime - voice.playback.ContentDspTime));
+            data[i].z = voice.data.w > 0 ? Mathf.Min(1e20f, (float)(voice.ContentEnd - voice.Start))
+                : Mathf.Min(voice.duration, (float)(voice.ContentEnd - voice.Start));
             falloffs[i] = voice.falloff; densities[i] = voice.density;
+            if (voice.moving != null) falloffs[i].w *= voice.moving.gain;
         }
         ActiveSourceCount = active;
         Shader.SetGlobalFloat("_AudioSonarActive", active > 0 ? 1 : 0);
         if (active == 0) return;
         Shader.SetGlobalVectorArray("_AudioSonarOrigins", origins);
+        Shader.SetGlobalVectorArray("_AudioSonarBlockerOrigins", blockerOrigins);
         Shader.SetGlobalVectorArray("_AudioSonarParameters", parameters);
         Shader.SetGlobalVectorArray("_AudioSonarLevels", levels);
         Shader.SetGlobalVectorArray("_AudioSonarData", data);
@@ -123,7 +206,7 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
     }
     public void ClearVisuals()
     {
-        for (int i = 0; i < Capacity; i++) voices[i] = null;
+        for (int i = 0; i < Capacity; i++) { voices[i]?.moving?.Stop(); voices[i] = null; }
         ActiveSourceCount = 0;
         if (instance == this) Shader.SetGlobalFloat("_AudioSonarActive", 0);
     }

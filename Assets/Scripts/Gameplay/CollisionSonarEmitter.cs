@@ -22,12 +22,21 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
     [Tooltip("Audible range at the base impact range; louder impacts scale this proportionally.")]
     [Min(0)] public float hearingRange = 20;
 
+    [Header("普通撞击声")]
+    [InspectorName("撞击录音"), Tooltip("留空时使用原有 SonarCueSource。粉碎录音在 PickupItem 上配置。")]
+    public AudioClip impactClip;
+    [InspectorName("撞击音量"), Range(0, 1), Tooltip("乘以 SonarObjectEmitter 的 Volume。")]
+    public float impactVolume = 1;
+    [InspectorName("落地音效冷却"), Min(0), Tooltip("首次落地后只抑制后续地面接触的撞击声音（秒）。0 关闭。")]
+    public float landingAudioCooldown = .4f;
+
     public int Emissions { get; private set; }
     public float LastImpactSpeed { get; private set; }
     public float LastEmissionRange { get; private set; }
 
     SonarObjectEmitter sonar;
     float nextEmission;
+    float nextLandingAudio;
 
     void Reset()
     {
@@ -59,7 +68,7 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
     {
         // Unity can send collision messages to disabled behaviours too.
         if (!isActiveAndEnabled || sonar == null || collision.contactCount == 0) return;
-        float impactSpeed = ImpactSpeed(collision);
+        float impactSpeed = ImpactSpeed(collision, out var impactNormal);
         if (TryGetComponent<PickupItem>(out var pickup) && pickup.TryBreak(collision, impactSpeed)) return;
         if (Time.time < nextEmission
             || (collisionLayers.value & (1 << collision.collider.gameObject.layer)) == 0) return;
@@ -69,7 +78,7 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
         if (impactSpeed < minimumImpactSpeed) return;
 
         float pulseRange = RangeForImpact(impactSpeed);
-        sonar.EmitWithRange(pulseRange);
+        EmitImpact(pulseRange, impactNormal);
         // AI hearing is a gameplay event, not contingent on a renderer or audio source being ready.
         GameplayNoise.Emit(collision.GetContact(0).point, hearingRange * pulseRange / Mathf.Max(1, sonar.range),
             GameplayNoiseKind.Impact, this);
@@ -79,11 +88,35 @@ public sealed class CollisionSonarEmitter : MonoBehaviour
         Emissions++;
     }
 
-    public static float ImpactSpeed(Collision collision)
+    void EmitImpact(float pulseRange, Vector3 impactNormal)
     {
+        // Use the strongest contact so a glancing floor contact does not mute a wall hit.
+        bool landing = landingAudioCooldown > 0 && Vector3.Dot(impactNormal, Vector3.up) >= .65f;
+        if (landing && Time.time < nextLandingAudio)
+        {
+            sonar.EmitWithClip(pulseRange, null);
+            return;
+        }
+
+        bool emitted = impactClip != null ? sonar.EmitWithClip(pulseRange, impactClip, impactVolume) : sonar.EmitWithRange(pulseRange);
+        if (landing && emitted && sonar.playSound) nextLandingAudio = Time.time + landingAudioCooldown;
+    }
+
+    public static float ImpactSpeed(Collision collision) => ImpactSpeed(collision, out _);
+
+    static float ImpactSpeed(Collision collision, out Vector3 impactNormal)
+    {
+        impactNormal = Vector3.zero;
         float speed = 0;
+        Vector3 velocity = collision.relativeVelocity;
         for (int i = 0; i < collision.contactCount; i++)
-            speed = Mathf.Max(speed, Mathf.Abs(Vector3.Dot(collision.relativeVelocity, collision.GetContact(i).normal)));
+        {
+            Vector3 normal = collision.GetContact(i).normal;
+            float contactSpeed = Mathf.Abs(Vector3.Dot(velocity, normal));
+            if (contactSpeed <= speed) continue;
+            speed = contactSpeed;
+            impactNormal = normal;
+        }
         return speed;
     }
 }

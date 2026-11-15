@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07ae86a58e5fb1d45be69005c23145b2, type: 3}
+  m_Name: ShoppingCartRoll
+  m_EditorClassIdentifier: Assembly-CSharp::AudioReactiveClip
+  clip: {fileID: 8300000, guid: 4edbe288ae9923f4c9b22670367f3d36, type: 3}
+  analysisRate: 60
+  data: 1d4a667b75808593a0afb5afb3c1c0d3cdcbcdccd5d4d1d7d7d8e3d3d6dfdedcebdddde3e1d6e3e1e1ddece1e9e6e7e2e4e7eadcdfdee5e6e3e3e9e9e9dfe2ded6d3d6ddd7d2d4cbcdccd1c7c3c2c0bfc3c0bbbac3c1bdc7bdc0bcb5b3b3c3c4b2bab7b0b3b3adb6b7b5bcc8c1b2afc9dbcbccc7c9ced5d5ccd3cfd8ccd2d7d5d5c9ced0cfd2d3cdcad6ccced5c5c5cccacbc2c2cbc4c4c5cbbdbec7cec4c3c6ded7d6d4cdcacfd7d1dcdadde3dfdae2e3e6e9e1e2dfe8eae9e4e6e5dbe2d5d8d0ccc7c6c2bec1c0bfc2beb6b4adaea6a6aca8a7a5aaafc2cdbcbcbebbbfbbc4c6cac9c4c2bdcec9d6d4d5d6cfc9d5d7ced5ccc7c5c7d1c9cec8c8cbc6c5c5c5cacaccc1c7cac5c2c9c7bcbcc2c6d9cecec2c4cbdcd5c7c8c5c3c1bec1c8c2ccc7bbbcc4ccc6c5c6c7c4bbc0b3b9c2b2b1b1b9afb2a9a5aaadb0b6b5bab6b9b6c4d5c5c7d1d5d9dbe1d7d6d9d2d7d8d7dadbd9d8dbd5dbdad5cacbc3c5d1c9c4c9c3c6cbcac8c4d5cbc3d5d6c8ced2c8d4cbc2c7c6c5c5d3d2c0bfc2c9cbc1cdbbc0c3c2c4bab5d8c4c2d5d4c0c1b8b7b3b6aca9b3a6a5b7b3bcb1b0a6a49d9b9693979e959fa5a49ea9a9a79e9ea9a9a59fa4abacb9afa09b97928e8f867e7c808a787a8183806e677668606058412e1e00000000000000000000000000000000000000000000y
+  frameCount: 487
+  bakedRate: 60
+  bakedSamples: 357093
+  bakedFrequency: 44100
+  bakedChannels: 2
+  bakedRequestedRate: 60
+  sourceHash: 661e9707904f8fa83137feeec6dc7bba

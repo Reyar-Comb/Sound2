@@ -25,8 +25,10 @@ public sealed class PickupItem : InteractableObject
     [Min(1)] public float breakPulseRange = 10;
     [Min(0)] public float breakHearingRange = 16;
     public AudioClip breakClip;
+    [InspectorName("粉碎音量"), Range(0, 1)] public float breakVolume = 1;
     public event System.Action PickedUp;
     public event System.Action Broken;
+    public event System.Action<GameObject> RemainsSpawned;
     public bool IsBroken { get; private set; }
     public GameObject SpawnedRemains { get; private set; }
 
@@ -285,8 +287,10 @@ public sealed class PickupItem : InteractableObject
         {
             var output = SpawnedRemains.AddComponent<SpatialAudioEmitter>();
             output.settings.maxDistance = breakHearingRange;
+            output.volume = breakVolume;
             output.PlayOneShot(breakClip);
         }
+        RemainsSpawned?.Invoke(SpawnedRemains);
         if (fragmentLifetime > 0) Destroy(SpawnedRemains, fragmentLifetime);
         gameObject.SetActive(false);
         Destroy(gameObject);

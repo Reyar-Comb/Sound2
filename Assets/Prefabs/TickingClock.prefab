@@ -213,6 +213,11 @@ MonoBehaviour:
   running: 1
   initialLongStep: 0
   initialShortStep: 3
+  tickRecordings:
+  - clip: {fileID: 8300000, guid: 9c471a332475631469d4b81606ea3b38, type: 3}
+    volume: 1
+  - clip: {fileID: 8300000, guid: f74633a490444d04c8ae5bca91092919, type: 3}
+    volume: 1
 --- !u!114 &5990298957643923215
 MonoBehaviour:
   m_ObjectHideFlags: 0
