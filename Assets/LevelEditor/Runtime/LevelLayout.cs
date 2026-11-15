@@ -123,7 +123,7 @@ namespace Sound2.LevelEditing
         public Vector2 size = new(2.6f, .8f);
     }
 
-    [DefaultExecutionOrder(-200), DisallowMultipleComponent]
+    [DefaultExecutionOrder(-300), DisallowMultipleComponent]
     public sealed class LevelLayout : MonoBehaviour
     {
         public List<RoomPartition> partitions = new();
@@ -131,6 +131,8 @@ namespace Sound2.LevelEditing
         public List<LevelCorridor> corridors = new List<LevelCorridor>();
         public List<LevelPit> pits = new List<LevelPit>();
         public List<LevelDoorway> doorways = new();
+        [Range(0, 1.8f), Tooltip("本关敌人可跨上的单级台阶高度（米），不是绝对海拔或爬墙高度。")]
+        public float enemyStepHeight = .3f;
         [Min(.1f)] public float wallHeight = 3.2f;
         [Min(.05f)] public float wallThickness = .2f;
         [Min(.05f)] public float floorThickness = .25f;

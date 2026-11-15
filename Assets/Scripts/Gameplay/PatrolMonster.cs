@@ -71,14 +71,18 @@ public sealed class PatrolMonster : MonoBehaviour
         if (navigation == null) navigation = FindAnyObjectByType<RuntimePatrolNavigation>();
         agent.radius = navigation != null ? navigation.agentRadius : .35f;
         agent.height = navigation != null ? navigation.agentHeight : 1.8f;
+        if (navigation != null) agent.agentTypeID = navigation.BuildSettings().agentTypeID;
         agent.stoppingDistance = .25f; agent.acceleration = 5; agent.angularSpeed = 180;
     }
     void Update()
     {
         if (navigation == null || !navigation.Ready) return;
+        // A level can be disabled and enabled again after an elevator trip.
+        if (initialized && !NavigationReady) { initialized = false; hasDestination = false; }
         if (!initialized)
         {
-            if (!NavMesh.SamplePosition(transform.position, out var start, 2, agent.areaMask)) return;
+            var filter = new NavMeshQueryFilter { agentTypeID = agent.agentTypeID, areaMask = agent.areaMask };
+            if (!NavMesh.SamplePosition(transform.position, out var start, 2, filter)) return;
             transform.position = start.position;
             agent.enabled = true;
             if (!agent.Warp(start.position)) return;

@@ -20,7 +20,7 @@ namespace Sound2.LevelEditing.Editor
                 var button = Button(fold, p.name + $" / {Vector2.Distance(p.start, p.end):0.##} m", () => Select(Kind.Partition, index));
                 button.AddToClassList("item"); button.EnableInClassList("selected-item", kind == Kind.Partition && selected == i);
             }
-            Button(fold, "绘制隔板（点击两端）", () => { tool = Tool.Partition; pending.Clear(); selectedProp = null; selected = -1; kind = Kind.None; Refresh(); SceneView.RepaintAll(); });
+            Button(fold, "绘制隔板（点击两端）", () => { tool = Tool.Partition; pending.Clear(); selectedEnemy = null; selectedProp = null; selected = -1; kind = Kind.None; Refresh(); SceneView.RepaintAll(); });
         }
 
         bool DrawFreePartitionProperties(VisualElement area)

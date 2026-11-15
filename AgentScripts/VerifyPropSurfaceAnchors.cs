@@ -66,7 +66,7 @@ public static class VerifyPropSurfaceAnchors
             Box("Floor", new Vector3(0, -.5f, 0), new Vector3(100, 1, 100));
             Box("Wall", new Vector3(0, 10, 20.5f), new Vector3(100, 40, 1));
             var sources = PropCatalog.All();
-            Check(sources.Count == 56 && sources.Count(p => p.GetComponent<EmbeddedDoor>() != null) == 1, "Audit covers 55 ordinary props; embedded door has its dedicated placement path");
+            Check(sources.Count == 60 && sources.Count(p => p.GetComponent<EmbeddedDoor>() != null) == 1, "Audit covers 59 ordinary props; embedded door has its dedicated placement path");
             foreach (var prefab in sources.Where(p => p.GetComponent<EmbeddedDoor>() == null))
             foreach (PropSurface surface in new[] { PropSurface.Floor, PropSurface.Wall })
             {

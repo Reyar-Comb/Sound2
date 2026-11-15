@@ -29,7 +29,7 @@ try {
     Check(blue.Length>0&&blue.All(b=>b.GetComponentInChildren<MonsterAudioEmitter>(true)==null),"Blue lightning actors do not receive the red monster audio controller");
     var areaPrefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/RedVineArea.prefab");
     area=Object.Instantiate(areaPrefab,new Vector3(5000,0,5000),Quaternion.identity);
-    Check(area.GetComponent<MonsterVines>()!=null&&area.GetComponentInChildren<MonsterAudioEmitter>(true)==null,"A static red vine area is not an audio-emitting monster");
+    Check(area.GetComponent<MonsterVines>()!=null&&area.GetComponent<MonsterAudioEmitter>()!=null,"Red vine areas reuse the monster audio controller");
     foreach(var lightning in blue)lightning.enabled=false; // Isolate patrol motion from lightning avoidance during distance checks.
     var agent=actor.GetComponent<NavMeshAgent>();
     var scan=actor.GetComponent<MonsterScanEmitter>();

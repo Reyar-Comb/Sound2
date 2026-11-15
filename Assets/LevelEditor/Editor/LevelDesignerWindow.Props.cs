@@ -170,6 +170,16 @@ namespace Sound2.LevelEditing.Editor
                     ("height", "攀爬高度（米）"), ("growthSources", "每次生长源数量"));
                 DrawPropDimensions(area, instance.GetComponent<MonsterVines>(), "藤蔓生长", ("growthInterval", "生长间隔（秒）"),
                     ("lifetime", "存活时间（秒）"), ("reach", "枝条长度（米）"), ("surfaces", "附着表面层"));
+                var motion = instance.GetComponent<MonsterVineAreaMotion>();
+                if (motion == null)
+                    Button(area, "添加起终点移动", () => { Undo.AddComponent<MonsterVineAreaMotion>(instance); Refresh(); });
+                else
+                {
+                    DrawPropDimensions(area, motion, "藤蔓区移动", ("startPosition", "起点（父物体局部坐标）"),
+                        ("endPosition", "终点（父物体局部坐标）"), ("speed", "速度（米/秒）"), ("pingPong", "往返移动"));
+                    Button(area, "当前位置设为起点", () => { MonsterVineAreaMotionEditor.SetEndpoint(motion, true, instance.transform.position); Refresh(); });
+                    Button(area, "当前位置设为终点", () => { MonsterVineAreaMotionEditor.SetEndpoint(motion, false, instance.transform.position); Refresh(); });
+                }
                 area.Add(new Label("红框为显示范围，运行时隐藏。藤蔓只附着范围内的真实表面，不产生碰撞。") { style = { whiteSpace = WhiteSpace.Normal } });
             }
             area.SetEnabled(!Application.isPlaying);

@@ -42,8 +42,10 @@ public sealed class MonsterVines : MonoBehaviour
         if (area != null)
         {
             if (!area.isActiveAndEnabled) { points.Clear(); return; }
-            if (areaMatrix != transform.localToWorldMatrix || areaSize != area.Size)
-            { ClearTrail(); areaMatrix = transform.localToWorldMatrix; areaSize = area.Size; }
+            // Moving areas keep world-anchored growth until it leaves their bounds.
+            // Clearing on every translation would restart all growth every frame.
+            if (areaSize != area.Size) { ClearTrail(); areaSize = area.Size; }
+            areaMatrix = transform.localToWorldMatrix;
             if (Time.deltaTime <= 0) return;
             points.RemoveAll(p => Time.time - p.born > lifetime || !area.ContainsWorld(p.position));
             if (Time.time < nextGrowth) return;

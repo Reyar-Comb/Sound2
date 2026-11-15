@@ -11,7 +11,7 @@ namespace Sound2.LevelEditing.Editor
 {
     public sealed partial class LevelDesignerWindow : EditorWindow
     {
-        enum Tool { Select, Rectangle, Circle, Line, Curve, Pit, Connect, Prop, RepositionProp, Partition }
+        enum Tool { Select, Rectangle, Circle, Line, Curve, Pit, Connect, Prop, RepositionProp, Partition, Enemy }
         enum Kind { None, Room, Corridor, Pit, Partition }
         [SerializeField] LevelLayout layout;
         [SerializeField] Tool tool;
@@ -43,7 +43,7 @@ namespace Sound2.LevelEditing.Editor
             }
             seededMode = false;
             if (tool == Tool.RepositionProp) tool = Tool.Select;
-            layout = target; selectedProp = null; selected = -1; kind = Kind.None; pending.Clear(); hasError = false;
+            layout = target; selectedProp = null; selectedEnemy = null; selected = -1; kind = Kind.None; pending.Clear(); hasError = false;
             status = layout == null ? "新建布局，或选择已有 LevelLayout。" : $"已载入：{layout.rooms.Count} 房间 · {layout.corridors.Count} 走廊 · {layout.pits.Count} 竖井。";
             Refresh(); Frame();
         }
@@ -85,7 +85,12 @@ namespace Sound2.LevelEditing.Editor
             var target = Selection.activeGameObject.GetComponentInParent<LevelLayout>();
             if (target != null && EditorUtility.IsPersistent(target)) return;
             if (target != null && target != layout) Bind(target);
-            if (target != null) SelectPropFromHierarchy();
+            if (target != null)
+            {
+                var enemy = Selection.activeGameObject.GetComponentInParent<LevelEnemy>();
+                if (enemy != null) { SelectEnemy(enemy); return; }
+                selectedEnemy = null; SelectPropFromHierarchy();
+            }
         }
         void OnUndo() { if (tool == Tool.RepositionProp) tool = Tool.Select; if (layout != null) { TryRebuild(); Refresh(); } }
 
@@ -119,13 +124,14 @@ namespace Sound2.LevelEditing.Editor
                 view.Repaint();
             });
             var tools = rootVisualElement.Q("tools"); tools.Clear();
-            string[] names = { "选择 / 编辑", "矩形房间", "圆柱房间", "直线走廊", "曲线走廊", "方形竖井", "连接端点", "放置道具", "隔板" };
+            string[] names = { "选择 / 编辑", "矩形房间", "圆柱房间", "直线走廊", "曲线走廊", "方形竖井", "连接端点", "放置道具", "隔板", "放置敌人" };
             for (int i = 0; i < names.Length; i++)
             {
-                Tool value = i == 8 ? Tool.Partition : (Tool)i;
+                Tool value = i == 9 ? Tool.Enemy : i == 8 ? Tool.Partition : (Tool)i;
                 var button = Button(tools, names[i], () =>
                 {
-                    tool = value; pending.Clear();
+                    tool = value; pending.Clear(); selectedEnemy = null;
+                    if (value == Tool.Enemy) { selectedProp = null; kind = Kind.None; selected = -1; rootVisualElement.Q<Foldout>("settings-foldout").value = true; }
                     if (value == Tool.Partition) { selectedProp = null; kind = Kind.None; selected = -1; }
                     if (value == Tool.Prop) rootVisualElement.Q<Foldout>("settings-foldout").value = true;
                     Refresh(); SceneView.RepaintAll();
@@ -141,6 +147,7 @@ namespace Sound2.LevelEditing.Editor
                 Tool.Partition => "依次点击隔板起点和终点。隔板可放在任意位置；Esc 取消。选中隔板后拖动中心平移，拖动端点改变长度和方向。",
                 Tool.Pit => "点击地面放置竖井。橙色轮廓是实际开口；管壁必须完整位于关卡内部。",
                 Tool.Prop => "打开道具浏览器，选择预览卡片后在 Scene 点击放置。墙面道具请切到 3D 检查。Esc 退出放置。",
+                Tool.Enemy => "在本关地面点击放置巡逻敌人。导航、巡逻、听声调查、扫描、藤蔓和音效自动配置；Esc 退出。",
                 Tool.RepositionProp => "重新吸附：在 Scene 指向新表面，左键确认移动原道具；Esc 取消。贴墙请切到 3D 检查。",
                 Tool.Rectangle or Tool.Circle => "点击 Scene 放置房间中心，切换选择工具后拖动中心与尺寸手柄。",
                 _ => "点击对象标记选择；拖动控制点调整形状。Ctrl+Z 撤销，Ctrl+Y 重做。"
@@ -163,6 +170,7 @@ namespace Sound2.LevelEditing.Editor
             if (tool == Tool.Connect) Toggle(area, "连接终点（关闭 = 起点）", endConnection, v => endConnection = v);
             Toggle(area, "导出时加入重力玩家", includePlayer, v => includePlayer = v);
             if (layout == null) return;
+            DrawEnemySettings(area);
             var fold = new Foldout { text = "生成设置", value = false }; area.Add(fold);
             Toggle(fold, "露天（不启用顶面）", layout.openSky, v => Change(() => layout.openSky = v));
             Toggle(fold, "保留房间隔墙", layout.architecturalPartitions, v => Change(() => layout.architecturalPartitions = v));
@@ -241,6 +249,7 @@ namespace Sound2.LevelEditing.Editor
             for (int i = 0; i < layout.corridors.Count; i++) Item(Kind.Corridor, i, "↝  " + layout.corridors[i].name + "  /  " + layout.corridors[i].width.ToString("0.##") + " m");
             for (int i = 0; i < layout.pits.Count; i++) Item(Kind.Pit, i, "□  " + layout.pits[i].name);
             DrawPartitionObjects(area);
+            DrawEnemyObjects(area);
             var propRoot = LevelPropPlacement.PropsRoot(layout);
             var props = new Foldout { name = "prop-objects", text = $"道具 ({(propRoot != null ? propRoot.childCount : 0)})", value = propsExpanded };
             props.RegisterValueChangedCallback(e => { if (e.target == props) propsExpanded = e.newValue; });
@@ -251,7 +260,7 @@ namespace Sound2.LevelEditing.Editor
         void DrawProperties()
         {
             var area = rootVisualElement.Q("properties"); area.Clear(); area.SetEnabled(!Application.isPlaying);
-            if (DrawFreePartitionProperties(area) || DrawPropProperties(area)) return;
+            if (DrawEnemyProperties(area) || DrawFreePartitionProperties(area) || DrawPropProperties(area)) return;
             if (layout == null || selected < 0) { area.Add(new Label("选择对象以编辑参数")); return; }
             if (kind == Kind.Room && selected < layout.rooms.Count)
             {
@@ -325,7 +334,7 @@ namespace Sound2.LevelEditing.Editor
             }
         }
 
-        void Select(Kind k, int index) { if (tool == Tool.RepositionProp || tool == Tool.Partition) tool = Tool.Select; selectedProp = null; kind = k; selected = index; Refresh(); SceneView.RepaintAll(); }
+        void Select(Kind k, int index) { if (tool == Tool.RepositionProp || tool == Tool.Partition) tool = Tool.Select; selectedEnemy = null; selectedProp = null; kind = k; selected = index; Refresh(); SceneView.RepaintAll(); }
         void Change(Action action)
         {
             if (layout == null || Application.isPlaying) return;
@@ -437,6 +446,7 @@ namespace Sound2.LevelEditing.Editor
             if (plane.Raycast(ray, out float distance)) hover = Snap(layout.Local(ray.GetPoint(distance)));
             Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
             DrawOutlines();
+            if (EnemySceneGUI(view, ray, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
             if (RingTableSceneGUI(view, ray, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
             if (PartitionSceneGUI(view, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
             if (tool == Tool.Prop || tool == Tool.RepositionProp)

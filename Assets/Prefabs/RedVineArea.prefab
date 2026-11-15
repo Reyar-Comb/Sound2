@@ -333,6 +333,7 @@ GameObject:
   - component: {fileID: 7405659624479284285}
   - component: {fileID: 6150896532018700981}
   - component: {fileID: 5636481542840453207}
+  - component: {fileID: 243051037793136754}
   m_Layer: 0
   m_Name: RedVineArea
   m_TagString: Untagged
@@ -390,6 +391,8 @@ MonoBehaviour:
   depth: 4
   height: 3
   growthSources: 3
+  contactDamageRadius: 0.65
+  contactDamageInterval: 0.5
   previewRoot: {fileID: 8592152906361898123}
   previewEdges:
   - {fileID: 7388440074921995676}
@@ -420,6 +423,20 @@ MonoBehaviour:
   surfaceAnchor: {x: 0, y: 0, z: 0}
   surfaceOffset: 0.01
   gameplayMaterial: {fileID: 0}
+--- !u!114 &243051037793136754
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3897790495892625042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 473696f650a27df4883664355a69b834, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterAudioEmitter
+  profile: {fileID: 11400000, guid: ae696f9f7a5d69e44b90323d61bb98b3, type: 2}
+  listener: {fileID: 0}
 --- !u!1 &3951420864368215172
 GameObject:
   m_ObjectHideFlags: 0

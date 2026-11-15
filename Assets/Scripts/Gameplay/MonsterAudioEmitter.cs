@@ -1,6 +1,6 @@
 using UnityEngine;
 
-/// <summary>Independent audio feedback for a patrol monster. Never emits gameplay noise or sonar waves.</summary>
+/// <summary>Shared audio feedback for patrol monsters and red vine areas. Never emits gameplay noise or sonar waves.</summary>
 [DefaultExecutionOrder(-10), DisallowMultipleComponent]
 public sealed class MonsterAudioEmitter : MonoBehaviour
 {
@@ -12,6 +12,7 @@ public sealed class MonsterAudioEmitter : MonoBehaviour
     public MonsterAudioProfile profile;
     public Transform listener;
     PatrolMonster monster;
+    Sound2.LevelEditing.MonsterVineArea vineArea;
     AudioListener cachedListener;
     Vector3 previousPosition;
     bool moving;
@@ -36,11 +37,12 @@ public sealed class MonsterAudioEmitter : MonoBehaviour
             actor.gameObject.AddComponent<MonsterAudioEmitter>();
     }
 
-    void Awake() => monster = GetComponent<PatrolMonster>();
+    void Awake() { monster = GetComponent<PatrolMonster>(); vineArea = GetComponent<Sound2.LevelEditing.MonsterVineArea>(); }
     void OnEnable() { previousPosition = transform.position; moving = false; }
     void OnDisable() => StopVoices();
     void OnDestroy() { crawl.Destroy(); hum.Destroy(); shout.Destroy(); }
     void StopVoices() { crawl.Stop(); hum.Stop(); shout.Stop(); }
+    public void ResetMotionAudio() { previousPosition = transform.position; moving = false; StopVoices(); }
 
     void LateUpdate()
     {
@@ -48,7 +50,9 @@ public sealed class MonsterAudioEmitter : MonoBehaviour
         previousPosition = position;
         if (AudioListener.pause || Time.deltaTime <= 0) { moving = false; return; }
         var settings = Profile;
-        if (settings == null || monster == null || !monster.isActiveAndEnabled) { StopVoices(); return; }
+        if (monster == null && vineArea == null) { monster = GetComponent<PatrolMonster>(); vineArea = GetComponent<Sound2.LevelEditing.MonsterVineArea>(); }
+        bool active = monster != null ? monster.isActiveAndEnabled : vineArea != null && vineArea.isActiveAndEnabled;
+        if (settings == null || !active) { StopVoices(); return; }
 
         if (listener == null && (cachedListener == null || !cachedListener.isActiveAndEnabled))
             cachedListener = FindAnyObjectByType<AudioListener>();
@@ -57,7 +61,7 @@ public sealed class MonsterAudioEmitter : MonoBehaviour
 
         float dt = Time.deltaTime;
         bool warped = motion.sqrMagnitude > 2 * 2; // Floor transitions / teleports are not a crawl step.
-        motion.y = 0;
+        if (vineArea == null) motion.y = 0;
         float threshold = Mathf.Max(.01f, settings.movementThreshold) * (moving ? .6f : 1) * dt;
         moving = !warped && motion.sqrMagnitude > threshold * threshold;
         float distance = Vector3.Distance(ears.position, transform.TransformPoint(settings.localOrigin));

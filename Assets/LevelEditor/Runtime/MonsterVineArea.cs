@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Sound2.LevelEditing
 {
-    [ExecuteAlways, DisallowMultipleComponent, RequireComponent(typeof(MonsterVines))]
+    [ExecuteAlways, DisallowMultipleComponent, RequireComponent(typeof(MonsterVines), typeof(MonsterAudioEmitter))]
     public sealed class MonsterVineArea : MonoBehaviour
     {
         [Min(.2f), InspectorName("矩形宽度（米）")] public float width = 6;
@@ -37,6 +37,8 @@ namespace Sound2.LevelEditing
         public void ConfigurePreview(Transform root, Transform[] edges) { previewRoot = root; previewEdges = edges; RefreshPreview(); }
         void OnEnable()
         {
+            if (Application.isPlaying && GetComponent<MonsterAudioEmitter>() == null)
+                gameObject.AddComponent<MonsterAudioEmitter>();
             vines = GetComponent<MonsterVines>();
             vines.BindArea(this); nextContactDamage = 0; dirty = true; RefreshPreview();
 #if UNITY_EDITOR
