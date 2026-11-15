@@ -37,7 +37,7 @@ Material:
     - _FaceEnabled: 1
     - _RevealDistance: 3
     - _ScreenDotRadius: 4.125
-    - _ScreenDotSpacing: 5.5
+    - _ScreenDotSpacing: 2
     - _StarBrightness: 0.65
     - _StarChance: 0.2
     - _StarDuration: 10

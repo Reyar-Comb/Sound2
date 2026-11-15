@@ -4750,6 +4750,161 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 6774215493524451135, guid: ee6cf46e234465e4092cb20f7cf54ed5, type: 3}
   m_PrefabInstance: {fileID: 1695626794}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &710386314
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 710386315}
+  - component: {fileID: 710386320}
+  - component: {fileID: 710386319}
+  - component: {fileID: 710386318}
+  - component: {fileID: 710386317}
+  - component: {fileID: 710386316}
+  m_Layer: 0
+  m_Name: Monster
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &710386315
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710386314}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 826807698}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &710386316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710386314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 473696f650a27df4883664355a69b834, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterAudioEmitter
+  profile: {fileID: 11400000, guid: ae696f9f7a5d69e44b90323d61bb98b3, type: 2}
+  listener: {fileID: 0}
+--- !u!114 &710386317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710386314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ecf30cee5299a4ad0933e8b2335d94aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterScanEmitter
+  player: {fileID: 0}
+  pulseField: {fileID: 0}
+  nearDistance: 2
+  farDistance: 16
+  nearInterval: 0.65
+  farInterval: 3.5
+  firstDelay: 0.8
+  localOrigin: {x: 0, y: 1, z: 0}
+  range: 14
+  waveSpeed: 10
+  afterglow: 0.8
+  distanceSettings:
+    enabled: 1
+    fadeStartDistance: 1
+    fadeEndDistance: 14
+    falloffPower: 1
+    pulseStrength: 0.9
+  densitySettings:
+    enabled: 1
+    fadeStartDistance: 6
+    fadeEndDistance: 10
+    falloffPower: 1
+  playSound: 1
+  volume: 0.22
+--- !u!114 &710386318
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710386314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86c0837f13196d64dbc165f8fff98653, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterVines
+  growthInterval: 0.32
+  lifetime: 2.8
+  reach: 2.8
+  surfaces:
+    serializedVersion: 2
+    m_Bits: 4294967291
+--- !u!114 &710386319
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710386314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7f4faf1d5ca7440daaa54cb10ff3dc1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PatrolMonster
+  navigation: {fileID: 1150160669}
+  patrolPoints: []
+  patrolSpeed: 1.1
+  investigateSpeed: 1.8
+  patrolPause: 0.8
+  searchSeconds: 3
+  investigateTimeout: 14
+  lightningSafetyMargin: 0.5
+  evadeRepathInterval: 0.6
+  hearingSensitivity: 1
+  throughWallRangeMultiplier: 0.45
+  hearingObstacles:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  soundPriorityMemory: 1.5
+  contactDamageRadius: 0.65
+  contactDamageInterval: 0.5
+--- !u!195 &710386320
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 710386314}
+  m_Enabled: 0
+  m_AgentTypeID: 0
+  m_Radius: 0.35
+  m_Speed: 3.5
+  m_Acceleration: 5
+  avoidancePriority: 50
+  m_AngularSpeed: 180
+  m_StoppingDistance: 0.25
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 1.8
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1001 &712291571
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5561,6 +5716,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8837317490238564239, guid: ef9bcd93bc9f2be458356ff79fe90d94, type: 3}
   m_PrefabInstance: {fileID: 133188367}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &826807697
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 826807698}
+  - component: {fileID: 826807699}
+  m_Layer: 0
+  m_Name: "\u5DE1\u903B\u654C\u4EBA 1"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &826807698
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 826807697}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -17.499998, y: 0, z: 34.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 710386315}
+  m_Father: {fileID: 1150160668}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &826807699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 826807697}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3f7d45727bca374689c12ffc664b280, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Sound2.LevelEditing.LevelEnemy
+  actor: {fileID: 710386319}
+  patrolRadius: 20
 --- !u!1001 &828666383
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8535,6 +8737,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1150160668}
   - component: {fileID: 1150160667}
+  - component: {fileID: 1150160669}
   m_Layer: 0
   m_Name: Editable Level
   m_TagString: Untagged
@@ -8591,6 +8794,7 @@ MonoBehaviour:
       edge: 0
   pits: []
   doorways: []
+  enemyStepHeight: 0.3
   wallHeight: 2.7
   wallThickness: 0.2
   floorThickness: 0.25
@@ -8619,8 +8823,28 @@ Transform:
   m_Children:
   - {fileID: 1064982294}
   - {fileID: 1708825886}
+  - {fileID: 826807698}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1150160669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1150160666}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b2694185ad0c46a6b32f914b2d81fa6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RuntimePatrolNavigation
+  geometryRoot: {fileID: 1150160668}
+  geometryLayers:
+    serializedVersion: 2
+    m_Bits: 4294967291
+  agentRadius: 0.35
+  agentHeight: 1.8
+  agentClimb: 0.3
 --- !u!1001 &1150212703
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -25123,7 +25123,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8837317490238564239, guid: ef9bcd93bc9f2be458356ff79fe90d94, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.00999999
+      value: -1.24
       objectReference: {fileID: 0}
     - target: {fileID: 8837317490238564239, guid: ef9bcd93bc9f2be458356ff79fe90d94, type: 3}
       propertyPath: m_LocalPosition.z
@@ -37863,6 +37863,7 @@ MonoBehaviour:
       edge: 0
   pits: []
   doorways: []
+  enemyStepHeight: 0.3
   wallHeight: 3.2
   wallThickness: 0.2
   floorThickness: 0.25
@@ -38301,7 +38302,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8837317490238564239, guid: ef9bcd93bc9f2be458356ff79fe90d94, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.00999999
+      value: -1.24
       objectReference: {fileID: 0}
     - target: {fileID: 8837317490238564239, guid: ef9bcd93bc9f2be458356ff79fe90d94, type: 3}
       propertyPath: m_LocalPosition.z
@@ -57565,7 +57566,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2995332533543264252, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.35476112
+      value: 4.854761
       objectReference: {fileID: 0}
     - target: {fileID: 2995332533543264252, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_LocalRotation.w
