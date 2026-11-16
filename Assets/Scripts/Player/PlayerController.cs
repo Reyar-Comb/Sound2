@@ -162,10 +162,8 @@ public sealed class PlayerController : MonoBehaviour
 
     private void Update()
     {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (Keyboard.current?.f9Key.wasPressedThisFrame == true)
+        if (DeveloperMode.Available && Keyboard.current?.f9Key.wasPressedThisFrame == true)
             DeveloperMode.Toggle();
-#endif
         if (InputSuspended || !characterController.enabled) return;
         Vector2 look = lookAction.action.ReadValue<Vector2>();
         yaw = Mathf.Repeat(yaw + look.x, 360f);

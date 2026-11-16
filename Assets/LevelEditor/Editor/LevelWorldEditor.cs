@@ -13,6 +13,11 @@ namespace Sound2.LevelEditing.Editor
         {
             var root=new VisualElement();
             root.Add(new HelpBox("把独立关卡 Prefab 放到本对象下，再配对电梯入口。目的地只保存在此处，单关没有楼层编号或去向要求。",HelpBoxMessageType.Info));
+            root.Add(new Button(() => {
+                var levels = ((LevelWorld)target).GetComponentsInChildren<LevelLayout>(true);
+                var level = levels.FirstOrDefault(l => l.gameObject.activeInHierarchy) ?? levels.FirstOrDefault();
+                EditorWindow.GetWindow<LevelDesignerWindow>("关卡编辑器").Bind(level);
+            }) { text = "打开总场景关卡编辑器" });
             root.Add(new Button(()=>{var world=(LevelWorld)target;Undo.RecordObject(world,"收集独立关卡");world.levels=world.GetComponentsInChildren<LevelLayout>(true).ToList();if(world.startingLevel==null)world.startingLevel=world.levels.FirstOrDefault();EditorUtility.SetDirty(world);serializedObject.Update();}){text="收集子关卡"});
             InspectorElement.FillDefaultInspector(root,serializedObject,this);return root;
         }

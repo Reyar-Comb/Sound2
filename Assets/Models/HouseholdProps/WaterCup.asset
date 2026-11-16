@@ -154,7 +154,7 @@ Mesh:
     m_Center: {x: -0.0000000018626451, y: 0.0000000037252903, z: 9.313226e-10}
     m_Extent: {x: 0.015988154, y: 0.1075, z: 0.022500005}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -333,7 +333,7 @@ Mesh:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.03725, y: 0.0125, z: 0.032475956}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -512,7 +512,7 @@ Mesh:
     m_Center: {x: 0, y: 0.0000000037252903, z: 0.0000000018626451}
     m_Extent: {x: 0.02222114, y: 0.1075, z: 0.022221142}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -691,7 +691,7 @@ Mesh:
     m_Center: {x: -0.0000000037252903, y: 0.0000000037252903, z: 0}
     m_Extent: {x: 0.015988145, y: 0.1075, z: 0.022499997}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -870,7 +870,7 @@ Mesh:
     m_Center: {x: 0, y: 0.0000000037252903, z: 0}
     m_Extent: {x: 0.0225, y: 0.1075, z: 0.015988149}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -1049,7 +1049,7 @@ Mesh:
     m_Center: {x: -0.0000000018626451, y: 0.0000000037252903, z: 0}
     m_Extent: {x: 0.01598815, y: 0.1075, z: 0.0225}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -1228,7 +1228,7 @@ Mesh:
     m_Center: {x: 0.0000000018626451, y: 0.0000000037252903, z: 0}
     m_Extent: {x: 0.01598815, y: 0.1075, z: 0.022500006}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -1407,7 +1407,7 @@ Mesh:
     m_Center: {x: 9.313226e-10, y: 0.0000000037252903, z: 0}
     m_Extent: {x: 0.022499997, y: 0.1075, z: 0.015988149}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -1586,7 +1586,7 @@ Mesh:
     m_Center: {x: 0.0000000018626451, y: 0.0000000037252903, z: -0.0000000018626451}
     m_Extent: {x: 0.022221142, y: 0.1075, z: 0.022221142}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -1765,7 +1765,7 @@ Mesh:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.0375, y: 0.0125, z: 0.03706699}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -1944,7 +1944,7 @@ Mesh:
     m_Center: {x: 0, y: 0.0000000037252903, z: 0}
     m_Extent: {x: 0.022221155, y: 0.1075, z: 0.022221155}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -2302,7 +2302,7 @@ Mesh:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.03725, y: 0.0125, z: 0.032475956}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -2481,7 +2481,7 @@ Mesh:
     m_Center: {x: 0, y: 0.0000000037252903, z: 0}
     m_Extent: {x: 0.022499997, y: 0.1075, z: 0.015988149}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -2660,7 +2660,7 @@ Mesh:
     m_Center: {x: 0, y: 0.0000000037252903, z: -0.0000000018626451}
     m_Extent: {x: 0.0225, y: 0.1075, z: 0.01598815}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -2839,7 +2839,7 @@ Mesh:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.03725, y: 0.0125, z: 0.032475956}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -3018,7 +3018,7 @@ Mesh:
     m_Center: {x: 0.0000000018626451, y: 0.0000000037252903, z: 0}
     m_Extent: {x: 0.022221146, y: 0.1075, z: 0.022221148}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -3197,7 +3197,7 @@ Mesh:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.037499994, y: 0.0125, z: 0.03706699}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
@@ -3376,7 +3376,7 @@ Mesh:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0.03725, y: 0.0125, z: 0.032475963}
   m_CookingOptions: 30
-  m_PreBakeConvexCollisionMesh: 0
+  m_PreBakeConvexCollisionMesh: 1
   m_PreBakeTriangleCollisionMesh: 0
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 

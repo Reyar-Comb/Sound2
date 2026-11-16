@@ -61,6 +61,7 @@ public sealed class PlayerVitality : MonoBehaviour
         bool lethal = instantDeath || (exact ? amount >= Health : IsWounded);
         // Ordinary damage keeps the two-hit rule; lethal hazards skip directly to death.
         Health = lethal ? 0 : exact ? Health - amount : Mathf.Max(1, maximumHealth) * .5f;
+        if (lethal && controller != null) StoryRunProgress.Current.RecordPlayerDeath();
         woundedUntil = lethal ? 0 : Time.time + Mathf.Max(.1f, woundSeconds);
         invulnerableUntil = Time.time + Mathf.Max(0, invulnerabilitySeconds);
         Changed?.Invoke(Health);

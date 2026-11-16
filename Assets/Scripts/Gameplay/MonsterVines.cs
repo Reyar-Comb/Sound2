@@ -11,6 +11,10 @@ public sealed class MonsterVines : MonoBehaviour
     [Min(.5f)] public float lifetime = 2.8f;
     [Min(.5f)] public float reach = 2.8f;
     public LayerMask surfaces = Physics.DefaultRaycastLayers;
+    [Tooltip("Optional: restrict growth to this object's colliders.")]
+    public Transform surfaceRoot;
+    [Tooltip("Allow trigger-only visual supports for scoped growth; these never block the player.")]
+    public bool includeTriggerSurfaces;
     struct Point { public Vector3 position; public float born; }
     readonly List<Point> points = new(Capacity);
     readonly RaycastHit[] hits = new RaycastHit[16];
@@ -122,11 +126,14 @@ public sealed class MonsterVines : MonoBehaviour
     bool SurfaceRay(Vector3 origin, Vector3 direction, float distance, out RaycastHit nearest)
     {
         nearest=default; float best=float.PositiveInfinity;
-        int count=Physics.RaycastNonAlloc(origin,direction,hits,distance,surfaces,QueryTriggerInteraction.Ignore);
+        int count=Physics.RaycastNonAlloc(origin,direction,hits,distance,surfaces,
+            surfaceRoot != null && includeTriggerSurfaces ? QueryTriggerInteraction.Collide : QueryTriggerInteraction.Ignore);
         for(int i=0;i<count;i++)
         {
             var hit=hits[i];
-            if(hit.collider.attachedRigidbody!=null || hit.collider is CharacterController || hit.transform.IsChildOf(transform) || hit.distance>=best)continue;
+            if (surfaceRoot != null && !hit.transform.IsChildOf(surfaceRoot)) continue;
+            if(hit.collider.attachedRigidbody!=null || hit.collider is CharacterController
+                || (surfaceRoot == null && hit.transform.IsChildOf(transform)) || hit.distance>=best)continue;
             best=hit.distance;nearest=hit;
         }
         return best<float.PositiveInfinity;

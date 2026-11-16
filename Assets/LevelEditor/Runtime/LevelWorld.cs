@@ -265,6 +265,8 @@ namespace Sound2.LevelEditing
         {
             CaptureInitialLevel(level);
             CurrentLevel=level;
+            if (level != null && level.GetComponentInChildren<LevelArenaBoss>(true) != null)
+                StoryRunProgress.Current.EnterBossRoom();
             if(activateOnlyCurrentLevel)foreach(var candidate in levels)if(candidate!=null)candidate.gameObject.SetActive(candidate==level);
         }
         public bool ReturnToStart(PlayerController actor)

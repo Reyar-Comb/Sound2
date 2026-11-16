@@ -27,25 +27,36 @@ namespace Sound2.LevelEditing.Editor
         [SerializeField] LevelMap seededMap;
         [SerializeField] bool geometryExpanded = true;
         [SerializeField] bool propsExpanded = true;
+        bool SceneInstance => LevelBuilder.IsScenePrefabInstance(layout);
         readonly List<Vector2> pending = new List<Vector2>();
         Vector2 hover;
         string status = "新建布局，或选择已有 LevelLayout。";
         bool hasError;
 
         [MenuItem("Tools/Sound2/关卡编辑器")]
-        public static void Open() => GetWindow<LevelDesignerWindow>("关卡编辑器");
+        public static void Open()
+        {
+            var window = GetWindow<LevelDesignerWindow>("关卡编辑器");
+            window.OnSelection();
+            if (window.layout == null) window.Bind(window.SceneLayouts().FirstOrDefault(l => l.gameObject.activeInHierarchy)
+                ?? window.SceneLayouts().FirstOrDefault());
+        }
+        public void OpenSourcePrefab()
+        {
+            var source = SceneInstance ? PrefabUtility.GetCorrespondingObjectFromSource(layout) : layout;
+            if (source != null) Bind(source);
+        }
         public void Bind(LevelLayout target)
         {
-            if (target != null && LevelBuilder.IsScenePrefabInstance(target))
-                target = PrefabUtility.GetCorrespondingObjectFromSource(target);
             if (target != null && EditorUtility.IsPersistent(target))
             {
                 var stage = PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(target));
                 target = stage.prefabContentsRoot.GetComponent<LevelLayout>();
             }
             seededMode = false;
-            if (tool == Tool.RepositionProp) tool = Tool.Select;
+            tool = Tool.Select;
             layout = target; selectedProp = null; selectedEnemy = null; selected = -1; kind = Kind.None; pending.Clear(); hasError = false;
+            InvalidatePropPreview();
             status = layout == null ? "新建布局，或选择已有 LevelLayout。" : $"已载入：{layout.rooms.Count} 房间 · {layout.corridors.Count} 走廊 · {layout.pits.Count} 竖井。";
             Refresh(); Frame();
         }
@@ -57,6 +68,7 @@ namespace Sound2.LevelEditing.Editor
             Undo.undoRedoPerformed += OnUndo;
             Selection.selectionChanged += OnSelection;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            EditorApplication.hierarchyChanged += InvalidatePropPreview;
         }
         void OnDisable()
         {
@@ -65,6 +77,8 @@ namespace Sound2.LevelEditing.Editor
             Undo.undoRedoPerformed -= OnUndo;
             Selection.selectionChanged -= OnSelection;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            EditorApplication.hierarchyChanged -= InvalidatePropPreview;
+            DisposePropPreview();
         }
         void OnPlayModeChanged(PlayModeStateChange state)
         {
@@ -84,11 +98,15 @@ namespace Sound2.LevelEditing.Editor
             if (Selection.activeGameObject == null) return;
             var map = Selection.activeGameObject.GetComponentInParent<LevelMap>();
             if (map != null) { seededMap = map; seededMode = true; Refresh(); return; }
-            var target = Selection.activeGameObject.GetComponentInParent<LevelLayout>();
+            var target = Selection.activeGameObject.GetComponentInParent<LevelLayout>(true);
             if (target != null && EditorUtility.IsPersistent(target)) return;
-            if (target != null && LevelBuilder.IsScenePrefabInstance(target)) return;
-            // Selecting an instance must not unexpectedly change stages; use the Inspector button to edit its asset.
-            if (target != null && target != layout && !LevelBuilder.IsScenePrefabInstance(target)) Bind(target);
+            if (target == null)
+            {
+                var world = Selection.activeGameObject.GetComponent<LevelWorld>();
+                if (world != null) target = world.GetComponentsInChildren<LevelLayout>(true)
+                    .FirstOrDefault(l => l.gameObject.activeInHierarchy) ?? world.GetComponentsInChildren<LevelLayout>(true).FirstOrDefault();
+            }
+            if (target != null && target != layout) Bind(target);
             if (target != null)
             {
                 var enemy = Selection.activeGameObject.GetComponentInParent<LevelEnemy>();
@@ -105,6 +123,9 @@ namespace Sound2.LevelEditing.Editor
             Refresh();
         }
 
+        List<LevelLayout> SceneLayouts() => UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects()
+            .SelectMany(r => r.GetComponentsInChildren<LevelLayout>(true)).ToList();
+
         void Refresh()
         {
             if (rootVisualElement.Q("header") == null) return;
@@ -114,17 +135,38 @@ namespace Sound2.LevelEditing.Editor
             rootVisualElement.Q("workspace").SetEnabled(!seededMode);
             rootVisualElement.Q<Foldout>("settings-foldout").text = seededMode ? "程序化设置" : "工具与生成设置";
             if (seededMode) { DrawSeededMode(); return; }
+            var levels = SceneLayouts();
+            if (levels.Count > 1)
+            {
+                var choices = levels.Select((l, i) => $"{i + 1}. {l.name}").ToList();
+                var picker = new PopupField<string>("场景关卡", choices, Mathf.Max(0, levels.IndexOf(layout))) { name = "scene-level-picker" };
+                picker.RegisterValueChangedCallback(_ => { Bind(levels[picker.index]); Selection.activeGameObject = layout.gameObject; }); header.Add(picker);
+            }
             var target = new ObjectField("编辑布局") { objectType = typeof(LevelLayout), allowSceneObjects = true, value = layout };
-            target.RegisterValueChangedCallback(e => Bind((LevelLayout)e.newValue)); header.Add(target);
+            target.RegisterValueChangedCallback(e => { Bind((LevelLayout)e.newValue); if (layout != null) Selection.activeGameObject = layout.gameObject; }); header.Add(target);
             bool instance = LevelBuilder.IsScenePrefabInstance(layout);
             foreach (var section in new[] { "tools", "workspace", "settings", "footer" })
-                rootVisualElement.Q(section).SetEnabled(!instance);
+                rootVisualElement.Q(section).SetEnabled(true);
             if (instance)
             {
-                header.Add(new HelpBox("当前是关卡实例。请打开 Prefab 编辑关卡内容；总场景只需调整摆放和电梯连接。", HelpBoxMessageType.Info));
-                Button(header, "打开关卡 Prefab", () => Bind(layout));
-                status = "关卡实例已关联 Prefab。"; UpdateStatus(); return;
+                header.Add(new HelpBox("正在编辑总场景中的关卡：道具和敌人修改随当前场景保存。房间、走廊、隔板和嵌入门请打开源 Prefab 编辑。", HelpBoxMessageType.Info));
+                Button(header, "打开源关卡 Prefab", OpenSourcePrefab);
             }
+            if (layout != null && !layout.gameObject.activeInHierarchy)
+            {
+                header.Add(new HelpBox("本关当前未启用，启用后可在 Scene 中放置道具。", HelpBoxMessageType.Info));
+                Button(header, "启用本关以编辑", () =>
+                {
+                    for (var t = layout.transform; t != null; t = t.parent)
+                    {
+                        if (t.gameObject.activeSelf) continue;
+                        Undo.RecordObject(t.gameObject, "启用关卡编辑"); t.gameObject.SetActive(true);
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(t.gameObject);
+                    }
+                    EditorSceneManager.MarkSceneDirty(layout.gameObject.scene); Refresh(); Frame();
+                }).SetEnabled(!Application.isPlaying);
+            }
+            Toggle(header, "道具原色预览", propColorPreview, v => { propColorPreview = v; SceneView.RepaintAll(); });
             var row = Row(header);
             Button(row, "新建独立场景", CreateLayout);
             Button(row, "俯视 / 框选全部", Frame);
@@ -150,6 +192,7 @@ namespace Sound2.LevelEditing.Editor
                     Refresh(); SceneView.RepaintAll();
                 });
                 button.EnableInClassList("active-tool", tool == value);
+                button.SetEnabled(!instance || value == Tool.Select || value == Tool.Prop || value == Tool.Enemy);
             }
             tools.SetEnabled(layout != null && !Application.isPlaying);
             rootVisualElement.Q<Label>("instructions").text = tool switch
@@ -167,11 +210,11 @@ namespace Sound2.LevelEditing.Editor
             };
             DrawSettings(); DrawObjects(); DrawProperties();
             var footer = rootVisualElement.Q("footer"); footer.Clear();
-            Button(footer, "重新生成", () => { TryRebuild(); Refresh(); }).SetEnabled(layout != null);
+            Button(footer, "重新生成", () => { TryRebuild(); Refresh(); }).SetEnabled(layout != null && !instance);
             Button(footer, "保存当前场景", Save).SetEnabled(layout != null);
             Button(footer, "性能分析 / 优化", () => LevelPerformanceWindow.Open(layout)).SetEnabled(layout != null && !Application.isPlaying);
-            Button(footer, "导出 .unity 场景", Export).AddToClassList("primary");
-            Button(footer, "导出关卡 Prefab", ExportLevelPrefab).SetEnabled(layout != null && !Application.isPlaying);
+            var export = Button(footer, "导出 .unity 场景", Export); export.AddToClassList("primary"); export.SetEnabled(!instance);
+            Button(footer, "导出关卡 Prefab", ExportLevelPrefab).SetEnabled(layout != null && !instance && !Application.isPlaying);
             UpdateStatus();
         }
 
@@ -198,6 +241,7 @@ namespace Sound2.LevelEditing.Editor
             MaterialField(fold, "地板材质", layout.floorMaterial, v => layout.floorMaterial = v);
             MaterialField(fold, "墙壁材质", layout.wallMaterial, v => layout.wallMaterial = v);
             MaterialField(fold, "管壁材质", layout.pitMaterial, v => layout.pitMaterial = v);
+            fold.SetEnabled(!SceneInstance);
             DrawPropSettings(area);
         }
 
@@ -262,7 +306,8 @@ namespace Sound2.LevelEditing.Editor
             for (int i = 0; i < layout.rooms.Count; i++) Item(Kind.Room, i, "▣  " + layout.rooms[i].name);
             for (int i = 0; i < layout.corridors.Count; i++) Item(Kind.Corridor, i, "↝  " + layout.corridors[i].name + "  /  " + layout.corridors[i].width.ToString("0.##") + " m");
             for (int i = 0; i < layout.pits.Count; i++) Item(Kind.Pit, i, "□  " + layout.pits[i].name);
-            DrawPartitionObjects(area);
+            geometry.SetEnabled(!SceneInstance);
+            if (!SceneInstance) DrawPartitionObjects(area);
             DrawEnemyObjects(area);
             var propRoot = LevelPropPlacement.PropsRoot(layout);
             var props = new Foldout { name = "prop-objects", text = $"道具 ({(propRoot != null ? propRoot.childCount : 0)})", value = propsExpanded };
@@ -274,7 +319,9 @@ namespace Sound2.LevelEditing.Editor
         void DrawProperties()
         {
             var area = rootVisualElement.Q("properties"); area.Clear(); area.SetEnabled(!Application.isPlaying);
-            if (DrawEnemyProperties(area) || DrawFreePartitionProperties(area) || DrawPropProperties(area)) return;
+            if (DrawEnemyProperties(area) || DrawPropProperties(area)) return;
+            if (SceneInstance) { area.Add(new Label("选择道具或敌人以编辑；房间结构请打开源关卡 Prefab。")); return; }
+            if (DrawFreePartitionProperties(area)) return;
             if (layout == null || selected < 0) { area.Add(new Label("选择对象以编辑参数")); return; }
             if (kind == Kind.Room && selected < layout.rooms.Count)
             {
@@ -378,7 +425,11 @@ namespace Sound2.LevelEditing.Editor
 
         void Save()
         {
-            if (LevelBuilder.IsScenePrefabInstance(layout)) { EditorSceneManager.SaveScene(layout.gameObject.scene); return; }
+            if (SceneInstance)
+            {
+                if (EditorSceneManager.SaveScene(layout.gameObject.scene)) { status = "已保存总场景中的关卡修改。"; hasError = false; UpdateStatus(); }
+                return;
+            }
             if (layout == null || !TryRebuild()) return;
             var stage = PrefabStageUtility.GetCurrentPrefabStage();
             if (stage != null && stage.scene == layout.gameObject.scene)
@@ -443,6 +494,8 @@ namespace Sound2.LevelEditing.Editor
             Bounds bounds = new Bounds(layout == null ? Vector3.zero : layout.transform.position, Vector3.one * 10);
             if (layout != null)
             {
+                if (layout.manualGeometry)
+                    foreach (var renderer in layout.GetComponentsInChildren<Renderer>(true)) bounds.Encapsulate(renderer.bounds);
                 foreach (var r in layout.rooms) foreach (var p in LevelGeometry.RoomOutline(r, 32)) bounds.Encapsulate(layout.World(p));
                 foreach (var c in layout.corridors) foreach (var p in c.points) bounds.Encapsulate(layout.World(p));
                 foreach (var p in LevelPartitions.All(layout)) { bounds.Encapsulate(layout.World(p.Start)); bounds.Encapsulate(layout.World(p.End, p.data.height)); }
@@ -455,7 +508,8 @@ namespace Sound2.LevelEditing.Editor
         Vector2 SnapPartition(LevelRoom room, Vector2 point) => snap <= 0 ? point : room.PartitionLocal(Snap(room.PartitionPoint(point)));
         void SceneGUI(SceneView view)
         {
-            if (seededMode || layout == null || Application.isPlaying || LevelBuilder.IsScenePrefabInstance(layout)) return;
+            if (seededMode || layout == null || Application.isPlaying || !layout.gameObject.activeInHierarchy) return;
+            DrawPropColorPreview(view);
             Event e = Event.current;
             var ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
             var plane = new Plane(layout.transform.up, layout.transform.position);
@@ -464,13 +518,14 @@ namespace Sound2.LevelEditing.Editor
             DrawOutlines();
             if (EnemySceneGUI(view, ray, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
             if (RingTableSceneGUI(view, ray, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
-            if (PartitionSceneGUI(view, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
+            if (!SceneInstance && PartitionSceneGUI(view, e)) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
             if (tool == Tool.Prop || tool == Tool.RepositionProp)
             {
                 PropSceneGUI(view, ray, e);
                 Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual;
                 return;
             }
+            if (SceneInstance) { Handles.zTest = UnityEngine.Rendering.CompareFunction.LessEqual; return; }
             if (tool == Tool.Select) EditHandles();
             else
             {

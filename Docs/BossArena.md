@@ -1,5 +1,19 @@
 # F8 Boss 战
 
+## SoundAndShell 初始房间结局
+
+当前总场景 `Assets/Scenes/SoundAndShell.unity` 中，初始房间的床带 `StartingRoomBed`：新一轮游戏隐藏 Renderer、关闭碰撞且不可交互；实际进入 Boss 关卡后解锁，经记忆桌“返回初始房间”回去可交互，触发 `9-the-hermit`。
+
+普通跳窗仍触发 `0-the-fool`。Boss 战真正开始后，玩家第一次死亡会锁定本轮倒吊人条件；复活后返回初始房间跳窗，改为 `12-the-hanged-man`。只进入 Boss 房或开始战斗但未死亡不会切换此分支。三张卡共用 `SoundShellOpening` 的黑屏、卡牌冲近、点击淡出与房间重置流程。
+
+倒吊人条件达成后，`StartingRoomWindowVines` 覆盖窗框及窗口空洞，床上没有藤蔓。它复用 `MonsterVines` 的生长和红点渲染，窗口内的支撑面仅为不可见触发器，无实体碰撞、无伤害、不阻止跳窗。白房间只额外绘制藤蔓，保留原有白色表现。
+
+`StoryRunProgress` 保存进入 Boss、开启 Boss 和开启后死亡三个状态，复活、关卡快照重建、返回按钮及结局返回均不清除；新一轮 Play/游戏运行清空。只配置初始房间的床实例，其他关卡的普通床不受影响。验证脚本：`AgentScripts/VerifyStartingRoomEndings.cs`，报告及画面对照：`Logs/StartingRoomEndings/`。
+
+F8 跳过信物条件与 F9 开发模式通过 `Debug.isDebugBuild` 限制在编辑器/开发构建中，替代 Unity 6000.6 已弃用的 `DEVELOPMENT_BUILD` 宏。`AgentScripts/FixCollisionBakeWarnings.cs` 审计构建场景及 Resources 引用的碰撞网格，按现有 MeshCollider 的凸包/三角网格用途开启预烘焙；不改动几何数据或 Collider 配置。
+
+## 战斗参数（原 F8 测试流程）
+
 直接打开 `Assets/Levels/LevelBoss.unity` 编辑和测试。按 Play 后玩家出生在圆厅门口，向前进入大厅即开始演出。在 Hierarchy 选中 `F8 > Boss Encounter`，用 `LevelArenaBoss` 调节战斗参数。圆厅布局也可以通过关卡编辑器修改。
 
 在总场景 `BaiYu-Test` 里，从 F7 乘电梯进入 F8。独立场景、总场景与 `Assets/Levels/F8.prefab` 分别保存各自的关卡数据和战斗参数，修改一处需要同步到需要这些修改的版本。

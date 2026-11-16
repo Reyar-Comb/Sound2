@@ -5,6 +5,51 @@ internal sealed class StoryRunProgress : ICollectibleProgress
 {
     internal static readonly StoryRunProgress Current = new();
     readonly HashSet<string> collected = new(System.StringComparer.Ordinal);
+    bool enteredBossRoom, startedBoss, diedAfterBossStarted;
+    public bool EnteredBossRoom { get { LoadEditorProgress(); return enteredBossRoom; } }
+    public bool StartedBoss { get { LoadEditorProgress(); return startedBoss; } }
+    public bool DiedAfterBossStarted { get { LoadEditorProgress(); return diedAfterBossStarted; } }
+    public event System.Action EndingProgressChanged;
+
+    public void EnterBossRoom()
+    {
+        LoadEditorProgress();
+        if (enteredBossRoom) return;
+        enteredBossRoom = true; SaveEndingProgress();
+    }
+
+    public void StartBoss()
+    {
+        LoadEditorProgress();
+        if (startedBoss) return;
+        enteredBossRoom = startedBoss = true; SaveEndingProgress();
+    }
+
+    public void RecordPlayerDeath()
+    {
+        LoadEditorProgress();
+        if (!startedBoss || diedAfterBossStarted) return;
+        diedAfterBossStarted = true; SaveEndingProgress();
+    }
+
+    void SaveEndingProgress()
+    {
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+        {
+            UnityEditor.SessionState.SetBool(EditorProgressKey + ".EnteredBoss", enteredBossRoom);
+            UnityEditor.SessionState.SetBool(EditorProgressKey + ".StartedBoss", startedBoss);
+            UnityEditor.SessionState.SetBool(EditorProgressKey + ".BossDeath", diedAfterBossStarted);
+        }
+#endif
+        EndingProgressChanged?.Invoke();
+    }
+
+    void ResetRunState()
+    {
+        collected.Clear();
+        enteredBossRoom = startedBoss = diedAfterBossStarted = false;
+    }
 
     public IReadOnlyCollection<string> CollectedIds
     {
@@ -44,12 +89,15 @@ internal sealed class StoryRunProgress : ICollectibleProgress
     {
         if (state != UnityEditor.PlayModeStateChange.ExitingEditMode) return;
         UnityEditor.SessionState.EraseString(EditorProgressKey);
-        Current.collected.Clear();
+        UnityEditor.SessionState.EraseBool(EditorProgressKey + ".EnteredBoss");
+        UnityEditor.SessionState.EraseBool(EditorProgressKey + ".StartedBoss");
+        UnityEditor.SessionState.EraseBool(EditorProgressKey + ".BossDeath");
+        Current.ResetRunState();
         Current.loadedEditorProgress = false;
     }
 #else
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetRun() => Current.collected.Clear();
+    static void ResetRun() => Current.ResetRunState();
 #endif
 
     void LoadEditorProgress()
@@ -59,6 +107,9 @@ internal sealed class StoryRunProgress : ICollectibleProgress
         loadedEditorProgress = true;
         var saved = UnityEditor.SessionState.GetString(EditorProgressKey, "");
         collected.UnionWith(saved.Split('\n', System.StringSplitOptions.RemoveEmptyEntries));
+        enteredBossRoom = UnityEditor.SessionState.GetBool(EditorProgressKey + ".EnteredBoss", false);
+        startedBoss = UnityEditor.SessionState.GetBool(EditorProgressKey + ".StartedBoss", false);
+        diedAfterBossStarted = UnityEditor.SessionState.GetBool(EditorProgressKey + ".BossDeath", false);
 #endif
     }
 }

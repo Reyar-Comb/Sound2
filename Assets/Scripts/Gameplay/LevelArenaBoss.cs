@@ -5,9 +5,7 @@ using Sound2.LevelEditing;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine.InputSystem;
-#endif
 
 [DisallowMultipleComponent]
 public sealed class LevelArenaBoss : MonoBehaviour
@@ -165,14 +163,12 @@ public sealed class LevelArenaBoss : MonoBehaviour
         {
             bool canStart = !SonicSpaceStartMenu.BlocksGameplay && !player.InputSuspended && !player.TransportLocked
                 && (world == null || (world.CurrentLevel == level && !world.Travelling));
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (canStart && Keyboard.current?.f8Key.wasPressedThisFrame == true)
+            if (DeveloperMode.Available && canStart && Keyboard.current?.f8Key.wasPressedThisFrame == true)
             {
                 StorySubtitles.Clear();
                 sequence = StartCoroutine(PlayEncounter());
                 return;
             }
-#endif
             float entryRadius = Mathf.Max(.1f, Radius - roomEntryInset);
             if (memoryGate == null && canStart
                 && local.sqrMagnitude < entryRadius * entryRadius
@@ -215,6 +211,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
                 if (candidate.levels.Contains(level)) { world = candidate; break; }
         player = world != null ? world.player : FindAnyObjectByType<PlayerController>();
         if (player == null || player.gameObject.scene != gameObject.scene) { player = null; return; }
+        if (world == null) StoryRunProgress.Current.EnterBossRoom();
         capsule = player.GetComponent<CharacterController>();
         vitality = player.GetComponent<PlayerVitality>();
         sonar = player.GetComponentInChildren<SonarPulseField>(true);
@@ -234,6 +231,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
     IEnumerator PlayEncounter()
     {
         State = EncounterState.Intro;
+        StoryRunProgress.Current.StartBoss();
         float cutoff = battleMusic != null ? (loopEndTime > 0 ? Mathf.Min(loopEndTime, battleMusic.length) : battleMusic.length) : 0;
         float reveal = Mathf.Min(revealMusicTime, cutoff);
         bool playingMusic = music.Play(battleMusic, musicVolume, loopFromReveal ? revealMusicTime : loopStartTime, loopEndTime);

@@ -2,7 +2,7 @@ using UnityEngine;
 
 internal static class DeveloperMode
 {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    public static bool Available => Debug.isDebugBuild;
     public static bool Enabled { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -10,6 +10,7 @@ internal static class DeveloperMode
 
     public static void Toggle()
     {
+        if (!Available) return;
         Enabled = !Enabled;
         foreach (var level in Object.FindObjectsByType<Sound2.LevelEditing.LevelLayout>())
             level.SetGameplayPresentation(true);
@@ -17,7 +18,4 @@ internal static class DeveloperMode
             prop.RefreshGameplayPresentation();
         Debug.Log(Enabled ? "Developer mode enabled (F9)" : "Developer mode disabled (F9)");
     }
-#else
-    public static bool Enabled => false;
-#endif
 }

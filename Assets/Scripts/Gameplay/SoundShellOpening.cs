@@ -3,7 +3,7 @@ using Sound2.LevelEditing;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>The physical starting room's window ending; does not reload the scene or its title.</summary>
+/// <summary>Starting-room tarot endings share one card/return sequence, without restarting the run.</summary>
 [DisallowMultipleComponent]
 public sealed class SoundShellOpening : MonoBehaviour
 {
@@ -12,12 +12,27 @@ public sealed class SoundShellOpening : MonoBehaviour
     public LevelLayout startingRoom;
     public Transform spawn;
     public Texture2D foolCard;
+    public Texture2D hermitCard;
+    public Texture2D hangedManCard;
     [Min(.1f)] public float fallSeconds = 1.5f;
     [Min(.1f)] public float cardRushSeconds = .42f;
     [Min(.1f)] public float returnFadeSeconds = 1.1f;
     public enum Phase { Room, Falling, Covering, CardRush, AwaitingReturn, Returning }
     public Phase CurrentPhase { get; private set; }
     public bool InStartingRoom => world != null && world.CurrentLevel == startingRoom;
+    public Texture2D WindowCard => StoryRunProgress.Current.DiedAfterBossStarted ? hangedManCard : foolCard;
+    public Texture CurrentCard => card != null ? card.texture : null;
+    public bool CanUseBed(PlayerController actor) => isActiveAndEnabled && actor == player && player != null
+        && StoryRunProgress.Current.EnteredBossRoom && InStartingRoom && CurrentPhase == Phase.Room
+        && !SonicSpaceStartMenu.BlocksGameplay && !player.InputSuspended && !player.TransportLocked
+        && hermitCard != null && player.GetComponent<PlayerVitality>()?.IsDead != true;
+
+    public bool TryUseBed(PlayerController actor)
+    {
+        if (!CanUseBed(actor)) return false;
+        sequence = StartCoroutine(ShowCard(hermitCard));
+        return true;
+    }
 
     Canvas canvas;
     UnityEngine.UI.Image black;
@@ -30,7 +45,7 @@ public sealed class SoundShellOpening : MonoBehaviour
     {
         if (player == null || world == null || startingRoom == null || spawn == null || foolCard == null)
         { Debug.LogError("Sound & Shell opening requires player, world, room, spawn and Fool card.", this); enabled = false; return; }
-        var root = new GameObject("Fool ending", typeof(RectTransform), typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler));
+        var root = new GameObject("Tarot ending", typeof(RectTransform), typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler));
         root.transform.SetParent(transform, false);
         canvas = root.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 32500;
         var scaler = root.GetComponent<UnityEngine.UI.CanvasScaler>();
@@ -75,7 +90,7 @@ public sealed class SoundShellOpening : MonoBehaviour
             if (startingRoom.transform.InverseTransformPoint(player.transform.position).y < -.5f)
             {
                 CurrentPhase = Phase.Falling; fallenFor += Time.deltaTime;
-                if (fallenFor >= fallSeconds) sequence = StartCoroutine(ShowFool());
+                if (fallenFor >= fallSeconds && WindowCard != null) sequence = StartCoroutine(ShowCard(WindowCard));
             }
             else { fallenFor = 0; CurrentPhase = Phase.Room; }
         }
@@ -93,9 +108,12 @@ public sealed class SoundShellOpening : MonoBehaviour
         apply(1);
     }
 
-    IEnumerator ShowFool()
+    IEnumerator ShowCard(Texture2D texture)
     {
         CurrentPhase = Phase.Covering;
+        card.texture = texture;
+        card.gameObject.name = texture.name;
+        FitCard();
         previousSuspended = player.InputSuspended; ownsInput = true;
         player.OpeningSequenceLocked = true; player.SetInputCaptured(false);
         player.GetComponent<PlayerPickup>()?.ClearForRespawn();

@@ -19,8 +19,16 @@ namespace Sound2.LevelEditing.Editor
 
         void ChooseProp(GameObject prefab)
         {
+            // Selection may predate opening/reloading the window, so no selectionChanged
+            // event was delivered. Resolve its level before starting a placement stroke.
+            var selectedLayout = Selection.activeGameObject != null
+                ? Selection.activeGameObject.GetComponentInParent<LevelLayout>(true) : null;
+            if (selectedLayout != null && selectedLayout != layout && !EditorUtility.IsPersistent(selectedLayout))
+                Bind(selectedLayout);
             if (prefab != null && !PrefabUtility.IsPartOfPrefabAsset(prefab))
             { status = "请选择 Project 中的 Prefab 资源。"; hasError = true; UpdateStatus(); return; }
+            if (SceneInstance && prefab != null && prefab.GetComponent<EmbeddedDoor>() != null)
+            { status = "嵌入门需要更新墙体，请点击“打开源关卡 Prefab”后放置。"; hasError = true; UpdateStatus(); return; }
             propPrefab = prefab;
             var metadata = prefab != null ? prefab.GetComponent<LevelProp>() : null;
             propSurface = metadata != null ? metadata.surface : PropSurface.Floor;
@@ -88,6 +96,11 @@ namespace Sound2.LevelEditing.Editor
             if (layout == null || selectedProp == null || selectedProp.transform.parent != LevelPropPlacement.PropsRoot(layout)) return false;
             var instance = selectedProp;
             area.Add(new Label("道具：" + instance.name));
+            if (SceneInstance && instance.GetComponent<EmbeddedDoor>() != null)
+            {
+                area.Add(new HelpBox("此门与墙洞关联，请打开源关卡 Prefab 编辑。", HelpBoxMessageType.Info));
+                return true;
+            }
             bool moving = tool == Tool.RepositionProp;
             Button(area, moving ? "取消重新吸附（Esc）" : "重新吸附到新位置", () =>
             {

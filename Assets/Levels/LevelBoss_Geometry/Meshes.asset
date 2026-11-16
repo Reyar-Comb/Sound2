@@ -155,7 +155,7 @@ Mesh:
     m_Extent: {x: 18.199799, y: 0.125, z: 19.9499}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
-  m_PreBakeTriangleCollisionMesh: 0
+  m_PreBakeTriangleCollisionMesh: 1
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
   'm_MeshMetrics[0]': 1
@@ -334,7 +334,7 @@ Mesh:
     m_Extent: {x: 18, y: 0.125, z: 19.75}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
-  m_PreBakeTriangleCollisionMesh: 0
+  m_PreBakeTriangleCollisionMesh: 1
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
   'm_MeshMetrics[0]': 1
@@ -525,7 +525,7 @@ Mesh:
     m_Extent: {x: 18.199799, y: 5, z: 19.947948}
   m_CookingOptions: 30
   m_PreBakeConvexCollisionMesh: 0
-  m_PreBakeTriangleCollisionMesh: 0
+  m_PreBakeTriangleCollisionMesh: 1
   m_BakedConvexCollisionMesh: 
   m_BakedTriangleCollisionMesh: 
   'm_MeshMetrics[0]': 1

@@ -72,8 +72,9 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
         elevatorGridPass.radius = Mathf.Clamp(sharedDotRadius >= 0 ? sharedDotRadius : cameraSettings.GetFloat("_ScreenDotRadius"),
             0, elevatorGridPass.spacing * .75f);
         renderer.EnqueuePass(elevatorGridPass);
-        if (renderingData.cameraData.camera.TryGetComponent<SoundShellOpening>(out var opening)
-            && opening.isActiveAndEnabled && opening.InStartingRoom) return;
+        pass.vinesOnly = renderingData.cameraData.camera.TryGetComponent<SoundShellOpening>(out var opening)
+            && opening.isActiveAndEnabled && opening.InStartingRoom;
+        if (pass.vinesOnly && !StoryRunProgress.Current.DiedAfterBossStarted) return;
         if (renderingData.cameraData.camera.TryGetComponent<CreatorRoom>(out var creatorRoom)
             && creatorRoom.isActiveAndEnabled && !creatorRoom.PointCloud) return;
         pass.sharedDotRadius = sharedDotRadius;
@@ -105,6 +106,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
         public Material material;
         public Material faceMaterial;
         public float sharedDotRadius;
+        public bool vinesOnly;
         private sealed class Data
         {
             public Material material;
@@ -136,6 +138,17 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             var uiRects = new Vector4[PlayerUiPointMask.Capacity];
             var uiOptions = new Vector4[PlayerUiPointMask.Capacity];
             int uiCount = PlayerUiPointMask.Collect(camera.camera, uiRects, uiOptions);
+            // HUD bounds use bottom-left screen coordinates. Match the camera projection's
+            // Y flip when URP renders into an intermediate texture before the final blit.
+            if (SystemInfo.graphicsUVStartsAtTop && !resources.isActiveTargetBackBuffer)
+                for (int i = 0; i < uiCount; i++)
+                    uiRects[i].y = 720f - uiRects[i].y;
+            if (vinesOnly)
+            {
+                // Keep the white room's ordinary surfaces; only the window's red cue is overlaid.
+                RecordVines(graph,resources,camera,faceMaterial!=null?faceMaterial:material,sharedDotRadius,uiCount,uiRects,uiOptions);
+                return;
+            }
             var coinSpaces = new Matrix4x4[CoinPickup.SurfaceCapacity];
             var coinWaves = new Vector4[CoinPickup.SurfaceCapacity];
             int coinCount = CoinPickup.CollectSurfaceWaves(camera.camera, coinSpaces, coinWaves);

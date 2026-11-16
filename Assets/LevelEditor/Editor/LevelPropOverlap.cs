@@ -74,6 +74,12 @@ namespace Sound2.LevelEditing.Editor
             // Embedded doors cut their host partition during commit; its current mesh is not an obstacle.
             if (layout.generatedRoot != null && source.GetComponent<EmbeddedDoor>() == null)
                 obstacles.AddRange(layout.generatedRoot.GetComponentsInChildren<Collider>());
+            if (layout.manualGeometry && source.GetComponent<EmbeddedDoor>() == null)
+            {
+                obstacles.Clear();
+                foreach (var collider in layout.GetComponentsInChildren<Collider>())
+                    if (collider.GetComponentInParent<LevelLayout>() == layout) obstacles.Add(collider);
+            }
             obstacles.RemoveAll(c => !Solid(c) || c.transform.IsChildOf(source.transform));
             if (obstacles.Count == 0) return false;
             var rootMatrix = Matrix4x4.TRS(pose.position, pose.rotation, PreviewScale(layout, source));

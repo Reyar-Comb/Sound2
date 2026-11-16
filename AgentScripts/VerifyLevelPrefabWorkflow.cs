@@ -45,13 +45,15 @@ public static class VerifyLevelPrefabWorkflow
             var sceneBytes=File.ReadAllBytes(scenePath);EditorSceneManager.MarkSceneDirty(scene);EditorSceneManager.SaveScene(scene);
             Check(sceneBytes.SequenceEqual(File.ReadAllBytes(scenePath)),"Repeat scene save is stable");
             window=ScriptableObject.CreateInstance<LevelDesignerWindow>();window.Bind(layout);
+            Check(PrefabStageUtility.GetCurrentPrefabStage()==null,"Binding scene instance keeps main stage for prop editing");
+            window.OpenSourcePrefab();
             var stage=PrefabStageUtility.GetCurrentPrefabStage();Check(stage!=null&&stage.assetPath==asset,"Editor opens instance's source Prefab");
             var edited=stage.prefabContentsRoot.GetComponent<LevelLayout>();edited.rooms[0].size=new Vector2(13,17);
             LevelBuilder.Rebuild(edited);LevelBuilder.Persist(edited,asset);PrefabUtility.SaveAsPrefabAsset(stage.prefabContentsRoot,asset);
             StageUtility.GoToMainStage();
             Check(layout.rooms[0].size==new Vector2(13,17),"Prefab edit propagates to scene instance");
             Check(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(root)==asset,"Editing retains root link");
-            return new {passed=true,checks=11};
+            return new {passed=true,checks=12};
         }
         finally
         {

@@ -31,17 +31,16 @@ namespace Sound2.LevelEditing.Editor
             float offset, float angle, out Pose pose)
         {
             pose = default;
-            if (layout == null || layout.generatedRoot == null || prefab == null) return false;
+            if (layout == null || prefab == null || !layout.gameObject.activeInHierarchy) return false;
             if (prefab.GetComponent<EmbeddedDoor>() != null)
-                return EmbeddedDoorPlacement.TryPose(layout, prefab, ray, out pose);
+                return !LevelBuilder.IsScenePrefabInstance(layout) && EmbeddedDoorPlacement.TryPose(layout, prefab, ray, out pose);
             RaycastHit nearest = default;
             float distance = float.PositiveInfinity;
             Physics.SyncTransforms();
-            var surfaces = new System.Collections.Generic.List<Collider>(layout.generatedRoot.GetComponentsInChildren<Collider>());
-            var props = PropsRoot(layout);
-            if (props != null) surfaces.AddRange(props.GetComponentsInChildren<Collider>());
+            // Authored levels (including StartingRoom) may have no Generated Geometry root.
+            var surfaces = layout.GetComponentsInChildren<Collider>();
             foreach (var collider in surfaces)
-                if (!collider.transform.IsChildOf(prefab.transform)
+                if (collider.GetComponentInParent<LevelLayout>() == layout && !collider.transform.IsChildOf(prefab.transform)
                     && collider.enabled && !collider.isTrigger && collider.Raycast(ray, out var hit, 10000)
                     && hit.distance < distance) { nearest = hit; distance = hit.distance; }
             if (nearest.collider == null) return false;
@@ -68,6 +67,8 @@ namespace Sound2.LevelEditing.Editor
                 || !instance.scene.IsValid() || instance.transform.parent != PropsRoot(layout))
                 throw new InvalidOperationException("请选择当前布局 Props 下的道具实例。");
             var door = instance.GetComponent<EmbeddedDoor>();
+            if (door != null && LevelBuilder.IsScenePrefabInstance(layout))
+                throw new InvalidOperationException("嵌入门需要更新墙体，请打开源关卡 Prefab 编辑。");
             var attachment = door != null ? EmbeddedDoorPlacement.ValidatePose(layout, instance, pose) : null;
             if (LevelPropOverlap.HasOverlap(layout, instance, pose))
                 throw new InvalidOperationException("道具碰撞体不能重叠。");
@@ -111,6 +112,8 @@ namespace Sound2.LevelEditing.Editor
         {
             if (Application.isPlaying || layout == null || prefab == null || !PrefabUtility.IsPartOfPrefabAsset(prefab))
                 throw new InvalidOperationException("请在编辑模式选择有效布局和 Prefab 资源。");
+            if (prefab.GetComponent<EmbeddedDoor>() != null && LevelBuilder.IsScenePrefabInstance(layout))
+                throw new InvalidOperationException("嵌入门需要更新墙体，请打开源关卡 Prefab 编辑。");
             var attachment = prefab.GetComponent<EmbeddedDoor>() != null
                 ? EmbeddedDoorPlacement.ValidatePose(layout, prefab, pose) : null;
             if (LevelPropOverlap.HasOverlap(layout, prefab, pose))
