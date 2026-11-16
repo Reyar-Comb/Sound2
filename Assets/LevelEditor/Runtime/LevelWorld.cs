@@ -21,6 +21,7 @@ namespace Sound2.LevelEditing
         public Transform startingPoint;
         public FloorProgressionProfile profile;
         public bool activateOnlyCurrentLevel = true;
+        public bool roomAcousticsEnabled = true;
         [Min(.1f), Tooltip("Main-thread activation budget per frame while the elevator travels (milliseconds). A single prop cannot be interrupted.")]
         public float activationBudgetMs = 2;
         [Min(1), Tooltip("Maximum props activated per frame; also spreads Start callbacks across frames.")]
@@ -30,6 +31,7 @@ namespace Sound2.LevelEditing
         public bool Travelling { get; private set; }
 
         LevelElevator departure, arrival;
+        PlayerController teleportPassenger;
         LevelActivation preparation;
         Transform resetTemplates;
         sealed class InitialLevel
@@ -166,6 +168,8 @@ namespace Sound2.LevelEditing
         {
             if(player!=null&&startingPoint!=null)player.Teleport(startingPoint.position);
             if(player!=null&&GetComponent<ElevatorHudContrast>()==null)gameObject.AddComponent<ElevatorHudContrast>();
+            if (player != null && GetComponent<LevelConsole>() == null) gameObject.AddComponent<LevelConsole>();
+            if (player != null && GetComponent<WorldRoomAcoustics>() == null) gameObject.AddComponent<WorldRoomAcoustics>();
         }
         public bool TryDestination(LevelElevator source,out LevelElevator destination,out float seconds)
         {
@@ -185,6 +189,61 @@ namespace Sound2.LevelEditing
                 ||!TryDestination(source,out var destination,out float seconds)||destination.Busy)return false;
             StartCoroutine(Transport(source,destination,actor,seconds));return true;
         }
+
+        internal bool TryTeleportToLevel(LevelLayout level)
+        {
+            if (!isActiveAndEnabled || Travelling || level == null || !levels.Contains(level) || player == null
+                || player.TransportLocked || player.DeathSequenceLocked || player.EncounterInputLocked
+                || player.OpeningSequenceLocked || SonicSpaceStartMenu.BlocksGameplay
+                || !player.TryGetComponent<CharacterController>(out var capsule) || !capsule.enabled) return false;
+
+            LevelElevator destination = null;
+            foreach (var connection in connections)
+            {
+                if (connection.destination != null && connection.destination.Level == level)
+                {
+                    destination = connection.destination;
+                    break;
+                }
+                if (connection.source != null && connection.source.Level == level && (connection.bidirectional || level == startingLevel))
+                    destination ??= connection.source;
+            }
+            if (destination == null || destination.Busy) return false;
+
+            float feetOffset = (capsule.height * .5f - capsule.center.y) * Mathf.Abs(player.transform.lossyScale.y);
+            var offset = destination.interiorCenter;
+            offset.y += (feetOffset + .05f) / Mathf.Max(.01f, Mathf.Abs(destination.transform.lossyScale.y))
+                - destination.interiorSize.y * .5f;
+            StartCoroutine(TeleportToElevator(destination, player, offset));
+            return true;
+        }
+
+        IEnumerator TeleportToElevator(LevelElevator destination, PlayerController actor, Vector3 offset)
+        {
+            Travelling = true;
+            teleportPassenger = actor;
+            actor.TransportLocked = true;
+            arrival = destination;
+            destination.Busy = true;
+            var level = destination.Level;
+            yield return CaptureInitialLevelAsync(level);
+            if (destination == null || level == null || actor == null) { Release(true); yield break; }
+
+            preparation = new LevelActivation(level, activationBudgetMs, activationBatchSize);
+            yield return preparation.Prepare();
+            if (destination == null || level == null || actor == null) { Release(true); yield break; }
+            foreach (var nav in level.GetComponentsInChildren<RuntimePatrolNavigation>())
+                while (nav != null && nav.isActiveAndEnabled && nav.IsBuilding) yield return null;
+
+            if (destination == null || actor == null) { Release(true); yield break; }
+            destination.Open(false);
+            while (destination != null && destination.DoorOpen > 0) yield return null;
+            if (destination == null || actor == null) { Release(true); yield break; }
+
+            actor.GetComponentInChildren<SonarPulseField>(true)?.ClearPulses();
+            yield return CompleteArrival(destination, actor, offset, 0, faceExit: true);
+        }
+
         IEnumerator Transport(LevelElevator source,LevelElevator destination,PlayerController actor,float seconds)
         {
             Travelling=true;departure=source;arrival=destination;source.Busy=destination.Busy=true;
@@ -200,6 +259,7 @@ namespace Sound2.LevelEditing
             bool loadingComplete = false;
             float elapsed = 0;
             float duration = Mathf.Max(.1f, seconds);
+            if (source.Contains(actor.transform.position)) source.PlayTravelSound();
             while ((elapsed < duration || !loadingComplete) && source != null && destination != null && actor != null && source.Contains(actor.transform.position))
             {
                 if (!loadingComplete) loadingComplete = !loading.MoveNext();
@@ -208,7 +268,11 @@ namespace Sound2.LevelEditing
                 source.SetTravelInk(14 * Mathf.SmoothStep(0, 1, t), 4 * t * (1 - t));
                 yield return null;
             }
-            if (source != null) source.SetTravelInk(0, 0);
+            if (source != null)
+            {
+                source.SetTravelInk(0, 0);
+                source.StopTravelSound();
+            }
             if (source != null && actor != null && !source.Contains(actor.transform.position))
             {
                 source.Open(true);
@@ -235,21 +299,33 @@ namespace Sound2.LevelEditing
             destination.Open(false);
             while(destination!=null&&destination.DoorOpen>0)yield return null;
             if(source==null||destination==null||actor==null){Release(true);yield break;}
-            Physics.SyncTransforms();
             Vector3 offset = source.transform.InverseTransformPoint(actor.transform.position);
+            float headingDelta = destination.transform.eulerAngles.y - source.transform.eulerAngles.y;
+            yield return CompleteArrival(destination, actor, offset, headingDelta);
+        }
+
+        IEnumerator CompleteArrival(LevelElevator destination, PlayerController actor, Vector3 offset, float headingDelta, bool faceExit = false)
+        {
+            Physics.SyncTransforms();
             destination.SetPaperEffect("_ArrivalDissolve", 0);
             destination.SetPaperEffect("_RespawnPaper", 0);
             // Clear only when the transfer commits: cancellation must keep the held item.
             // Loose objects stay in the departure level; only the player crosses levels.
             actor.GetComponent<PlayerPickup>()?.ClearHeldItem();
             actor.Teleport(destination.transform.TransformPoint(offset));
-            actor.RotateTransport(destination.transform.eulerAngles.y-source.transform.eulerAngles.y);
+            if (faceExit)
+            {
+                actor.FaceDirection(destination.transform.forward);
+                actor.GetComponent<FootstepEmitter>()?.ResetStride();
+            }
+            else actor.RotateTransport(headingDelta);
             Physics.SyncTransforms();
             Activate(destination.Level);
             preparation.Commit(); preparation = null;
             actor.GetComponent<PlayerFloorProgression>()?.EnterAuthoredLevel(levels.IndexOf(destination.Level)+1);
             destination.Open(true);
             while(destination!=null&&destination.DoorOpen<.999f)yield return null;
+            if (destination == null) { Release(true); yield break; }
             ArrivalCheckpoint = destination;
             Release(false);
             // A shared arrival/departure cabin (e.g. Home) must remain visible and usable.
@@ -284,6 +360,9 @@ namespace Sound2.LevelEditing
         void Release(bool cancelled)
         {
             preparation?.Dispose(); preparation = null;
+            if (teleportPassenger != null) teleportPassenger.TransportLocked = false;
+            teleportPassenger = null;
+            if (departure != null) departure.StopTravelSound();
             if(cancelled && departure!=null)departure.Open(true);
             if(departure!=null)departure.Busy=false;if(arrival!=null)arrival.Busy=false;
             departure=arrival=null;Travelling=false;

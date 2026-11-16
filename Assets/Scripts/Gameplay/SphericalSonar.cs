@@ -105,6 +105,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         source = gameObject.AddComponent<AudioSource>();
         source.playOnAwake = false;
         source.spatialBlend = 0; // Player-generated emission cue; not a simulated returning echo.
+        source.bypassReverbZones = true;
         source.volume = .16f;
         cue = GetComponent<SonarCueSource>();
         ownsCue = cue == null;

@@ -140,12 +140,15 @@ public static class VerifyJumpLanding
             typeof(FootstepEmitter).GetMethod("PlayStepSound", Flags).Invoke(foot, null);
             float stepRms = await measure(); testSource.Stop(); await Tick(120);
             typeof(FootstepEmitter).GetMethod("EmitLanding", Flags).Invoke(foot, new object[] { 7f });
-            float landingRms = await measure(); testSource.Stop();
-            check(stepRms > .001f && landingRms > stepRms * 1.7f, "Explicit landing audio is louder than a step (RMS " + stepRms + " -> " + landingRms + ")");
+            float landingRms = await measure(); testSource.Stop(); await Tick(120);
+            check(stepRms > .001f && landingRms > stepRms * 1.2f, "Explicit landing audio is louder than a step (RMS " + stepRms + " -> " + landingRms + ")");
             foot.landingClip = null;
             typeof(FootstepEmitter).GetMethod("EmitLanding", Flags).Invoke(foot, new object[] { 7f });
-            check(!testSource.isPlaying, "Missing landing clip does not fall back to the footstep clip");
+            float fallbackRms = await measure(); testSource.Stop(); await Tick(120);
+            check(stepRms > .001f && fallbackRms > stepRms * 1.2f, "Landing falls back to a louder footstep clip");
             foot.clips = Array.Empty<AudioClip>();
+            typeof(FootstepEmitter).GetMethod("EmitLanding", Flags).Invoke(foot, new object[] { 7f });
+            check(!testSource.isPlaying, "Missing landing and footstep clips stay silent");
             typeof(FootstepEmitter).GetMethod("PlayStepSound", Flags).Invoke(foot, null);
             check(!testSource.isPlaying, "Missing footstep clips stay silent even with an assigned source");
         }

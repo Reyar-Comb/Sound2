@@ -1,17 +1,18 @@
 // Optional additive audio waves. No extra render target or draw pass; the existing point-grid samples this.
-#define AUDIO_SONAR_CAPACITY 4
+#define AUDIO_SONAR_CAPACITY 16
+int _AudioSonarSlotCount;
 float _AudioSonarActive;
-float4 _AudioSonarOrigins[AUDIO_SONAR_CAPACITY], _AudioSonarParameters[AUDIO_SONAR_CAPACITY];
-float4 _AudioSonarBlockerOrigins[AUDIO_SONAR_CAPACITY];
-float4 _AudioSonarLevels[AUDIO_SONAR_CAPACITY], _AudioSonarData[AUDIO_SONAR_CAPACITY];
-float4 _AudioSonarFalloffs[AUDIO_SONAR_CAPACITY], _AudioSonarDensities[AUDIO_SONAR_CAPACITY];
+float4 _AudioSonarOriginsBySource[AUDIO_SONAR_CAPACITY], _AudioSonarParametersBySource[AUDIO_SONAR_CAPACITY];
+float4 _AudioSonarBlockerOriginsBySource[AUDIO_SONAR_CAPACITY];
+float4 _AudioSonarLevelsBySource[AUDIO_SONAR_CAPACITY], _AudioSonarDataBySource[AUDIO_SONAR_CAPACITY];
+float4 _AudioSonarFalloffsBySource[AUDIO_SONAR_CAPACITY], _AudioSonarDensitiesBySource[AUDIO_SONAR_CAPACITY];
 TEXTURE2D_ARRAY(_AudioSonarAnalysis);
 TEXTURE2D_ARRAY(_AudioSonarBlockers);
 
 // Linear peaks are decoded once at upload; one channel and no frequency-band loop.
 float AudioSonarRead(int slot,float time)
 {
-    float4 data=_AudioSonarData[slot];
+    float4 data=_AudioSonarDataBySource[slot];
     if(time<0 || time>=data.z)return 0;
     if(data.w>0)time=fmod(time,data.w);
     float frame=min(time*data.y,data.x-1);
@@ -27,7 +28,7 @@ float AudioSonarTrail(int slot,float time,float glow)
         peak=max(peak,AudioSonarRead(slot,time-glow*.5)*.55);
         peak=max(peak,AudioSonarRead(slot,time-glow)*.15);
     }
-    float4 curve=_AudioSonarLevels[slot];
+    float4 curve=_AudioSonarLevelsBySource[slot];
     float value=saturate((peak*curve.x-curve.z)/max(.001,curve.w-curve.z));
     return pow(value,curve.y);
 }
@@ -36,15 +37,15 @@ float2 AudioReactiveVisibility(float3 positionWS,float3 normalWS,float orderedRa
     float2 brightness=0;
     gold=0;
     if(_AudioSonarActive<.5)return brightness;
-    [loop]for(int slot=0;slot<AUDIO_SONAR_CAPACITY;slot++)
+    [loop]for(int slot=0;slot<min(_AudioSonarSlotCount,AUDIO_SONAR_CAPACITY);slot++)
     {
-        float4 settings=_AudioSonarParameters[slot];
-        float elapsed=_AudioSonarOrigins[slot].w;
+        float4 settings=_AudioSonarParametersBySource[slot];
+        float elapsed=_AudioSonarOriginsBySource[slot].w;
         if(settings.w<.5 || elapsed<0)continue;
-        float3 delta=positionWS-_AudioSonarOrigins[slot].xyz;
+        float3 delta=positionWS-_AudioSonarOriginsBySource[slot].xyz;
         float distance=length(delta);
         if(distance<.0001 || distance>settings.x)continue;
-        float4 attenuation=_AudioSonarFalloffs[slot],thinning=_AudioSonarDensities[slot];
+        float4 attenuation=_AudioSonarFalloffsBySource[slot],thinning=_AudioSonarDensitiesBySource[slot];
         float distanceGain=attenuation.w,densityGain=1,reach=settings.x;
         if(attenuation.z>0)
         {
@@ -63,7 +64,7 @@ float2 AudioReactiveVisibility(float3 positionWS,float3 normalWS,float orderedRa
         float reveal=AudioSonarTrail(slot,age,settings.z);
         reveal*=distanceGain;
         if(reveal<.0001)continue;
-        float3 blockerDelta=positionWS-_AudioSonarBlockerOrigins[slot].xyz;
+        float3 blockerDelta=positionWS-_AudioSonarBlockerOriginsBySource[slot].xyz;
         float3 magnitude=max(abs(blockerDelta),.0001);int face;float2 uv;
         if(magnitude.x>=magnitude.y && magnitude.x>=magnitude.z){face=blockerDelta.x>=0?0:1;uv=blockerDelta.zy/magnitude.x;}
         else if(magnitude.y>=magnitude.z){face=blockerDelta.y>=0?2:3;uv=blockerDelta.xz/magnitude.y;}
@@ -72,7 +73,7 @@ float2 AudioReactiveVisibility(float3 positionWS,float3 normalWS,float orderedRa
         float4 plane=LOAD_TEXTURE2D_ARRAY(_AudioSonarBlockers,cell,slot*6+face);
         if(dot(plane.xyz,plane.xyz)>.5 && dot(plane.xyz,blockerDelta)<plane.w-.06)continue;
         float referenceRange=max(.001,min(_RevealDistance,_DistanceBands.w));
-        float density=FaceDensityAt(positionWS,normalWS,_AudioSonarOrigins[slot].xyz,max(.001,reach/referenceRange),true)
+        float density=FaceDensityAt(positionWS,normalWS,_AudioSonarOriginsBySource[slot].xyz,max(.001,reach/referenceRange),true)
             *saturate(_FaceDensityScale)*densityGain;
         float2 visible=float2(orderedRank<densityGain?reveal:0,orderedRank<density?reveal:0);
         if(settings.w>1.5) gold=max(gold,visible);

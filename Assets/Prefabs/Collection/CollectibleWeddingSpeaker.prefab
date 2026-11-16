@@ -95,6 +95,10 @@ PrefabInstance:
       propertyPath: surfaceAnchor.z
       value: 0.135
       objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

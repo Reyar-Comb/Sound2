@@ -11016,6 +11016,8 @@ GameObject:
   - component: {fileID: 4697731547988026422}
   - component: {fileID: 4092204006196184960}
   - component: {fileID: 8481332932469472393}
+  - component: {fileID: 8840146704499272020}
+  - component: {fileID: 8840146704499272021}
   m_Layer: 0
   m_Name: LevelSchoolWorld
   m_TagString: Untagged
@@ -13996,6 +13998,10 @@ PrefabInstance:
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: SchoolSpeaker (12)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -19507,6 +19513,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SchoolSpeaker (13)
       objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -19580,6 +19590,10 @@ PrefabInstance:
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: SchoolSpeaker (7)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -20745,6 +20759,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SchoolSpeaker (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -21413,6 +21431,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SchoolSpeaker
       objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -22002,6 +22024,10 @@ PrefabInstance:
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: SchoolSpeaker (5)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -25501,6 +25527,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SchoolSpeaker (8)
       objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -26448,6 +26478,10 @@ PrefabInstance:
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: SchoolSpeaker (9)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -29132,6 +29166,10 @@ PrefabInstance:
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: SchoolSpeaker (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -32201,6 +32239,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SchoolSpeaker (6)
       objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -32348,6 +32390,10 @@ PrefabInstance:
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: SchoolSpeaker (4)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -32768,6 +32814,10 @@ PrefabInstance:
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: SchoolSpeaker (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -34310,6 +34360,10 @@ PrefabInstance:
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: SchoolSpeaker (11)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -39088,6 +39142,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SchoolSpeaker (10)
       objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -39716,3 +39774,146 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8734044141997123052, guid: 7eca1354a5f2d5f4980a5ba345d6c5c1, type: 3}
   m_PrefabInstance: {fileID: 9210179063226032645}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272000 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 417313479423830302}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272001 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 1943154876314103248}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272002 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 1953760630553640857}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272003 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 2457575524123892508}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272004 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 2575723870701188457}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272005 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 2720777913105386307}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272006 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 3845207812488348789}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272007 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 4233778475662169146}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272008 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 5274832308211750329}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272009 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 6396217658673391555}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272010 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 6398006684933961997}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272011 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 6570563130042973977}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272012 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 7254209041093790021}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8840146704499272013 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2586740238425897094, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 9022917764919008050}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8840146704499272020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8604422381021689762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3af7f4e9a905a42ccb48a150da63b765, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ImpactSoundPool
+  clip: {fileID: 0}
+  listener: {fileID: 0}
+  settings:
+    hrtf: 1
+    occlusion: 0
+    reflections: 0
+    distanceMode: 1
+    minDistance: 1
+    maxDistance: 12
+    farEarGain: 1
+  capacity: 14
+  initializeOnStart: 0
+  prewarmAcrossFrames: 1
+  preRoll: 0.3
+  tailSeconds: 0
+--- !u!114 &8840146704499272021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8604422381021689762}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0370ee7aabd751478478077173341da, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::AudioReactiveSonarEmitter
+  analysis: {fileID: 11400000, guid: 580838e9c6584995ae45b9bdbc1d146e, type: 2}
+  emissionOrigin: {fileID: 8840146704499272000}
+  additionalOrigins:
+  - {fileID: 8840146704499272001}
+  - {fileID: 8840146704499272002}
+  - {fileID: 8840146704499272003}
+  - {fileID: 8840146704499272004}
+  - {fileID: 8840146704499272005}
+  - {fileID: 8840146704499272006}
+  - {fileID: 8840146704499272007}
+  - {fileID: 8840146704499272008}
+  - {fileID: 8840146704499272009}
+  - {fileID: 8840146704499272010}
+  - {fileID: 8840146704499272011}
+  - {fileID: 8840146704499272012}
+  - {fileID: 8840146704499272013}
+  playAudioAtAdditionalOrigins: 1
+  loop: 1
+  playOnStart: 1
+  volume: 0.5
+  visual:
+    range: 12
+    waveSpeed: 7
+    afterglow: 0.1
+    gain: 1
+    peakFloor: 0.05
+    peakCeiling: 0.8
+    responseExponent: 1.8
+    distance:
+      enabled: 1
+      fadeStartDistance: 1
+      fadeEndDistance: 12
+      falloffPower: 1
+      pulseStrength: 1

@@ -87,21 +87,25 @@ public sealed class StoryCollectible : InteractableObject
 
     void ScheduleArrival(SonarPulseField source, int slot, uint token, Vector3 origin, float range, float speed)
     {
-        float distance = VisibleDistance(source, origin, scanAnchor != null ? scanAnchor.position : InteractionPosition, range);
-        // A shelf can hide the interaction anchor while leaving another part of the item exposed.
-        if (float.IsPositiveInfinity(distance))
-        {
-            foreach (var collider in scanColliders)
-                if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy && !collider.isTrigger)
-                    distance = Mathf.Min(distance, VisibleDistance(source, origin, collider.bounds.center, range));
-            if (float.IsPositiveInfinity(distance)) return;
-        }
+        float distance = ScanDistance(source, origin, range);
+        if (float.IsPositiveInfinity(distance)) return;
         float arrival = Time.time + distance / speed;
         if (scheduledField != null && scheduledField.IsPulseCurrent(scheduledSlot, scheduledToken) && arrivalTime <= arrival) return;
         scheduledField = source;
         scheduledSlot = slot;
         scheduledToken = token;
         arrivalTime = arrival;
+    }
+
+    internal float ScanDistance(SonarPulseField source, Vector3 origin, float range)
+    {
+        float distance = VisibleDistance(source, origin, scanAnchor != null ? scanAnchor.position : InteractionPosition, range);
+        if (!float.IsPositiveInfinity(distance)) return distance;
+        // A shelf can hide the interaction anchor while leaving another part of the item exposed.
+        foreach (var collider in scanColliders)
+            if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy && !collider.isTrigger)
+                distance = Mathf.Min(distance, VisibleDistance(source, origin, collider.bounds.center, range));
+        return distance;
     }
 
     float VisibleDistance(SonarPulseField source, Vector3 origin, Vector3 point, float range)
@@ -120,6 +124,11 @@ public sealed class StoryCollectible : InteractableObject
         if (!scheduledField.IsPulseCurrent(scheduledSlot, scheduledToken)) { scheduledField = null; return; }
         if (Time.time < arrivalTime) return;
         scheduledField = null;
+        RevealFromSonar();
+    }
+
+    internal void RevealFromSonar()
+    {
         if (Collected) return;
         Discovered = true;
         glowUntil = Time.time + Mathf.Max(.05f, discoveryGlowSeconds);

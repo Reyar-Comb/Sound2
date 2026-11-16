@@ -1,11 +1,12 @@
+using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
 
-/// <summary>Four independent audio-wave slots with cached source-to-surface occlusion.</summary>
+/// <summary>Audio-wave slots with cached source-to-surface occlusion.</summary>
 [DefaultExecutionOrder(200), DisallowMultipleComponent]
 public sealed class AudioReactiveSonarField : MonoBehaviour
 {
-    public const int Capacity = 4;
+    public const int Capacity = 16;
     static AudioReactiveSonarField instance;
     static readonly ProfilerMarker triggerMarker = new ProfilerMarker("AudioSonar.Trigger");
     static readonly ProfilerMarker updateMarker = new ProfilerMarker("AudioSonar.Update");
@@ -26,6 +27,8 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         public ImpactSoundPool.Playback playback;
         public MovingLoop moving;
         public AudioReactiveVisualSettings settings;
+        public AudioReactiveClip clip;
+        public List<(StoryCollectible item, float distance)> collectibles;
         public float range, speed, glow, duration;
         public Vector3 position, blockerOrigin;
         public float occlusionRange;
@@ -80,16 +83,27 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         Shader.SetGlobalTexture("_AudioSonarAnalysis", analysis);
         Shader.SetGlobalTexture("_AudioSonarBlockers", blockers);
     }
-    public bool Emit(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, ImpactSoundPool pool, float volume, float strength, bool looping, out ImpactSoundPool.Playback playback, bool gold = false, Transform source = null)
+    public bool Emit(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, ImpactSoundPool pool, float volume, float strength, bool looping, out ImpactSoundPool.Playback playback, bool gold = false, Transform source = null, double? scheduledStart = null)
     {
         playback = null;
         if (!Application.isPlaying || !isActiveAndEnabled || clip == null || !clip.IsReady || settings == null || strength <= 0
             || pool == null || !pool.isActiveAndEnabled || pool.clip != clip.clip || !pool.Preload(looping)) return false;
         using var scope = triggerMarker.Auto();
         if (!TryPrepareVoice(position, clip, settings, strength, looping, source, out int slot, out var voice)) return false;
-        bool played = looping ? pool.PlayLoopAt(position, volume, out playback) : pool.PlayAt(position, volume, out playback);
+        bool played = scheduledStart.HasValue ? pool.PlayScheduledAt(position, volume, looping, scheduledStart.Value, out playback)
+            : looping ? pool.PlayLoopAt(position, volume, out playback) : pool.PlayAt(position, volume, out playback);
         if (!played) { voices[slot] = null; Refresh(); return false; }
         voice.playback = playback;
+        if (gold) voice.parameters.w = 2;
+        PublishVoice(slot, voice);
+        return true;
+    }
+
+    internal bool EmitCopy(Vector3 position, Transform source, AudioReactiveClip clip, AudioReactiveVisualSettings settings,
+        float strength, bool looping, bool gold, ImpactSoundPool.Playback sharedPlayback)
+    {
+        if (!TryPrepareVoice(position, clip, settings, strength, looping, source, out int slot, out var voice, false)) return false;
+        voice.playback = sharedPlayback;
         if (gold) voice.parameters.w = 2;
         PublishVoice(slot, voice);
         return true;
@@ -106,7 +120,7 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
     }
 
     bool TryPrepareVoice(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, float strength, bool looping, Transform source,
-        out int slot, out Voice voice)
+        out int slot, out Voice voice, bool allowReplacement = true)
     {
         slot = -1;
         voice = null;
@@ -118,7 +132,7 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         for (int i = 0; i < Capacity; i++)
         {
             if (voices[i] == null || voices[i].End <= now) { slot = i; break; }
-            if (voices[i].End < earliest) { earliest = voices[i].End; slot = i; }
+            if (allowReplacement && voices[i].End < earliest) { earliest = voices[i].End; slot = i; }
         }
         if (slot < 0) return false; // All slots contain continuous sources: never silently hide a running radio.
         float range = Mathf.Max(1, settings.range), speed = Mathf.Max(.1f, settings.waveSpeed);
@@ -131,13 +145,65 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         Graphics.CopyTexture(upload, 0, 0, analysis, slot, 0);
         falloff.w *= Mathf.Max(0, strength);
         voice = new Voice {
-            settings = settings, position = position, blockerOrigin = position, range = range, speed = speed, duration = clip.Duration,
+            settings = settings, clip = clip, position = position, blockerOrigin = position, range = range, speed = speed, duration = clip.Duration,
             occlusionRange = effective, highQuality = settings.highQualityOcclusion, source = source,
             glow = Mathf.Clamp(settings.afterglow, 0, 2),
             parameters = new Vector4(range, speed, Mathf.Clamp(settings.afterglow, 0, 2), 1),
             data = new Vector4(clip.FrameCount, clip.FrameRate, clip.Duration, looping ? clip.Duration : 0), falloff = falloff, density = density
         };
+        CaptureCollectiblePaths(voice);
         return true;
+    }
+
+    void CaptureCollectiblePaths(Voice voice)
+    {
+        // Reuse the blocker query's source and ignore list before the next wave samples.
+        voice.collectibles?.Clear();
+        foreach (var item in StoryCollectible.Active)
+        {
+            if (item == null || item.Collected || item.gameObject.scene != sampler.gameObject.scene) continue;
+            float distance = item.ScanDistance(sampler, voice.blockerOrigin, voice.occlusionRange);
+            if (float.IsPositiveInfinity(distance)) continue;
+            voice.collectibles ??= new();
+            voice.collectibles.Add((item, distance));
+        }
+    }
+
+    static void RevealCollectibles(Voice voice, double now, Vector3 origin)
+    {
+        if (voice.collectibles == null || now < voice.Start) return;
+        float elapsed = (float)(now - voice.Start);
+        float contentLength = (float)(voice.ContentEnd - voice.Start);
+        float sourceGain = voice.falloff.w * (voice.moving?.gain ?? 1);
+        foreach (var (item, sampledDistance) in voice.collectibles)
+        {
+            if (item == null || !item.isActiveAndEnabled || item.Collected) continue;
+            float distance = sampledDistance;
+            if (voice.moving != null)
+            {
+                Vector3 point = item.InteractionPosition;
+                distance += Vector3.Distance(point, origin) - Vector3.Distance(point, voice.blockerOrigin);
+            }
+            if (distance >= voice.occlusionRange) continue;
+            float age = elapsed - Mathf.Max(0, distance) / voice.speed;
+            // Match the peak and afterglow samples used by AudioSonarTrail in the shader.
+            float peak = ReadPeak(voice, age, contentLength);
+            if (voice.glow > .0001f)
+            {
+                peak = Mathf.Max(peak, ReadPeak(voice, age - voice.glow * .5f, contentLength) * .55f);
+                peak = Mathf.Max(peak, ReadPeak(voice, age - voice.glow, contentLength) * .15f);
+            }
+            float distanceGain = voice.falloff.z > 0
+                ? Mathf.Pow(1 - Mathf.SmoothStep(0, 1, Mathf.InverseLerp(voice.falloff.x, voice.falloff.y, distance)), voice.falloff.z)
+                : 1;
+            if (voice.settings.MapPeak(peak) * distanceGain * sourceGain >= .0001f) item.RevealFromSonar();
+        }
+    }
+
+    static float ReadPeak(Voice voice, float time, float contentLength)
+    {
+        if (time < 0 || time >= contentLength) return 0;
+        return voice.clip.Evaluate(voice.data.w > 0 ? time % voice.duration : time, 0);
     }
 
     bool CaptureOcclusion(int slot, Vector3 position, float range, bool highQuality, Transform source)
@@ -173,7 +239,10 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
                 || (voice.moving.position - voice.blockerOrigin).sqrMagnitude < .75f * .75f) continue;
             voice.nextOcclusion = now + .25;
             if (CaptureOcclusion(slot, voice.moving.position, voice.occlusionRange, voice.highQuality, voice.source))
+            {
                 voice.blockerOrigin = voice.moving.position;
+                CaptureCollectiblePaths(voice);
+            }
             nextMovingSlot = (slot + 1) % Capacity;
             return;
         }
@@ -183,13 +252,15 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
     {
         if (!isActiveAndEnabled || instance != this) return;
         using var scope = updateMarker.Auto();
-        double now = AudioSettings.dspTime; int active = 0;
+        double now = AudioSettings.dspTime; int active = 0, slotCount = 0;
         hasGold = false;
         for (int i = 0; i < Capacity; i++)
         {
             var voice = voices[i];
             if (voice == null || now > voice.End) { voices[i] = null; parameters[i] = Vector4.zero; continue; }
-            active++; var p = voice.moving != null ? voice.moving.position : voice.position;
+            active++; slotCount = i + 1;
+            var p = voice.moving != null ? voice.moving.position : voice.position;
+            RevealCollectibles(voice, now, p);
             origins[i] = new Vector4(p.x, p.y, p.z, (float)(now - voice.Start));
             blockerOrigins[i] = voice.blockerOrigin;
             parameters[i] = voice.parameters; levels[i] = voice.settings.PackPeakLevels(); data[i] = voice.data;
@@ -201,14 +272,16 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         }
         ActiveSourceCount = active;
         Shader.SetGlobalFloat("_AudioSonarActive", active > 0 ? 1 : 0);
+        Shader.SetGlobalInt("_AudioSonarSlotCount", slotCount);
         if (active == 0) return;
-        Shader.SetGlobalVectorArray("_AudioSonarOrigins", origins);
-        Shader.SetGlobalVectorArray("_AudioSonarBlockerOrigins", blockerOrigins);
-        Shader.SetGlobalVectorArray("_AudioSonarParameters", parameters);
-        Shader.SetGlobalVectorArray("_AudioSonarLevels", levels);
-        Shader.SetGlobalVectorArray("_AudioSonarData", data);
-        Shader.SetGlobalVectorArray("_AudioSonarFalloffs", falloffs);
-        Shader.SetGlobalVectorArray("_AudioSonarDensities", densities);
+        // The original property names retain their four-element allocation until Unity exits.
+        Shader.SetGlobalVectorArray("_AudioSonarOriginsBySource", origins);
+        Shader.SetGlobalVectorArray("_AudioSonarBlockerOriginsBySource", blockerOrigins);
+        Shader.SetGlobalVectorArray("_AudioSonarParametersBySource", parameters);
+        Shader.SetGlobalVectorArray("_AudioSonarLevelsBySource", levels);
+        Shader.SetGlobalVectorArray("_AudioSonarDataBySource", data);
+        Shader.SetGlobalVectorArray("_AudioSonarFalloffsBySource", falloffs);
+        Shader.SetGlobalVectorArray("_AudioSonarDensitiesBySource", densities);
     }
     public void ClearVisuals()
     {

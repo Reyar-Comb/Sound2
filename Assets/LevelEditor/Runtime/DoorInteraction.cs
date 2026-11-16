@@ -26,6 +26,13 @@ namespace Sound2.LevelEditing
         [Min(0)] public float autoCloseDelay;
         [Range(.1f, 3)] public float lockedShakeAngle = 1.5f;
         [Min(.1f)] public float lockedShakeDuration = .3f;
+        [Header("门交互音效与声波")]
+        [SerializeField, InspectorName("触发音效"), Tooltip("成功切换开关门时，从门把手播放一次并发出一道声波。")]
+        AudioClip interactionSound;
+        [SerializeField, Range(0, 1)] float interactionVolume = .65f;
+        [SerializeField, Min(1)] float interactionPulseRange = 8;
+        [SerializeField, Min(.1f)] float interactionPulseSpeed = 8;
+        [SerializeField, Min(.05f)] float interactionPulseAfterglow = .6f;
         public bool TargetOpen { get; private set; }
         public bool Blocked { get; private set; }
         public float CurrentAngle { get; private set; }
@@ -38,6 +45,7 @@ namespace Sound2.LevelEditing
 
         Quaternion closedRotation;
         Rigidbody hingeBody;
+        SpatialAudioEmitter interactionAudio;
         float swingSign = 1;
         float shakeRemaining, openTime;
         float receivedOpenAngle = -1, receivedSpeed;
@@ -72,8 +80,20 @@ namespace Sound2.LevelEditing
             TeleportBlocked = false;
             openTime = 0;
             receivedOpenAngle = -1;
+            PlayInteractionSound(player);
             if (TargetOpen && teleportDestination != null)
                 TeleportBlocked = !TryTransport(player);
+        }
+
+        void PlayInteractionSound(PlayerInteraction player)
+        {
+            if (interactionSound == null) return;
+            var anchor = interactionAnchor != null ? interactionAnchor : hinge;
+            if (interactionAudio == null && !anchor.TryGetComponent(out interactionAudio))
+                interactionAudio = anchor.gameObject.AddComponent<SpatialAudioEmitter>();
+            interactionAudio.PlayOneShot(interactionSound, interactionVolume);
+            player.GetComponentInChildren<SonarPulseField>()?.EmitFrom(anchor.position, interactionPulseRange,
+                interactionPulseSpeed, interactionPulseAfterglow, null, source: transform);
         }
 
         public bool CanOpenFrom(Vector3 position)

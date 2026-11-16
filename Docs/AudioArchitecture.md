@@ -195,7 +195,7 @@ public void Reveal(Vector3 origin)
 
 `PlayerController.Landed(float impactSpeed)` 在一次真实空中→地面接触时触发；短于 0.08s 的接触变化或低于 `Minimum Landing Speed`（默认 2.5m/s）的轻微沉降不算落地冲击。`Teleport` 重置下落状态，直接传送至地面不会假触发，从空中继续下落则正常触发。`FootstepEmitter` 订阅该事件，复用 32–35 脚步波槽，落地当帧不重复发普通脚步。
 
-`Landing Multiplier` 默认 2：声波范围、距离衰减起止位置和 AI 可听范围为脚步的两倍，视觉强度乘二并封顶 1；AI 事件复用 `Impact` 类型。音频使用独立的 `Landing Clip` 与同一个显式 `Audio Source`，增益为 `clamp01(Volume * Landing Multiplier)`，默认 0.8 对比普通脚步 0.4。`Landing Clip` 留空时保持静音，不回退到脚步录音。
+`Landing Multiplier` 默认 2，落地声波范围、距离衰减起止位置和 AI 可听范围为脚步的两倍，视觉强度乘二并封顶 1。AI 事件复用 `Impact` 类型。落地默认从 `Clips` 播放下一条脚步录音，也可以用 `Landing Clip` 指定录音。`Landing Volume Multiplier` 默认 1.35，普通脚步音量为 0.4 时，落地音量为 0.54。
 
 ## 验证入口
 

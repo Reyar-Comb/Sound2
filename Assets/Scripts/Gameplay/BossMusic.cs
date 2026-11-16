@@ -20,6 +20,7 @@ internal sealed class BossMusic
         {
             source.playOnAwake = false;
             source.spatialBlend = 0;
+            source.bypassReverbZones = true;
         }
     }
 

@@ -63,7 +63,11 @@ public sealed class AudioReactiveSonarEmitterEditor : Editor
         using (new EditorGUI.DisabledScope(!Application.isPlaying || emitter.analysis == null || !emitter.analysis.IsReady))
         {
             if (GUILayout.Button("Play + emit audio wave")) emitter.Trigger();
-            if (GUILayout.Button("Stop audio (emitted waves keep travelling)")) emitter.AudioPool.StopAll();
+            if (GUILayout.Button("Stop audio (emitted waves keep travelling)"))
+            {
+                emitter.Stop();
+                emitter.AudioPool.StopAll();
+            }
         }
     }
 }

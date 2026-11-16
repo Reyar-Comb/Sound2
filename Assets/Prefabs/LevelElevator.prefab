@@ -1289,6 +1289,7 @@ MonoBehaviour:
       m_Calls: []
   elevator: {fileID: 4707925825356582448}
   inside: 1
+  pressSound: {fileID: 0}
 --- !u!1 &4423712098850432247
 GameObject:
   m_ObjectHideFlags: 0
@@ -2277,6 +2278,7 @@ MonoBehaviour:
       m_Calls: []
   elevator: {fileID: 4707925825356582448}
   inside: 0
+  pressSound: {fileID: 0}
 --- !u!1 &7190892762338148060
 GameObject:
   m_ObjectHideFlags: 0
@@ -2339,6 +2341,11 @@ MonoBehaviour:
   interiorCenter: {x: 0, y: 1.5, z: 0}
   interiorSize: {x: 3.5, y: 3, z: 4.6}
   doorSeconds: 0.8
+  buttonPressSound: {fileID: 8300000, guid: 38fb487906e326d45a916ba02e0df3e1, type: 3}
+  doorOpenSound: {fileID: 8300000, guid: a3a3ea96f687df5488cd627004ca1527, type: 3}
+  doorCloseSound: {fileID: 8300000, guid: f7df39322cb4a5f478b78a39edb72490, type: 3}
+  travelSound: {fileID: 8300000, guid: 2b5e4c7d38cbdcd4abdeb70a654e4561, type: 3}
+  travelSoundOrigin: {fileID: 6097014074707828943}
 --- !u!114 &8192688720791482413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2355,6 +2362,7 @@ MonoBehaviour:
   surfaceAnchor: {x: 0, y: 0, z: 0}
   surfaceOffset: 0
   gameplayMaterial: {fileID: 0}
+  combinedGameplayMesh: {fileID: 0}
 --- !u!1 &7847716157123078873
 GameObject:
   m_ObjectHideFlags: 0

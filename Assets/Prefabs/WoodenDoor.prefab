@@ -306,6 +306,11 @@ MonoBehaviour:
   obstructionLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+  interactionSound: {fileID: 8300000, guid: 00252af5853045afbcb1179ed36214b1, type: 3}
+  interactionVolume: 0.65
+  interactionPulseRange: 8
+  interactionPulseSpeed: 8
+  interactionPulseAfterglow: 0.6
 --- !u!1 &5847819562544779142
 GameObject:
   m_ObjectHideFlags: 0

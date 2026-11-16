@@ -1461,7 +1461,7 @@ MonoBehaviour:
   geometryRoot: {fileID: 508970749046095532}
   geometryLayers:
     serializedVersion: 2
-    m_Bits: 4294967291
+    m_Bits: 307
   agentRadius: 0.35
   agentHeight: 1.8
   agentClimb: 0.3

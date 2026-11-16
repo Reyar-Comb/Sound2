@@ -86,7 +86,7 @@ public static class VerifyPlayerPointCloudPrefab
             check(foot.audioSource != null && foot.audioSource.transform.IsChildOf(root.transform)
                 && foot.audioSource.isPlaying && foot.clips.Select(c => c.name).SequenceEqual(new[] { "step1", "step2", "step3", "step4" }),
                 "Direct prefab instance plays the four explicitly bound recordings");
-            check(foot.landingClip == null, "Landing stays unassigned without falling back to a step recording");
+            check(foot.landingClip == null && foot.landingVolumeMultiplier > 1, "Landing uses a louder step recording by default");
             return new { passed = true, checks };
         }
         finally

@@ -36,8 +36,11 @@ public sealed class FootstepEmitter : MonoBehaviour
     public AudioClip[] clips;
     [Range(0, 1)] public float volume = .4f;
     [Header("Landing (shared footstep pulse channel)")]
+    [Tooltip("Optional landing recording. When empty, uses the next clip in the footstep list.")]
     public AudioClip landingClip;
-    [Min(1), Tooltip("Scales landing audio gain, pulse range and AI hearing range relative to footsteps.")]
+    [Min(1), Tooltip("Scales landing audio volume relative to a normal footstep.")]
+    public float landingVolumeMultiplier = 1.35f;
+    [Min(1), Tooltip("Scales landing pulse range and AI hearing range relative to footsteps.")]
     public float landingMultiplier = 2;
     public UnityEvent<Vector3> onStep = new UnityEvent<Vector3>();
     public UnityEvent<Vector3> onLand = new UnityEvent<Vector3>();
@@ -152,24 +155,25 @@ public sealed class FootstepEmitter : MonoBehaviour
             pulseStrength = Mathf.Clamp01(distanceSettings.pulseStrength * multiplier)
         };
         EmitPulse(multiplier, landingDistance);
-        if (soundEnabled && audioSource != null && landingClip != null)
-            audioSource.PlayOneShot(landingClip, Mathf.Clamp01(volume * multiplier));
+        if (soundEnabled)
+            PlayFootstepSound(landingClip, Mathf.Clamp01(volume * Mathf.Max(1, landingVolumeMultiplier)));
         GameplayNoise.Emit(LastOrigin, hearingRange * multiplier, GameplayNoiseKind.Impact, this);
         Landings++;
         Landed?.Invoke(LastOrigin);
         onLand.Invoke(LastOrigin);
     }
 
-    void PlayStepSound()
+    void PlayStepSound() => PlayFootstepSound(null, volume);
+
+    void PlayFootstepSound(AudioClip clip, float gain)
     {
         if (audioSource == null) return;
-        AudioClip clip = null;
         if (clips != null)
             for (int i = 0; i < clips.Length && clip == null; i++)
             {
                 clip = clips[clipIndex % clips.Length];
                 clipIndex = (clipIndex + 1) % clips.Length;
             }
-        if (clip != null) audioSource.PlayOneShot(clip, volume);
+        if (clip != null) audioSource.PlayOneShot(clip, gain);
     }
 }

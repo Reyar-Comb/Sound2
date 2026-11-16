@@ -12,6 +12,8 @@ public sealed class SpatialAudioSettings
     public bool hrtf = true;
     public bool occlusion;
     public bool reflections;
+    [Tooltip("Keep this source outside the shared room reverb and wall filter.")]
+    public bool bypassRoomAcoustics;
     [Range(0, 2)] public float reflectionMix = .65f;
     public SoundDistanceMode distanceMode = SoundDistanceMode.Physics;
     [Min(.01f)] public float minDistance = 1;
@@ -61,6 +63,9 @@ public sealed class SpatialAudioEmitter : MonoBehaviour
     AudioSource source;
     SteamAudioSource steamSource;
     AudioListener cachedListener;
+    AudioLowPassFilter roomLowPass;
+    bool roomBlocked;
+    float nextWallCheck, roomGain = 1, roomCutoff = WorldRoomAcoustics.ClearCutoff;
     volatile float leftGain = 1, rightGain = 1;
     volatile int filterChannels;
     float smoothLeft = 1, smoothRight = 1;
@@ -86,7 +91,11 @@ public sealed class SpatialAudioEmitter : MonoBehaviour
     void LateUpdate() => Apply();
 
     /// <summary>Apply immediately before a transient, or after changing settings.</summary>
-    public void Apply()
+    public void Apply() => Apply(false);
+
+    internal void ApplyBeforePlayback() => Apply(true);
+
+    void Apply(bool startingPlayback)
     {
         Initialize();
         if (listener == null && (cachedListener == null || !cachedListener.isActiveAndEnabled))
@@ -106,7 +115,8 @@ public sealed class SpatialAudioEmitter : MonoBehaviour
         // whole signal, including the wet tail, without a second inverse-distance gain.
         steamSource.distanceAttenuation = settings.distanceMode == SoundDistanceMode.Physics;
         steamSource.distanceAttenuationInput = DistanceAttenuationInput.PhysicsBased;
-        source.volume = Mathf.Clamp01(volume) * (steamSource.distanceAttenuation ? 1 : settings.GainAt(CurrentDistance));
+        float gain = Mathf.Clamp01(volume) * (steamSource.distanceAttenuation ? 1 : settings.GainAt(CurrentDistance));
+        source.volume = gain * ApplyRoomAcoustics(ears, gain, startingPlayback);
         leftGain = rightGain = 1;
         if (ears == null || settings.farEarGain >= 1) return;
         var horizontal = Vector3.ProjectOnPlane(transform.position - ears.position, ears.up);
@@ -115,10 +125,51 @@ public sealed class SpatialAudioEmitter : MonoBehaviour
         rightGain = side < 0 ? Mathf.Lerp(1, settings.farEarGain, -side) : 1;
     }
 
+    float ApplyRoomAcoustics(Transform ears, float gain, bool startingPlayback)
+    {
+        var rooms = WorldRoomAcoustics.Current;
+        bool useRooms = rooms != null && rooms.Available && gameObject.scene == rooms.gameObject.scene
+            && !settings.bypassRoomAcoustics;
+        float send = useRooms && !settings.reflections ? 1 : 0;
+        if (source.reverbZoneMix != send) source.reverbZoneMix = send;
+
+        bool checkWalls = useRooms && !settings.occlusion && ears != null && gain > .001f
+            && (startingPlayback || source.isPlaying);
+        if (startingPlayback || !checkWalls)
+        {
+            roomBlocked = false;
+            nextWallCheck = 0;
+        }
+        if (checkWalls && Time.unscaledTime >= nextWallCheck
+            && rooms.TrySample(transform, ears.position, CurrentDistance, out bool blocked))
+        {
+            roomBlocked = blocked;
+            nextWallCheck = Time.unscaledTime + .15f;
+        }
+
+        if (roomBlocked && roomLowPass == null)
+        {
+            roomLowPass = gameObject.AddComponent<AudioLowPassFilter>();
+            roomLowPass.cutoffFrequency = WorldRoomAcoustics.ClearCutoff;
+        }
+        float targetGain = roomBlocked ? WorldRoomAcoustics.WallGain : 1;
+        float targetCutoff = roomBlocked ? WorldRoomAcoustics.WallCutoff : WorldRoomAcoustics.ClearCutoff;
+        float blend = startingPlayback || !checkWalls ? 1 : Mathf.Clamp01(12 * Time.unscaledDeltaTime);
+        roomGain = Mathf.Lerp(roomGain, targetGain, blend);
+        roomCutoff = Mathf.Lerp(roomCutoff, targetCutoff, blend);
+        if (roomLowPass != null)
+        {
+            bool muffled = roomCutoff < WorldRoomAcoustics.ClearCutoff - 10;
+            if (roomLowPass.enabled != muffled) roomLowPass.enabled = muffled;
+            if (muffled) roomLowPass.cutoffFrequency = roomCutoff;
+        }
+        return roomGain;
+    }
+
     public void PlayOneShot(AudioClip clip, float gain = 1)
     {
         if (clip == null || !isActiveAndEnabled) return;
-        Apply();
+        ApplyBeforePlayback();
         source.PlayOneShot(clip, Mathf.Clamp01(gain));
     }
 

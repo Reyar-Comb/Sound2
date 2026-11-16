@@ -32,7 +32,8 @@ public sealed class PlayerController : MonoBehaviour
     public bool DeathSequenceLocked { get; internal set; }
     internal bool EncounterInputLocked { get; set; }
     internal bool OpeningSequenceLocked { get; set; }
-    public bool InputSuspended { get => inputSuspended || DeathSequenceLocked || EncounterInputLocked || OpeningSequenceLocked; set => inputSuspended = value; }
+    bool consoleInputLocked;
+    public bool InputSuspended { get => inputSuspended || DeathSequenceLocked || EncounterInputLocked || OpeningSequenceLocked || consoleInputLocked; set => inputSuspended = value; }
     public bool TransportLocked { get; set; }
     public Transform ViewTransform => cameraTransform;
     public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);
@@ -92,6 +93,12 @@ public sealed class PlayerController : MonoBehaviour
         if (captured) EnableJumpInput();
         InputSuspended = !captured;
         ApplyCursorCapture(captured && isActiveAndEnabled);
+    }
+
+    internal void SetConsoleInput(bool open)
+    {
+        consoleInputLocked = open;
+        ApplyCursorCapture(!InputSuspended && isActiveAndEnabled && !SonicSpaceStartMenu.BlocksGameplay);
     }
 
     private void EnableJumpInput()

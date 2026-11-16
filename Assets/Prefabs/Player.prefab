@@ -329,6 +329,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: bde7a78f58ee63a47a0a7a41ac673795, type: 3}
   volume: 0.4
   landingClip: {fileID: 0}
+  landingVolumeMultiplier: 1.35
   landingMultiplier: 2
   onStep:
     m_PersistentCalls:
