@@ -192,7 +192,7 @@ public static class VerifyIndependentLevels
         var destinationLevel=destination.Level;destinationLevel.transform.position+=new Vector3(900,31,400);destinationLevel.transform.Rotate(0,90,0);connection.travelSeconds=.15f;connection.bidirectional=true;
         var interaction=player.GetComponent<PlayerInteraction>();source.Use(interaction,false);await Until(()=>source.DoorOpen>.999f,"outside call opens doors");
         player.Teleport(source.transform.TransformPoint(new Vector3(0,1,0)));await Task.Delay(100);
-        var ball=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupBouncyBall.prefab"));ball.transform.position=source.transform.TransformPoint(new Vector3(.9f,1,0));
+        var ball=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupBouncyBall.prefab"));ball.transform.SetParent(source.Level.transform.Find("Props"),false);ball.transform.position=source.transform.TransformPoint(new Vector3(.9f,1,0));
         var body=ball.GetComponent<Rigidbody>();body.isKinematic=true;Physics.SyncTransforms();var offset=source.transform.InverseTransformPoint(body.position);
         var held=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/PickupBouncyBall.prefab"));held.transform.position=player.GetComponentInChildren<Camera>().transform.position+player.transform.forward*.6f;Physics.SyncTransforms();
         var pickup=player.GetComponent<PlayerPickup>();Check(pickup.TryPickUp(held.GetComponent<PickupItem>()),"pickup before travel");
@@ -200,10 +200,8 @@ public static class VerifyIndependentLevels
         await Until(()=>!world.Travelling,"travel completes");
         Check(world.CurrentLevel==destinationLevel&&destination.Contains(player.transform.position),"arrives at rotated displaced endpoint");
         Check(!player.TransportLocked&&destination.DoorOpen>.999f,"arrival unlocks and opens");
-        Check(Vector3.Distance(body.position,destination.transform.TransformPoint(offset))<.05f&&body.isKinematic,"cargo offset and physics retained");
-        Check(pickup.HeldItem==held.GetComponent<PickupItem>(),"held item remains held");
-        held.GetComponent<PickupItem>().Release(player.transform.position+Vector3.right,Vector3.zero);await Task.Delay(100);
-        Check(held.transform.IsChildOf(destinationLevel.transform),"release belongs to destination level");
+        Check(Vector3.Distance(body.position,source.transform.TransformPoint(offset))<.05f&&body.isKinematic&&!ball.activeInHierarchy,"loose item remains in source level");
+        Check(pickup.HeldItem==null&&held==null,"held item cleared on successful travel");
         destination.Use(interaction,true);await Until(()=>!world.Travelling,"bidirectional return completes");Check(world.CurrentLevel==source.Level,"returns by world connection");
         source.Use(interaction,true);Check(world.Travelling,"second trip begins");world.enabled=false;Check(!world.Travelling&&!player.TransportLocked&&!source.Busy,"cancel restores input and endpoint");world.enabled=true;
         Object.Destroy(ball);Object.Destroy(held);

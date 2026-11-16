@@ -33,7 +33,7 @@ namespace Sound2.LevelEditing.Editor
         }
         public static void EnsureCurrent(LevelLayout layout)
         {
-            if (layout.manualGeometry) return;
+            if (layout.manualGeometry || LevelBuilder.IsScenePrefabInstance(layout)) return;
             var doors = EmbeddedDoorPlacement.Doors(layout);
             if (doors.Length == 0 && !signatures.ContainsKey(layout)) return;
             if (failed.Contains(layout) || !signatures.TryGetValue(layout, out var previous) || previous != Signature(layout, doors))
@@ -64,7 +64,7 @@ namespace Sound2.LevelEditing.Editor
             foreach (var key in stale) { signatures.Remove(key); failed.Remove(key); }
             foreach (var layout in Resources.FindObjectsOfTypeAll<LevelLayout>())
             {
-                if (layout.manualGeometry || EditorUtility.IsPersistent(layout) || !layout.gameObject.scene.IsValid()
+                if (layout.manualGeometry || LevelBuilder.IsScenePrefabInstance(layout) || EditorUtility.IsPersistent(layout) || !layout.gameObject.scene.IsValid()
                     || EditorSceneManager.IsPreviewScene(layout.gameObject.scene)) continue;
                 var doors = EmbeddedDoorPlacement.Doors(layout);
                 if (doors.Length == 0 && !signatures.ContainsKey(layout)) continue;

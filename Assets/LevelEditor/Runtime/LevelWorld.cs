@@ -28,7 +28,6 @@ namespace Sound2.LevelEditing
         public LevelLayout CurrentLevel { get; private set; }
         public LevelElevator ArrivalCheckpoint { get; private set; }
         public bool Travelling { get; private set; }
-        readonly List<(Rigidbody body,bool kinematic,Transform parent,Vector3 position,Quaternion rotation)> cargo = new();
 
         LevelElevator departure, arrival;
         LevelActivation preparation;
@@ -192,13 +191,6 @@ namespace Sound2.LevelEditing
             source.SetPaperEffect("_ArrivalDissolve", 0);
             source.SetPaperEffect("_RespawnPaper", 0);
             source.Open(false);
-            cargo.Clear();
-            foreach(var body in FindObjectsByType<Rigidbody>())
-            {
-                if(!source.Contains(body.worldCenterOfMass)||body.GetComponent<PickupItem>()?.IsHeld==true)continue;
-                cargo.Add((body,body.isKinematic,body.transform.parent,source.transform.InverseTransformPoint(body.position),Quaternion.Inverse(source.transform.rotation)*body.rotation));
-                if(!body.isKinematic){body.linearVelocity=Vector3.zero;body.angularVelocity=Vector3.zero;}body.isKinematic=true;
-            }
             while(source!=null&&source.DoorOpen>0)yield return null;
             if(source==null||destination==null||destination.Level==null||actor==null){Release(true);yield break;}
             yield return CaptureInitialLevelAsync(destination.Level);
@@ -247,18 +239,11 @@ namespace Sound2.LevelEditing
             Vector3 offset = source.transform.InverseTransformPoint(actor.transform.position);
             destination.SetPaperEffect("_ArrivalDissolve", 0);
             destination.SetPaperEffect("_RespawnPaper", 0);
+            // Clear only when the transfer commits: cancellation must keep the held item.
+            // Loose objects stay in the departure level; only the player crosses levels.
+            actor.GetComponent<PlayerPickup>()?.ClearHeldItem();
             actor.Teleport(destination.transform.TransformPoint(offset));
             actor.RotateTransport(destination.transform.eulerAngles.y-source.transform.eulerAngles.y);
-            foreach(var item in cargo)if(item.body!=null)
-            {
-                item.body.transform.SetParent(destination.Level.transform.Find("Props")??destination.Level.transform,true);
-                // SetParent dirties the Transform; update it as well as the physics pose
-                // so the next transform sync cannot overwrite the cargo's teleport.
-                Vector3 position = destination.transform.TransformPoint(item.position);
-                Quaternion rotation = destination.transform.rotation * item.rotation;
-                item.body.transform.SetPositionAndRotation(position, rotation);
-                item.body.position=position;item.body.rotation=rotation;
-            }
             Physics.SyncTransforms();
             Activate(destination.Level);
             preparation.Commit(); preparation = null;
@@ -298,8 +283,7 @@ namespace Sound2.LevelEditing
         {
             preparation?.Dispose(); preparation = null;
             if(cancelled && departure!=null)departure.Open(true);
-            foreach(var item in cargo)if(item.body!=null){if(cancelled && item.parent!=null)item.body.transform.SetParent(item.parent,true);item.body.isKinematic=item.kinematic;}
-            cargo.Clear();if(departure!=null)departure.Busy=false;if(arrival!=null)arrival.Busy=false;
+            if(departure!=null)departure.Busy=false;if(arrival!=null)arrival.Busy=false;
             departure=arrival=null;Travelling=false;
         }
         void OnDisable()

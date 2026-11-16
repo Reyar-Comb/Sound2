@@ -36,6 +36,8 @@ namespace Sound2.LevelEditing.Editor
         public static void Open() => GetWindow<LevelDesignerWindow>("关卡编辑器");
         public void Bind(LevelLayout target)
         {
+            if (target != null && LevelBuilder.IsScenePrefabInstance(target))
+                target = PrefabUtility.GetCorrespondingObjectFromSource(target);
             if (target != null && EditorUtility.IsPersistent(target))
             {
                 var stage = PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(target));
@@ -84,7 +86,9 @@ namespace Sound2.LevelEditing.Editor
             if (map != null) { seededMap = map; seededMode = true; Refresh(); return; }
             var target = Selection.activeGameObject.GetComponentInParent<LevelLayout>();
             if (target != null && EditorUtility.IsPersistent(target)) return;
-            if (target != null && target != layout) Bind(target);
+            if (target != null && LevelBuilder.IsScenePrefabInstance(target)) return;
+            // Selecting an instance must not unexpectedly change stages; use the Inspector button to edit its asset.
+            if (target != null && target != layout && !LevelBuilder.IsScenePrefabInstance(target)) Bind(target);
             if (target != null)
             {
                 var enemy = Selection.activeGameObject.GetComponentInParent<LevelEnemy>();
@@ -92,7 +96,7 @@ namespace Sound2.LevelEditing.Editor
                 selectedEnemy = null; SelectPropFromHierarchy();
             }
         }
-        void OnUndo() { if (tool == Tool.RepositionProp) tool = Tool.Select; if (layout != null) { TryRebuild(); Refresh(); } }
+        void OnUndo() { if (tool == Tool.RepositionProp) tool = Tool.Select; if (layout != null) { if (!LevelBuilder.IsScenePrefabInstance(layout)) TryRebuild(); Refresh(); } }
 
         public void CreateGUI()
         {
@@ -112,6 +116,15 @@ namespace Sound2.LevelEditing.Editor
             if (seededMode) { DrawSeededMode(); return; }
             var target = new ObjectField("编辑布局") { objectType = typeof(LevelLayout), allowSceneObjects = true, value = layout };
             target.RegisterValueChangedCallback(e => Bind((LevelLayout)e.newValue)); header.Add(target);
+            bool instance = LevelBuilder.IsScenePrefabInstance(layout);
+            foreach (var section in new[] { "tools", "workspace", "settings", "footer" })
+                rootVisualElement.Q(section).SetEnabled(!instance);
+            if (instance)
+            {
+                header.Add(new HelpBox("当前是关卡实例。请打开 Prefab 编辑关卡内容；总场景只需调整摆放和电梯连接。", HelpBoxMessageType.Info));
+                Button(header, "打开关卡 Prefab", () => Bind(layout));
+                status = "关卡实例已关联 Prefab。"; UpdateStatus(); return;
+            }
             var row = Row(header);
             Button(row, "新建独立场景", CreateLayout);
             Button(row, "俯视 / 框选全部", Frame);
@@ -338,7 +351,7 @@ namespace Sound2.LevelEditing.Editor
         void Select(Kind k, int index) { if (tool == Tool.RepositionProp || tool == Tool.Partition) tool = Tool.Select; selectedEnemy = null; selectedProp = null; kind = k; selected = index; Refresh(); SceneView.RepaintAll(); }
         void Change(Action action)
         {
-            if (layout == null || Application.isPlaying) return;
+            if (layout == null || Application.isPlaying || LevelBuilder.IsScenePrefabInstance(layout)) return;
             Undo.RecordObject(layout, "编辑关卡布局"); action(); EditorUtility.SetDirty(layout); TryRebuild(); DrawObjects();
         }
         bool TryRebuild()
@@ -365,6 +378,7 @@ namespace Sound2.LevelEditing.Editor
 
         void Save()
         {
+            if (LevelBuilder.IsScenePrefabInstance(layout)) { EditorSceneManager.SaveScene(layout.gameObject.scene); return; }
             if (layout == null || !TryRebuild()) return;
             var stage = PrefabStageUtility.GetCurrentPrefabStage();
             if (stage != null && stage.scene == layout.gameObject.scene)
@@ -418,7 +432,8 @@ namespace Sound2.LevelEditing.Editor
             string path = EditorUtility.SaveFilePanelInProject("导出独立关卡", layout.name, "prefab", "只包含本关模型、道具和电梯入口；连接关系由大场景保存。");
             if (string.IsNullOrEmpty(path)) return;
             LevelBuilder.ExportPrefab(layout, path);
-            status = "已导出独立关卡：" + path; UpdateStatus();
+            Bind(AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<LevelLayout>());
+            status = "已保存关卡 Prefab 并保留实例关联：" + path; UpdateStatus();
         }
 
         void Frame()
@@ -440,7 +455,7 @@ namespace Sound2.LevelEditing.Editor
         Vector2 SnapPartition(LevelRoom room, Vector2 point) => snap <= 0 ? point : room.PartitionLocal(Snap(room.PartitionPoint(point)));
         void SceneGUI(SceneView view)
         {
-            if (seededMode || layout == null || Application.isPlaying) return;
+            if (seededMode || layout == null || Application.isPlaying || LevelBuilder.IsScenePrefabInstance(layout)) return;
             Event e = Event.current;
             var ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
             var plane = new Plane(layout.transform.up, layout.transform.position);

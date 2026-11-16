@@ -22,7 +22,9 @@ public sealed class PlayerPickup : MonoBehaviour
 
     public PickupItem HeldItem => heldItem != null && heldItem.Holder == this ? heldItem : null;
 
-    public void ClearForRespawn()
+    public void ClearForRespawn() => ClearHeldItem();
+
+    public void ClearHeldItem()
     {
         var item = HeldItem;
         heldItem = followingItem = null;

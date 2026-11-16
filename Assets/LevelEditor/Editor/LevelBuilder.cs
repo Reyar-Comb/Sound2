@@ -10,8 +10,18 @@ namespace Sound2.LevelEditing.Editor
 {
     public static class LevelBuilder
     {
+        // Scene instances own placement and routing only. Geometry belongs to the level asset.
+        public static bool IsScenePrefabInstance(LevelLayout layout)
+        {
+            if (layout == null || !PrefabUtility.IsPartOfPrefabInstance(layout)) return false;
+            var stage = PrefabStageUtility.GetCurrentPrefabStage();
+            return stage == null || stage.scene != layout.gameObject.scene;
+        }
+
         public static void Rebuild(LevelLayout layout)
         {
+            if (IsScenePrefabInstance(layout))
+                throw new InvalidOperationException("请打开关卡 Prefab 后编辑布局，避免在总场景产生几何覆盖。");
             if (layout.manualGeometry) return;
             if (Application.isPlaying) throw new InvalidOperationException("请退出运行模式后编辑关卡。");
             var meshes = LevelGeometry.Build(layout); // Validate first; preserve the last valid preview on failure.
@@ -63,6 +73,7 @@ namespace Sound2.LevelEditing.Editor
 
         public static void Persist(LevelLayout layout, string scenePath)
         {
+            if (IsScenePrefabInstance(layout)) return;
             if (layout.manualGeometry) return;
             EmbeddedDoorEditorSync.EnsureCurrent(layout);
             if (layout.generatedRoot == null) Rebuild(layout);
@@ -111,27 +122,12 @@ namespace Sound2.LevelEditing.Editor
         public static void ExportPrefab(LevelLayout source, string path, bool rebuild = true)
         {
             if (rebuild) Rebuild(source);
-            var scene = EditorSceneManager.NewPreviewScene();
-            try
-            {
-                var copy = Object.Instantiate(source.gameObject);
-                SceneManager.MoveGameObjectToScene(copy, scene);
-                copy.name = source.name;
-                copy.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-                RestorePropPrefabLinks(source.transform.Find("Props"), copy.transform.Find("Props"));
-                var layout = copy.GetComponent<LevelLayout>();
-                // Persist owns and destroys transient meshes; the scene must retain its preview meshes.
-                foreach (var filter in layout.generatedRoot.GetComponentsInChildren<MeshFilter>(true))
-                    if (filter.sharedMesh != null && !AssetDatabase.Contains(filter.sharedMesh))
-                    {
-                        filter.sharedMesh = Object.Instantiate(filter.sharedMesh);
-                        filter.sharedMesh.name = filter.gameObject.name;
-                        filter.GetComponent<MeshCollider>().sharedMesh = filter.sharedMesh;
-                    }
-                Persist(layout, path);
-                PrefabUtility.SaveAsPrefabAsset(copy, path);
-            }
-            finally { EditorSceneManager.ClosePreviewScene(scene); }
+            Persist(source, path);
+            var stage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (stage != null && stage.scene == source.gameObject.scene)
+                PrefabUtility.SaveAsPrefabAsset(source.gameObject, path);
+            else
+                PrefabUtility.SaveAsPrefabAssetAndConnect(source.gameObject, path, InteractionMode.UserAction);
         }
 
         public static void Export(LevelLayout source, string path, bool includePlayer)
