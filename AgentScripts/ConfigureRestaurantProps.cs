@@ -130,7 +130,10 @@ public static class ConfigureRestaurantProps
         deckCollider.sharedMesh = StoreCollision("DeckCollision", collisionMesh);
         foreach (int side in new[] { -1, 1 }) root.AddComponent<MeshCollider>().sharedMesh = StoreCollision("StairRamp" + side, StairRamp(side));
         var anchor = new GameObject("Elevator placement (deck level)"); anchor.transform.SetParent(root.transform, false); anchor.transform.localPosition = new Vector3(0, .7f, .5f);
-        Metadata(); PrefabUtility.SaveAsPrefabAsset(root, path); Object.DestroyImmediate(root); root = null;
+        Metadata();
+        Sound2.LevelEditing.Editor.ConservativeColliderOptimizer.Optimize(root,
+            Sound2.LevelEditing.Editor.ConservativeColliderOptimizer.ReferencedColliders(new[]{root}));
+        PrefabUtility.SaveAsPrefabAsset(root, path); Object.DestroyImmediate(root); root = null;
     }
     static Mesh StoreCollision(string name, Mesh source)
     {

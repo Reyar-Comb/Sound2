@@ -3646,6 +3646,10 @@ PrefabInstance:
       value: 0.060000002
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedHash
+      value: -687648557
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: innerRadius
       value: 11
       objectReference: {fileID: 0}
@@ -3654,9 +3658,21 @@ PrefabInstance:
       value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVisual
+      value: 
+      objectReference: {fileID: -2852513942496255548, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVersion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.size
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedCollision
+      value: 
+      objectReference: {fileID: -5089608147196423825, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.data[0].startAngle
       value: 0
@@ -4230,6 +4246,10 @@ PrefabInstance:
       value: 0.060000002
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedHash
+      value: 483256339
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: innerRadius
       value: 27
       objectReference: {fileID: 0}
@@ -4238,9 +4258,21 @@ PrefabInstance:
       value: 28
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVisual
+      value: 
+      objectReference: {fileID: 1609775875570047072, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVersion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.size
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedCollision
+      value: 
+      objectReference: {fileID: 1886860099321952764, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.data[0].startAngle
       value: 70
@@ -4883,6 +4915,7 @@ MonoBehaviour:
   soundPriorityMemory: 1.5
   contactDamageRadius: 0.65
   contactDamageInterval: 0.5
+  exactContactDamage: 0
 --- !u!195 &710386320
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -5894,6 +5927,10 @@ PrefabInstance:
       value: 0.060000002
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedHash
+      value: 911960467
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: innerRadius
       value: 15
       objectReference: {fileID: 0}
@@ -5902,9 +5939,21 @@ PrefabInstance:
       value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVisual
+      value: 
+      objectReference: {fileID: 4359236311809250573, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVersion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.size
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedCollision
+      value: 
+      objectReference: {fileID: 8398124939818345541, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.data[0].startAngle
       value: 160
@@ -6007,6 +6056,10 @@ PrefabInstance:
       value: 0.060000002
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedHash
+      value: 1216893139
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: innerRadius
       value: 23
       objectReference: {fileID: 0}
@@ -6015,9 +6068,21 @@ PrefabInstance:
       value: 24
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVisual
+      value: 
+      objectReference: {fileID: -2893445296254559563, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVersion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.size
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedCollision
+      value: 
+      objectReference: {fileID: 3494683537135950154, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.data[0].startAngle
       value: 0
@@ -8757,6 +8822,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60898eb98d80405489368309154f5604, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Sound2.LevelEditing.LevelLayout
+  manualGeometry: 0
   partitions: []
   rooms:
   - id: 7036897c41cc4025bf68c38ba4e1b22d
@@ -10427,6 +10493,10 @@ PrefabInstance:
       value: 0.060000002
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedHash
+      value: -1249875949
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: innerRadius
       value: 19
       objectReference: {fileID: 0}
@@ -10435,9 +10505,21 @@ PrefabInstance:
       value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVisual
+      value: 
+      objectReference: {fileID: -6960224115265984498, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedVersion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.size
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
+      propertyPath: storedCollision
+      value: 
+      objectReference: {fileID: -2503704859102569956, guid: ecbdebd73164690459c9e64e0a22c25c, type: 2}
     - target: {fileID: 3879159851008597188, guid: 011bee4f8b1562d42b1fec266a0753c7, type: 3}
       propertyPath: gaps.Array.data[0].startAngle
       value: 20

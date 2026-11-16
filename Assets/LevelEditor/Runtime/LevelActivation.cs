@@ -66,6 +66,12 @@ namespace Sound2.LevelEditing
             }
             // Start callbacks can also initialize geometry, so readiness needs a further frame.
             yield return null;
+            // Start queues passive voices instead of constructing them all in that frame.
+            // Keep the floor in preparation until its voices are ready for immediate impacts.
+            var emitters = level.GetComponentsInChildren<SonarObjectEmitter>();
+            foreach (var emitter in emitters)
+                while (emitter != null && emitter.isActiveAndEnabled && !emitter.AudioReady)
+                    yield return null;
             level.IsPreparing = false;
         }
 

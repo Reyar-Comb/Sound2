@@ -12,6 +12,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
     [Tooltip("Material using the Screen Grid Face And Corner Points shader.")]
     public Material settings;
     private PointPass pass;
+    private ElevatorGridPass elevatorGridPass;
     static readonly System.Collections.Generic.Dictionary<ScriptableRenderer, BlackBoxPointCloudFeature> activeRenderers = new();
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetRenderers() => activeRenderers.Clear();
@@ -44,6 +45,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
 
     public override void Create()
     {
+        elevatorGridPass = new ElevatorGridPass { renderPassEvent = RenderPassEvent.BeforeRenderingTransparents };
         pass = new PointPass { renderPassEvent = RenderPassEvent.BeforeRenderingTransparents };
         pass.ConfigureInput(ScriptableRenderPassInput.Depth);
     }
@@ -53,10 +55,6 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
         activeRenderers[renderer] = this;
         // Authoring/Scene cameras keep their ordinary materials and lighting; effects belong to the running game.
         if (settings == null || !Application.isPlaying || renderingData.cameraData.cameraType != CameraType.Game) return;
-        if (renderingData.cameraData.camera.TryGetComponent<SoundShellOpening>(out var opening)
-            && opening.isActiveAndEnabled && opening.InStartingRoom) return;
-        if (renderingData.cameraData.camera.TryGetComponent<CreatorRoom>(out var creatorRoom)
-            && creatorRoom.isActiveAndEnabled && !creatorRoom.PointCloud) return;
         var cameraSettings = settings;
         float sharedDotRadius = -1;
         if (renderingData.cameraData.camera.TryGetComponent<SphericalSonar>(out var sonar)
@@ -68,11 +66,38 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                 Mathf.Max(1, cameraSettings.GetFloat("_ScreenDotSpacing")));
             sharedDotRadius = Mathf.Clamp(sonar.dotRadius, .25f, tightestSpacing * .75f);
         }
+        // The white starting room skips the point cloud, but its elevator still needs
+        // the current camera's dot grid for wall waves and cabin edges.
+        elevatorGridPass.spacing = Mathf.Max(1, cameraSettings.GetFloat("_ScreenDotSpacing"));
+        elevatorGridPass.radius = Mathf.Clamp(sharedDotRadius >= 0 ? sharedDotRadius : cameraSettings.GetFloat("_ScreenDotRadius"),
+            0, elevatorGridPass.spacing * .75f);
+        renderer.EnqueuePass(elevatorGridPass);
+        if (renderingData.cameraData.camera.TryGetComponent<SoundShellOpening>(out var opening)
+            && opening.isActiveAndEnabled && opening.InStartingRoom) return;
+        if (renderingData.cameraData.camera.TryGetComponent<CreatorRoom>(out var creatorRoom)
+            && creatorRoom.isActiveAndEnabled && !creatorRoom.PointCloud) return;
         pass.sharedDotRadius = sharedDotRadius;
         pass.material = cameraSettings;
         // Preserve the teammate's original face cloud independently of sonar contour spacing.
         pass.faceMaterial = settings;
         renderer.EnqueuePass(pass);
+    }
+
+    private sealed class ElevatorGridPass : ScriptableRenderPass
+    {
+        public float spacing, radius;
+        sealed class Data { public Vector4 grid; }
+        public override void RecordRenderGraph(RenderGraph graph, ContextContainer frameData)
+        {
+            var camera = frameData.Get<UniversalCameraData>();
+            using (var builder = graph.AddRasterRenderPass<Data>("Elevator dot grid", out var data))
+            {
+                data.grid = new Vector4(spacing, radius, 720f / Mathf.Max(1, camera.cameraTargetDescriptor.height), 0);
+                builder.AllowGlobalStateModification(true);
+                builder.AllowPassCulling(false);
+                builder.SetRenderFunc(static (Data d, RasterGraphContext context) => context.cmd.SetGlobalVector("_ElevatorPointGrid", d.grid));
+            }
+        }
     }
 
     private sealed class PointPass : ScriptableRenderPass
@@ -312,7 +337,6 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     data.viewport = new Vector4(width, height, 1f / width, 1f / height);
                     data.crosshairClearZone = clearZone;
                     data.gridSize = new Vector4(columns, rows, 1f / columns, 1f / rows);
-                    if (index == 2) builder.AllowGlobalStateModification(true);
                     if (index == 0) builder.UseTexture(resources.cameraDepthTexture, AccessFlags.Read);
                     else { builder.UseTexture(grid, AccessFlags.Read); builder.UseTexture(dangerGrid, AccessFlags.Read); }
                     builder.SetRenderAttachment(index == 0 ? grid : resources.activeColorTexture, 0,
@@ -344,13 +368,6 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                         if (d.sharedDotRadius >= 0)
                             properties.SetFloat("_ScreenDotRadius", d.sharedDotRadius);
                         properties.SetMatrix("_StarViewProjection", d.starViewProjection);
-                        if (d.index == 2)
-                        {
-                            float spacing = Mathf.Max(1, d.material.GetFloat("_ScreenDotSpacing"));
-                            float radius = d.sharedDotRadius >= 0 ? d.sharedDotRadius : d.material.GetFloat("_ScreenDotRadius");
-                            context.cmd.SetGlobalVector("_ElevatorPointGrid", new Vector4(spacing,
-                                Mathf.Clamp(radius, 0, spacing * .75f), 720f / d.viewport.y, 0));
-                        }
                         if (d.grid.IsValid()) properties.SetTexture("_PointGrid", (RTHandle)d.grid);
                         if (d.dangerGrid.IsValid()) properties.SetTexture("_DangerPointGrid", (RTHandle)d.dangerGrid);
                         if (d.depth.IsValid()) properties.SetTexture("_PointDepth", (RTHandle)d.depth);

@@ -256,10 +256,11 @@ namespace Sound2.LevelEditing.Editor
             bool valid = LevelPropPlacement.TryPose(layout, source, ray,
                 moving ? repositionSurface : propSurface, moving ? repositionOffset : propOffset,
                 moving ? repositionAngle : propAngle, out var pose);
+            bool overlapping = valid && LevelPropOverlap.HasOverlap(layout, source, pose);
             if (valid)
             {
-                var scale = source.GetComponent<EmbeddedDoor>() != null ? layout.transform.lossyScale
-                    : moving ? source.transform.lossyScale : source.transform.localScale;
+                var scale = LevelPropOverlap.PreviewScale(layout, source);
+                var previewColor = overlapping ? Color.red : new Color(.3f, 1, .65f);
                 var rootMatrix = Matrix4x4.TRS(pose.position, pose.rotation, scale);
                 if (e.type == EventType.Repaint) foreach (var filter in source.GetComponentsInChildren<MeshFilter>(true))
                 {
@@ -267,7 +268,7 @@ namespace Sound2.LevelEditing.Editor
                     var matrix = rootMatrix * source.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
                     if (!filter.sharedMesh.isReadable)
                     {
-                        using (new Handles.DrawingScope(new Color(.3f, 1, .65f), matrix))
+                        using (new Handles.DrawingScope(previewColor, matrix))
                             Handles.DrawWireCube(filter.sharedMesh.bounds.center, filter.sharedMesh.bounds.size);
                         continue;
                     }
@@ -280,12 +281,13 @@ namespace Sound2.LevelEditing.Editor
                             lines[(i + j) * 2] = vertices[triangles[i + j]];
                             lines[(i + j) * 2 + 1] = vertices[triangles[i + (j + 1) % 3]];
                         }
-                    using (new Handles.DrawingScope(new Color(.3f, 1, .65f), matrix)) Handles.DrawLines(lines);
+                    using (new Handles.DrawingScope(previewColor, matrix)) Handles.DrawLines(lines);
                 }
-                Handles.Label(pose.position, (moving ? "点击重新吸附 " : "点击放置 ") + source.name);
+                if (!overlapping) Handles.Label(pose.position, (moving ? "点击重新吸附 " : "点击放置 ") + source.name);
             }
             if (e.type == EventType.MouseDown && e.button == 0 && !e.alt)
             {
+                if (overlapping) { e.Use(); return; }
                 if (valid)
                 {
                     if (moving)

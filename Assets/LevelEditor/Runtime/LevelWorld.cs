@@ -39,6 +39,7 @@ namespace Sound2.LevelEditing
             public Dictionary<Transform, Transform> originals;
         }
         readonly Dictionary<LevelLayout, InitialLevel> initialLevels = new();
+        readonly HashSet<AsyncInstantiateOperation<LevelLayout>> pendingCopies = new();
 
         static Dictionary<Transform, Transform> MatchHierarchy(Transform source, Transform target)
         {
@@ -55,14 +56,7 @@ namespace Sound2.LevelEditing
         void CaptureInitialLevel(LevelLayout level)
         {
             if (level == null || initialLevels.ContainsKey(level)) return;
-            if (resetTemplates == null)
-            {
-                var root = new GameObject("Level restart templates");
-                root.transform.SetParent(transform, false);
-                root.SetActive(false);
-                root.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
-                resetTemplates = root.transform;
-            }
+            EnsureTemplateRoot();
             // Clone while inactive, before any gameplay callbacks mutate the authored state.
             var template = Instantiate(level, resetTemplates, false);
             initialLevels[level] = new InitialLevel
@@ -72,11 +66,46 @@ namespace Sound2.LevelEditing
             };
         }
 
+        // Keep the destination inactive until the complete snapshot (including cross-prop
+        // references) exists. Unity copies the hierarchy asynchronously; no WaitForCompletion.
+        IEnumerator CaptureInitialLevelAsync(LevelLayout level)
+        {
+            if (level == null || initialLevels.ContainsKey(level)) yield break;
+            EnsureTemplateRoot();
+            var copy = InstantiateAsync(level, new InstantiateParameters { parent = resetTemplates, worldSpace = false });
+            pendingCopies.Add(copy);
+            try
+            {
+                yield return copy;
+                if (level == null) { if (copy.Result.Length > 0) Destroy(copy.Result[0].gameObject); yield break; }
+                initialLevels[level] = new InitialLevel
+                {
+                    template = copy.Result[0],
+                    originals = MatchHierarchy(level.transform, copy.Result[0].transform)
+                };
+            }
+            finally { pendingCopies.Remove(copy); if (!copy.isDone) copy.Cancel(); }
+        }
+
+        void EnsureTemplateRoot()
+        {
+            if (resetTemplates != null) return;
+            var root = new GameObject("Level restart templates");
+            root.transform.SetParent(transform, false);
+            root.SetActive(false);
+            root.hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
+            resetTemplates = root.transform;
+        }
+
         public IEnumerator ResetCurrentLevel()
         {
             if (Travelling || CurrentLevel == null || !initialLevels.TryGetValue(CurrentLevel, out var initial)) yield break;
             var previous = CurrentLevel;
-            var replacement = Instantiate(initial.template, resetTemplates, false);
+            var copy = InstantiateAsync(initial.template, new InstantiateParameters { parent = resetTemplates, worldSpace = false });
+            pendingCopies.Add(copy);
+            try { yield return copy; }
+            finally { pendingCopies.Remove(copy); if (!copy.isDone) copy.Cancel(); }
+            var replacement = copy.Result[0];
             var restored = MatchHierarchy(initial.template.transform, replacement.transform);
             replacement.name = previous.name;
             replacement.gameObject.SetActive(false);
@@ -120,6 +149,14 @@ namespace Sound2.LevelEditing
                     while (nav != null && nav.IsBuilding) yield return null;
                 activation.Commit();
             }
+            // The template predates arrival, so its property blocks have no completed
+            // dissolve. Restore the checkpoint's settled appearance after reactivation.
+            if (ArrivalCheckpoint != null && ArrivalCheckpoint.Level == replacement)
+            {
+                ArrivalCheckpoint.SetTravelInk(0, 0);
+                ArrivalCheckpoint.SetPaperEffect("_RespawnPaper", 0);
+                ArrivalCheckpoint.SetPaperEffect("_ArrivalDissolve", TryDestination(ArrivalCheckpoint, out _, out _) ? 0 : 1);
+            }
         }
         void Awake()
         {
@@ -151,7 +188,6 @@ namespace Sound2.LevelEditing
         }
         IEnumerator Transport(LevelElevator source,LevelElevator destination,PlayerController actor,float seconds)
         {
-            CaptureInitialLevel(destination.Level);
             Travelling=true;departure=source;arrival=destination;source.Busy=destination.Busy=true;
             source.SetPaperEffect("_ArrivalDissolve", 0);
             source.SetPaperEffect("_RespawnPaper", 0);
@@ -164,6 +200,8 @@ namespace Sound2.LevelEditing
                 if(!body.isKinematic){body.linearVelocity=Vector3.zero;body.angularVelocity=Vector3.zero;}body.isKinematic=true;
             }
             while(source!=null&&source.DoorOpen>0)yield return null;
+            if(source==null||destination==null||destination.Level==null||actor==null){Release(true);yield break;}
+            yield return CaptureInitialLevelAsync(destination.Level);
             if(source==null||destination==null||destination.Level==null||actor==null){Release(true);yield break;}
             preparation = new LevelActivation(destination.Level, activationBudgetMs, activationBatchSize);
             var loading = preparation.Prepare();
@@ -252,6 +290,11 @@ namespace Sound2.LevelEditing
             cargo.Clear();if(departure!=null)departure.Busy=false;if(arrival!=null)arrival.Busy=false;
             departure=arrival=null;Travelling=false;
         }
-        void OnDisable(){StopAllCoroutines();Release(true);}
+        void OnDisable()
+        {
+            foreach (var copy in pendingCopies) if (!copy.isDone) copy.Cancel();
+            pendingCopies.Clear();
+            StopAllCoroutines();Release(true);
+        }
     }
 }
