@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>A scene prop that can be investigated after a white pulse reaches it.</summary>
+/// <summary>A scene prop that can be investigated after a sonar pulse reaches it.</summary>
 [DisallowMultipleComponent]
 public sealed class StoryCollectible : InteractableObject
 {
@@ -28,7 +28,9 @@ public sealed class StoryCollectible : InteractableObject
         : Mathf.Clamp01((glowUntil - Time.time) / Mathf.Max(.05f, discoveryGlowSeconds));
 
     ICollectibleProgress progress;
+    ICollectibleProgress Progress => progress ??= progressProvider as ICollectibleProgress ?? StoryRunProgress.Current;
     CollectionItemSequence sequence;
+    Collider[] scanColliders;
     SonarPulseField scheduledField;
     int scheduledSlot;
     uint scheduledToken;
@@ -40,8 +42,9 @@ public sealed class StoryCollectible : InteractableObject
     void Awake()
     {
         sequence = GetComponent<CollectionItemSequence>();
+        scanColliders = GetComponentsInChildren<Collider>(true);
         if (outlineRenderers == null || outlineRenderers.Length == 0) outlineRenderers = GetComponentsInChildren<Renderer>(true);
-        if (progressProvider is ICollectibleProgress bound) BindProgress(bound);
+        BindProgress(Progress);
     }
 
     void OnEnable() => Active.Add(this);
@@ -66,7 +69,7 @@ public sealed class StoryCollectible : InteractableObject
     internal void ContinueFrom(StoryCollectible source)
     {
         collectibleId = source.collectibleId;
-        BindProgress(source.progress);
+        BindProgress(source.Progress);
         Discovered = true;
     }
 
@@ -75,7 +78,7 @@ public sealed class StoryCollectible : InteractableObject
         if (storySubtitles != null) storySubtitles.Trigger();
     }
 
-    internal static void ScheduleWhitePulse(SonarPulseField source, int slot, uint token, Vector3 origin, float range, float speed)
+    internal static void SchedulePulse(SonarPulseField source, int slot, uint token, Vector3 origin, float range, float speed)
     {
         foreach (var item in Active)
             if (!item.Collected && item.gameObject.scene == source.gameObject.scene)
@@ -84,26 +87,37 @@ public sealed class StoryCollectible : InteractableObject
 
     void ScheduleArrival(SonarPulseField source, int slot, uint token, Vector3 origin, float range, float speed)
     {
-        Vector3 delta = (scanAnchor != null ? scanAnchor.position : InteractionPosition) - origin;
-        float distance = delta.magnitude;
-        if (distance > range) return;
-        if (distance > .001f && source.TryGetPulseBlocker(origin, delta / distance, distance, out var hit))
+        float distance = VisibleDistance(source, origin, scanAnchor != null ? scanAnchor.position : InteractionPosition, range);
+        // A shelf can hide the interaction anchor while leaving another part of the item exposed.
+        if (float.IsPositiveInfinity(distance))
         {
-            if (!hit.collider.transform.IsChildOf(transform)) return;
-            distance = hit.distance;
+            foreach (var collider in scanColliders)
+                if (collider != null && collider.enabled && collider.gameObject.activeInHierarchy && !collider.isTrigger)
+                    distance = Mathf.Min(distance, VisibleDistance(source, origin, collider.bounds.center, range));
+            if (float.IsPositiveInfinity(distance)) return;
         }
         float arrival = Time.time + distance / speed;
-        if (scheduledField != null && scheduledField.IsWhitePulseCurrent(scheduledSlot, scheduledToken) && arrivalTime <= arrival) return;
+        if (scheduledField != null && scheduledField.IsPulseCurrent(scheduledSlot, scheduledToken) && arrivalTime <= arrival) return;
         scheduledField = source;
         scheduledSlot = slot;
         scheduledToken = token;
         arrivalTime = arrival;
     }
 
+    float VisibleDistance(SonarPulseField source, Vector3 origin, Vector3 point, float range)
+    {
+        Vector3 delta = point - origin;
+        float distance = delta.magnitude;
+        if (distance > range) return float.PositiveInfinity;
+        if (distance > .001f && source.TryGetPulseBlocker(origin, delta / distance, distance, out var hit))
+            return hit.collider.transform.IsChildOf(transform) ? hit.distance : float.PositiveInfinity;
+        return distance;
+    }
+
     void Update()
     {
         if (scheduledField == null) return;
-        if (!scheduledField.IsWhitePulseCurrent(scheduledSlot, scheduledToken)) { scheduledField = null; return; }
+        if (!scheduledField.IsPulseCurrent(scheduledSlot, scheduledToken)) { scheduledField = null; return; }
         if (Time.time < arrivalTime) return;
         scheduledField = null;
         if (Collected) return;
@@ -118,9 +132,9 @@ public sealed class StoryCollectible : InteractableObject
     {
         if (player == null || !CanInteract(player)) return false;
         if (sequence != null && sequence.RequiresShatter) return sequence.TryHold(player);
-        if (progress != null && !string.IsNullOrWhiteSpace(collectibleId) && !progress.TryCollect(collectibleId))
+        if (!string.IsNullOrWhiteSpace(collectibleId) && !Progress.TryCollect(collectibleId))
         {
-            Collected = progress.IsCollected(collectibleId);
+            Collected = Progress.IsCollected(collectibleId);
             return false;
         }
         return base.TryInteract(player);

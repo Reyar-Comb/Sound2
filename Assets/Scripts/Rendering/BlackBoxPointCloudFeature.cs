@@ -54,7 +54,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
     {
         activeRenderers[renderer] = this;
         // Authoring/Scene cameras keep their ordinary materials and lighting; effects belong to the running game.
-        if (settings == null || !Application.isPlaying || renderingData.cameraData.cameraType != CameraType.Game) return;
+        if (settings == null || !Application.isPlaying || DeveloperMode.Enabled || renderingData.cameraData.cameraType != CameraType.Game) return;
         var cameraSettings = settings;
         float sharedDotRadius = -1;
         if (renderingData.cameraData.camera.TryGetComponent<SphericalSonar>(out var sonar)

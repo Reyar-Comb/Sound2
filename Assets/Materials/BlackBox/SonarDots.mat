@@ -37,13 +37,13 @@ Material:
     - _EdgeEnabled: 1
     - _EdgeRevealDistance: 3
     - _EdgeWidth: 4.5
-    - _FaceDensityScale: 0.03
+    - _FaceDensityScale: 0.179
     - _FaceEnabled: 1
     - _RevealDistance: 3
     - _ScreenCircleRadius: 300
     - _ScreenCoreRadius: 70
-    - _ScreenDotRadius: 5
-    - _ScreenDotSpacing: 3.5
+    - _ScreenDotRadius: 5.7
+    - _ScreenDotSpacing: 5.01
     - _StarBrightness: 0.65
     - _StarChance: 0.2
     - _StarDuration: 10
@@ -51,7 +51,7 @@ Material:
     - _TwinkleDuration: 6
     - _TwinkleEnabled: 1
     - _TwinkleFraction: 0.005
-    - _WorldCircleRadius: 1.2
+    - _WorldCircleRadius: 3.75
     - _WorldCoreRadius: 0.28
     m_Colors:
     - _CoreDensityLevels: {r: 1, g: 0.99, b: 0.98, a: 0.97}
