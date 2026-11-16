@@ -62,12 +62,19 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
     SonarCueSource cue;
     float nextEmission;
     bool initialized;
+    bool started;
+    public bool AudioReady => initialized;
 
     void Start()
     {
-        Initialize();
+        started = true;
+        SonarAudioWarmup.Schedule(this);
         nextEmission = Time.time + firstDelay;
     }
+
+    void OnEnable() { if (started) SonarAudioWarmup.Schedule(this); }
+    void OnDisable() => SonarAudioWarmup.Cancel(this);
+    internal void PrepareAudio() => Initialize();
 
     void Initialize()
     {
@@ -88,6 +95,7 @@ public sealed class SonarObjectEmitter : MonoBehaviour, ISerializationCallbackRe
         emitter.volume = volume;
         emitter.Apply();
         initialized = true;
+        SonarAudioWarmup.Cancel(this);
     }
 
     void Update()

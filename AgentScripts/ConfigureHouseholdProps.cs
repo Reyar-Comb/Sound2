@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Sound2.LevelEditing;
+using Sound2.LevelEditing.Editor;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -64,7 +65,10 @@ public static class ConfigureHouseholdProps
             if(loaded)
                 foreach(Transform part in root.transform.Cast<Transform>().ToArray())
                     if(part.name!="Interaction Anchor" && part.name!="Sound Origin")Object.DestroyImmediate(part.gameObject);
-            model(); Presentation(root); PrefabUtility.SaveAsPrefabAsset(root,path); created.Add(path);
+            model(); Presentation(root);
+            Sound2.LevelEditing.Editor.ConservativeColliderOptimizer.Optimize(root,
+                Sound2.LevelEditing.Editor.ConservativeColliderOptimizer.ReferencedColliders(new[]{root}));
+            PrefabUtility.SaveAsPrefabAsset(root,path); created.Add(path);
         }
         finally { if(loaded)PrefabUtility.UnloadPrefabContents(root);else Object.DestroyImmediate(root); root=null; }
     }
@@ -287,7 +291,9 @@ public static class ConfigureHouseholdProps
             var combined=new Mesh();combined.CombineMeshes(combines.ToArray(),true,true);
             MeshPart(root,"Model",Store(name,combined),material,Vector3.zero,false);
             if(!breakable)return null;
-            Presentation(debris);PropFragments.SetLayer(debris);return PrefabUtility.SaveAsPrefabAsset(debris,"Assets/Prefabs/"+name+"Broken.prefab");
+            Presentation(debris);PropFragments.SetLayer(debris);
+            if (name == "WineGlass") WineGlassFragmentBudget.Apply(debris);
+            return PrefabUtility.SaveAsPrefabAsset(debris,"Assets/Prefabs/"+name+"Broken.prefab");
         }
         finally {Object.DestroyImmediate(debris);}
     }

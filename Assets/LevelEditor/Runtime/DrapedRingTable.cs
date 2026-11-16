@@ -26,8 +26,23 @@ namespace Sound2.LevelEditing
         Mesh ownedVisual, ownedCollision;
         bool needsRebuild = true;
         int appliedHash;
+        [SerializeField, HideInInspector] Mesh storedVisual, storedCollision;
+        [SerializeField, HideInInspector] int storedHash;
+        [SerializeField, HideInInspector] int storedVersion;
+        const int MeshVersion = 1;
 
-        void OnEnable() => needsRebuild = true;
+        void OnEnable()
+        {
+            int hash = ParameterHash();
+            if (ownedVisual != null && ownedCollision != null && appliedHash == hash)
+                needsRebuild = false;
+            else if (storedVersion == MeshVersion && storedHash == hash && storedVisual != null && storedCollision != null)
+            {
+                ApplyMeshes(storedVisual, storedCollision);
+                appliedHash = hash; needsRebuild = false;
+            }
+            else needsRebuild = true;
+        }
         void OnValidate() => needsRebuild = true;
         void Update()
         {
@@ -165,10 +180,20 @@ namespace Sound2.LevelEditing
         }
         public void UseStoredMeshes(Mesh visual, Mesh collision)
         {
-            GetComponent<MeshFilter>().sharedMesh = visual;
-            var collider = GetComponent<MeshCollider>(); collider.sharedMesh = null;
-            if (collision != null && collision.vertexCount > 0) collider.sharedMesh = collision;
+            Normalize();
+            ApplyMeshes(visual, collision);
             ReleaseOwnedMeshes(); appliedHash = ParameterHash(); needsRebuild = false;
+            storedVisual = visual; storedCollision = collision;
+            storedHash = appliedHash; storedVersion = MeshVersion;
+        }
+        void ApplyMeshes(Mesh visual, Mesh collision)
+        {
+            var filter = GetComponent<MeshFilter>();
+            var collider = GetComponent<MeshCollider>();
+            if (filter.sharedMesh != visual) filter.sharedMesh = visual;
+            var target = collision != null && collision.vertexCount > 0 ? collision : null;
+            // Reassigning an unchanged collider mesh needlessly repeats PhysX cooking.
+            if (collider.sharedMesh != target) collider.sharedMesh = target;
         }
         void ReleaseOwnedMeshes()
         {

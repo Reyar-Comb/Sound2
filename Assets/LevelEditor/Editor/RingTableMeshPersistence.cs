@@ -17,6 +17,8 @@ namespace Sound2.LevelEditing.Editor
                 var visual = Store(layout.geometryAsset, "RingTable_" + i + "_Cloth", filter.sharedMesh);
                 var collision = Store(layout.geometryAsset, "RingTable_" + i + "_Collision", collider.sharedMesh);
                 table.UseStoredMeshes(visual, collision);
+                EditorUtility.SetDirty(table);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(table);
                 EditorUtility.SetDirty(filter); EditorUtility.SetDirty(collider);
                 PrefabUtility.RecordPrefabInstancePropertyModifications(filter);
                 PrefabUtility.RecordPrefabInstancePropertyModifications(collider);

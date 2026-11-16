@@ -69,6 +69,8 @@ namespace Sound2.LevelEditing.Editor
                 throw new InvalidOperationException("请选择当前布局 Props 下的道具实例。");
             var door = instance.GetComponent<EmbeddedDoor>();
             var attachment = door != null ? EmbeddedDoorPlacement.ValidatePose(layout, instance, pose) : null;
+            if (LevelPropOverlap.HasOverlap(layout, instance, pose))
+                throw new InvalidOperationException("道具碰撞体不能重叠。");
             Undo.IncrementCurrentGroup();
             int group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("重新吸附关卡道具");
@@ -111,6 +113,8 @@ namespace Sound2.LevelEditing.Editor
                 throw new InvalidOperationException("请在编辑模式选择有效布局和 Prefab 资源。");
             var attachment = prefab.GetComponent<EmbeddedDoor>() != null
                 ? EmbeddedDoorPlacement.ValidatePose(layout, prefab, pose) : null;
+            if (LevelPropOverlap.HasOverlap(layout, prefab, pose))
+                throw new InvalidOperationException("道具碰撞体不能重叠。");
             Undo.IncrementCurrentGroup();
             int group = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName("放置关卡道具");
