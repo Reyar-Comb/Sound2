@@ -1,0 +1,192 @@
+using System;
+using System.Collections.Generic;
+using Sound2.LevelEditing;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+[DisallowMultipleComponent]
+public sealed class BossMemoryGate : InteractableObject
+{
+    [Serializable]
+    public sealed class Memory
+    {
+        public string id;
+        public string title;
+        public Transform visual;
+        [TextArea(4, 12)] public string text;
+    }
+
+    public BossMemoryButton returnButton, startButton;
+    public Transform displayRoot;
+    [SerializeField] Material displayGameplayMaterial;
+    public Memory[] memories;
+    [Min(.1f)] public float lineHoldSeconds = 2.4f;
+    [Min(1)] public float charactersPerSecond = StorySubtitles.DefaultCharactersPerSecond;
+    [Min(.1f)] public float displaySize = .52f;
+    [Min(.1f)] public float slotSpacing = .72f;
+
+    [SerializeField, HideInInspector] List<string> placed = new();
+    LevelArenaBoss boss;
+    LevelArenaBoss Boss => boss != null ? boss : boss = GetComponentInParent<LevelLayout>()?.GetComponentInChildren<LevelArenaBoss>(true);
+    bool leaving;
+    public int PlacedCount => placed.Count;
+    public bool Ready => memories != null && memories.Length > 0 && placed.Count == memories.Length;
+    public bool Available => !leaving && (Boss == null || Boss.State == LevelArenaBoss.EncounterState.Waiting);
+
+    public override string InteractionHint
+    {
+        get
+        {
+            int total = memories?.Length ?? 0;
+            if (Ready) return $"收集品已摆齐（{PlacedCount}/{total}）";
+            return NextMemory() >= 0
+                ? $"放置收集品（{PlacedCount}/{total}）"
+                : $"查看信物进度（{PlacedCount}/{total}）";
+        }
+    }
+
+    public override bool AllowWhileHolding => true;
+
+    void Awake()
+    {
+        interactionEnabled = true;
+        RefreshButtons();
+    }
+
+    void Update() => RefreshButtons();
+
+    void RefreshButtons()
+    {
+        if (returnButton != null) returnButton.SetPulse(Available);
+        if (startButton != null) startButton.SetPulse(Available && Ready);
+    }
+
+    int NextMemory()
+    {
+        if (memories != null)
+            for (int i = 0; i < memories.Length; i++)
+                if (!placed.Contains(memories[i].id) && StoryRunProgress.Current.IsCollected(memories[i].id)) return i;
+        return -1;
+    }
+
+    public override bool CanInteract(PlayerInteraction actor) => base.CanInteract(actor) && Available;
+
+    protected override void OnInteract(PlayerInteraction actor)
+    {
+        int slot = NextMemory();
+        if (slot < 0)
+        {
+            actor.GetComponent<PlayerSubtitles>()?.ShowImmediate(Ready
+                ? "信物已摆齐，可以按右侧按钮开启 Boss 战。"
+                : "没有可摆放的信物。请先在关卡中收集，再回到长桌。");
+            return;
+        }
+        var memory = memories[slot];
+        if (!CreateDisplay(memory, slot)) return;
+        placed.Add(memory.id);
+        RefreshButtons();
+    }
+
+    bool CreateDisplay(Memory memory, int slot)
+    {
+        if (memory.visual == null || displayRoot == null) return false;
+
+        var display = new GameObject(memory.title);
+        display.transform.SetParent(displayRoot, false);
+        var source = memory.visual;
+        var bounds = new Bounds();
+        bool hasBounds = false;
+        foreach (var filter in source.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (filter.sharedMesh == null || !filter.TryGetComponent<MeshRenderer>(out var renderer) || !renderer.enabled) continue;
+            var part = new GameObject(filter.name, typeof(MeshFilter), typeof(MeshRenderer));
+            part.transform.SetParent(display.transform, false);
+            Matrix4x4 local = source.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+            part.transform.SetLocalPositionAndRotation(local.GetColumn(3), local.rotation);
+            part.transform.localScale = local.lossyScale;
+            part.GetComponent<MeshFilter>().sharedMesh = filter.sharedMesh;
+            part.GetComponent<MeshRenderer>().sharedMaterials = renderer.sharedMaterials;
+            var meshBounds = filter.sharedMesh.bounds;
+            for (int corner = 0; corner < 8; corner++)
+            {
+                Vector3 vertex = local.MultiplyPoint3x4(meshBounds.center + Vector3.Scale(meshBounds.extents,
+                    new Vector3((corner & 1) == 0 ? -1 : 1, (corner & 2) == 0 ? -1 : 1, (corner & 4) == 0 ? -1 : 1)));
+                if (hasBounds) bounds.Encapsulate(vertex);
+                else { bounds = new Bounds(vertex, Vector3.zero); hasBounds = true; }
+            }
+        }
+        if (!hasBounds) { Destroy(display); return false; }
+
+        var presentation = display.AddComponent<LevelProp>();
+        presentation.gameplayMaterial = displayGameplayMaterial;
+        presentation.RefreshGameplayPresentation();
+
+        float scale = displaySize / Mathf.Max(.01f, bounds.size.x, bounds.size.y, bounds.size.z);
+        display.transform.localScale = Vector3.one * scale;
+        display.transform.localPosition = new Vector3((slot - (memories.Length - 1) * .5f) * slotSpacing, .015f, 0)
+            - new Vector3(bounds.center.x, bounds.min.y, bounds.center.z) * scale;
+        var collider = display.AddComponent<BoxCollider>();
+        collider.center = bounds.center;
+        collider.size = Vector3.Max(bounds.size, Vector3.one * .055f);
+        var anchor = new GameObject("Inspect").transform;
+        anchor.SetParent(display.transform, false);
+        anchor.localPosition = bounds.center;
+        var inspect = display.AddComponent<InteractableObject>();
+        inspect.interactionAnchor = anchor;
+        inspect.interactionHint = "调查：" + memory.title;
+        inspect.onInteract.AddListener(_ =>
+        {
+            if (!Available) return;
+            StorySubtitles.Clear();
+            StorySubtitles.Play(memory.title, lineHoldSeconds, charactersPerSecond);
+            foreach (string line in memory.text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                StorySubtitles.Play(line.Trim(), lineHoldSeconds, charactersPerSecond);
+        });
+        return true;
+    }
+
+    internal void Press(PlayerInteraction actor, bool start)
+    {
+        if (!Available || actor == null) return;
+        var player = actor.GetComponent<PlayerController>();
+        if (player == null) return;
+        if (start)
+        {
+            if (!Ready || Boss == null || !Boss.TryStartFromGate(player)) return;
+            StorySubtitles.Clear();
+            RefreshButtons();
+            return;
+        }
+
+        StorySubtitles.Clear();
+        var world = GetComponentInParent<LevelWorld>();
+        if (world == null)
+            foreach (var candidate in FindObjectsByType<LevelWorld>())
+                if (candidate.player == player) { world = candidate; break; }
+        if (world != null && world.ReturnToStart(player)) return;
+
+        leaving = true;
+        RefreshButtons();
+        const string campaignPath = "Assets/Scenes/SoundAndShell.unity";
+#if UNITY_EDITOR
+        var load = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(
+            campaignPath, new LoadSceneParameters(LoadSceneMode.Single));
+#else
+        var load = SceneManager.LoadSceneAsync(campaignPath, LoadSceneMode.Single);
+#endif
+        if (load == null)
+        {
+            leaving = false;
+            RefreshButtons();
+            return;
+        }
+        load.completed += _ =>
+        {
+            var campaign = SceneManager.GetSceneByPath(campaignPath);
+            if (!campaign.isLoaded) return;
+            foreach (var root in campaign.GetRootGameObjects())
+                foreach (var menu in root.GetComponentsInChildren<SonicSpaceStartMenu>())
+                    if (!menu.HasStarted) menu.enabled = false;
+        };
+    }
+}
