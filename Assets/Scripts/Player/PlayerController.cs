@@ -67,6 +67,7 @@ public sealed class PlayerController : MonoBehaviour
 
     private void OnEnable()
     {
+        EnableJumpInput();
         PropFragments.ExcludeFromPlayer(this);
         if (InputSuspended) return;
         ApplyCursorCapture(true);
@@ -88,8 +89,15 @@ public sealed class PlayerController : MonoBehaviour
     public void SetInputCaptured(bool captured)
     {
         if(SonicSpaceStartMenu.BlocksGameplay)captured=false;
+        if (captured) EnableJumpInput();
         InputSuspended = !captured;
         ApplyCursorCapture(captured && isActiveAndEnabled);
+    }
+
+    private void EnableJumpInput()
+    {
+        jumpAction = moveAction != null ? moveAction.action?.actionMap?.FindAction("Jump") : null;
+        jumpAction?.Enable();
     }
 
     public void FaceDirection(Vector3 direction)
@@ -154,6 +162,10 @@ public sealed class PlayerController : MonoBehaviour
 
     private void Update()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (Keyboard.current?.f9Key.wasPressedThisFrame == true)
+            DeveloperMode.Toggle();
+#endif
         if (InputSuspended || !characterController.enabled) return;
         Vector2 look = lookAction.action.ReadValue<Vector2>();
         yaw = Mathf.Repeat(yaw + look.x, 360f);

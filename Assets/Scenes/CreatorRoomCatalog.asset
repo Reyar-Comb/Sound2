@@ -285,3 +285,11 @@ MonoBehaviour:
     prefab: {fileID: 6829245542594993515, guid: 1dfc9052217ba6f44aa074b461559383, type: 3}
     mesh: {fileID: 0}
     modelOnly: 0
+  - label: BossMemoryButton
+    prefab: {fileID: 1250945419469540645, guid: 01e2dd8084cecdb44a5f22233ec1966f, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 1
+  - label: BossMemoryTable
+    prefab: {fileID: 8884952806131050416, guid: 2268c38131cac2e4b900c01da4510b80, type: 3}
+    mesh: {fileID: 0}
+    modelOnly: 1

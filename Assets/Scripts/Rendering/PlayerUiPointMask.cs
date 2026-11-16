@@ -36,9 +36,11 @@ public static class PlayerUiPointMask
         foreach (var canvas in canvases)
         {
             if (canvas == null || !canvas.isActiveAndEnabled) continue;
-            // This transparent full-screen effect must not erase the sonar scene beneath it.
+            // Full-screen effects blend over the sonar scene; their bounds are not HUD masks.
             var damage = canvas.GetComponentInParent<PlayerDamageFeedback>();
             if (damage != null && damage.OverlayCanvas == canvas) continue;
+            var boss = canvas.GetComponentInParent<LevelArenaBoss>();
+            if (boss != null && boss.OverlayCanvas == canvas) continue;
             var root = canvas.rootCanvas;
             if (!root.isActiveAndEnabled || (root.renderMode == RenderMode.ScreenSpaceCamera && root.worldCamera != camera)) continue;
             var projection = root.renderMode == RenderMode.ScreenSpaceOverlay ? null : camera;

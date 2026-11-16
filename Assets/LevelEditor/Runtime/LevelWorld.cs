@@ -282,6 +282,18 @@ namespace Sound2.LevelEditing
             CurrentLevel=level;
             if(activateOnlyCurrentLevel)foreach(var candidate in levels)if(candidate!=null)candidate.gameObject.SetActive(candidate==level);
         }
+        public bool ReturnToStart(PlayerController actor)
+        {
+            if (actor == null || actor != player || startingLevel == null || startingPoint == null || Travelling) return false;
+            Activate(startingLevel);
+            ArrivalCheckpoint = null;
+            actor.Teleport(startingPoint.position);
+            actor.FaceDirection(startingPoint.forward);
+            actor.GetComponent<PlayerFloorProgression>()?.EnterAuthoredLevel(levels.IndexOf(startingLevel) + 1);
+            actor.GetComponentInChildren<SonarPulseField>(true)?.ClearPulses();
+            return true;
+        }
+
         void Release(bool cancelled)
         {
             preparation?.Dispose(); preparation = null;

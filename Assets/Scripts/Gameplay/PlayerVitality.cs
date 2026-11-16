@@ -12,7 +12,7 @@ public sealed class PlayerVitality : MonoBehaviour
     public float Health { get; private set; }
     public bool IsDead => Health<=0;
     public bool IsWounded => !IsDead && woundedUntil > Time.time;
-    public bool IsInvulnerable => Time.time < invulnerableUntil;
+    public bool IsInvulnerable => DeveloperMode.Enabled || Time.time < invulnerableUntil;
     public float WoundRemaining => IsWounded ? woundedUntil - Time.time : 0;
     public event Action<float> Changed;
     public event Action Died;

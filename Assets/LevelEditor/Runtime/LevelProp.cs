@@ -17,9 +17,17 @@ namespace Sound2.LevelEditing
         Renderer[] renderers;
         Material[][] previewMaterials;
 
-        void OnEnable()
+        void OnEnable() => RefreshGameplayPresentation();
+
+        internal void RefreshGameplayPresentation()
         {
-            if (!Application.isPlaying || gameplayMaterial == null) return;
+            if (!Application.isPlaying || !isActiveAndEnabled || gameplayMaterial == null) return;
+            if (DeveloperMode.Enabled)
+            {
+                RestorePreview();
+                return;
+            }
+            if (previewMaterials != null) return;
             var filter = GetComponent<MeshFilter>();
             if (combinedGameplayMesh != null && filter != null)
             {
@@ -37,7 +45,9 @@ namespace Sound2.LevelEditing
             }
         }
 
-        void OnDisable()
+        void OnDisable() => RestorePreview();
+
+        void RestorePreview()
         {
             if (previewMesh != null) { GetComponent<MeshFilter>().sharedMesh = previewMesh; previewMesh = null; }
             if (previewMaterials == null) return;

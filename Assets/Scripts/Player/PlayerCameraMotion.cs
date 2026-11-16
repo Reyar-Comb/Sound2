@@ -62,6 +62,14 @@ public sealed class PlayerCameraMotion : MonoBehaviour
         Vector3 displacement = transform.position - previousPosition;
         previousPosition = transform.position;
         if (view == null || Time.deltaTime <= 0) return;
+        if (player.EncounterInputLocked)
+        {
+            view.localPosition = restPosition;
+            view.localRotation = player.AimLocalRotation;
+            offset = offsetVelocity = angles = angleVelocity = Vector3.zero;
+            walking = 0;
+            return;
+        }
         float dt = Time.deltaTime;
         bool active = player.isActiveAndEnabled && !player.InputSuspended && capsule.enabled;
         bool supported = !player.UsesGravity || capsule.isGrounded;

@@ -5,6 +5,9 @@ using Sound2.LevelEditing;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+using UnityEngine.InputSystem;
+#endif
 
 [DisallowMultipleComponent]
 public sealed class LevelArenaBoss : MonoBehaviour
@@ -25,6 +28,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
     public AudioClip battleMusic;
     [Range(0, 1)] public float musicVolume = .85f;
     [Min(0)] public float revealMusicTime = 21.33f;
+    [Min(0)] public float introBlackoutTime = 5.33f;
     public bool loopFromReveal = true;
     [Min(0)] public float loopStartTime = 21.33f;
     [Tooltip("0 表示音频末尾。"), Min(0)] public float loopEndTime;
@@ -93,6 +97,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
     public EncounterState State { get; private set; }
     public float RemainingSeconds => State == EncounterState.Fighting ? Mathf.Max(0, fightEndsAt - Time.time) : 0;
     public Skill? CurrentSkill { get; private set; }
+    internal Canvas OverlayCanvas { get; private set; }
     internal float Radius { get; private set; }
     internal float FloorY => ToWorld(Vector2.zero, 0).y;
 
@@ -102,6 +107,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
     readonly List<LineRenderer> attackLines = new();
     LevelWorld world;
     LevelRoom room;
+    BossMemoryGate memoryGate;
     PlayerController player;
     PlayerVitality vitality;
     CharacterController capsule;
@@ -117,26 +123,35 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     void Awake()
     {
+        if (EnsureRuntime()) return;
+        Debug.LogError("Boss arena requires a circular room and a hypercube.", this);
+        enabled = false;
+    }
+
+    bool EnsureRuntime()
+    {
+        if (music != null && room != null) return true;
         if (level == null) level = GetComponentInParent<LevelLayout>();
         room = level != null ? level.FindRoom(arenaRoomId) : null;
-        if (room == null || cube == null)
-        {
-            Debug.LogError("Boss arena requires a circular room and a hypercube.", this);
-            enabled = false;
-            return;
-        }
+        if (room == null || cube == null) return false;
 
         Radius = room.size.x * .5f;
+        memoryGate = level.GetComponentInChildren<BossMemoryGate>(true);
         music = new BossMusic(gameObject);
-        var effects = new GameObject("Boss spatial effects");
-        effects.transform.SetParent(transform, false);
-        effectsAudio = effects.AddComponent<SpatialAudioEmitter>();
+        effectsAudio = transform.Find("Boss spatial effects")?.GetComponent<SpatialAudioEmitter>();
+        if (effectsAudio == null)
+        {
+            var effects = new GameObject("Boss spatial effects");
+            effects.transform.SetParent(transform, false);
+            effectsAudio = effects.AddComponent<SpatialAudioEmitter>();
+        }
         ResetEncounter();
+        return true;
     }
 
     void Update()
     {
-        if (room == null) return;
+        if (!EnsureRuntime()) return;
         if (resetRequested) ResetEncounter();
         music.Tick();
         if (State == EncounterState.Won || State == EncounterState.Ending) return;
@@ -148,9 +163,18 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
         if (State == EncounterState.Waiting)
         {
+            bool canStart = !SonicSpaceStartMenu.BlocksGameplay && !player.InputSuspended && !player.TransportLocked
+                && (world == null || (world.CurrentLevel == level && !world.Travelling));
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (canStart && Keyboard.current?.f8Key.wasPressedThisFrame == true)
+            {
+                StorySubtitles.Clear();
+                sequence = StartCoroutine(PlayEncounter());
+                return;
+            }
+#endif
             float entryRadius = Mathf.Max(.1f, Radius - roomEntryInset);
-            if (!SonicSpaceStartMenu.BlocksGameplay && !player.InputSuspended && !player.TransportLocked
-                && (world == null || (world.CurrentLevel == level && !world.Travelling))
+            if (memoryGate == null && canStart
                 && local.sqrMagnitude < entryRadius * entryRadius
                 && target.min.y >= FloorY - .3f && target.min.y < FloorY + 2)
                 sequence = StartCoroutine(PlayEncounter());
@@ -197,19 +221,40 @@ public sealed class LevelArenaBoss : MonoBehaviour
         if (vitality != null) vitality.Died += RequestReset;
     }
 
+    internal bool TryStartFromGate(PlayerController actor)
+    {
+        if (!EnsureRuntime()) return false;
+        if (player == null) FindPlayer();
+        if (memoryGate == null || !memoryGate.Ready || actor != player || player == null
+            || player.InputSuspended || player.TransportLocked || State != EncounterState.Waiting) return false;
+        sequence = StartCoroutine(PlayEncounter());
+        return true;
+    }
+
     IEnumerator PlayEncounter()
     {
         State = EncounterState.Intro;
-        LockInput();
-        ShowScreen(Color.black);
         float cutoff = battleMusic != null ? (loopEndTime > 0 ? Mathf.Min(loopEndTime, battleMusic.length) : battleMusic.length) : 0;
         float reveal = Mathf.Min(revealMusicTime, cutoff);
         bool playingMusic = music.Play(battleMusic, musicVolume, loopFromReveal ? revealMusicTime : loopStartTime, loopEndTime);
-        if (playingMusic)
+        float fade = memoryGate == null ? 0 : (playingMusic ? Mathf.Min(introBlackoutTime, reveal) : introBlackoutTime);
+        float start = Time.time;
+        double Elapsed() => playingMusic ? music.Elapsed : Time.time - start;
+        if (fade > 0)
         {
-            while (music.Elapsed < reveal) yield return null;
+            float range = Mathf.Max(2, Radius * 2);
+            sonar?.EmitFrom(memoryGate.startButton.InteractionPosition, range, revealWaveSpeed, fade);
+            while (Elapsed() < fade)
+            {
+                ShowScreen(new Color(0, 0, 0, Mathf.SmoothStep(0, 1, Mathf.Clamp01((float)Elapsed() / fade))));
+                yield return null;
+            }
         }
-        else yield return new WaitForSeconds(revealWithoutMusic);
+        ShowScreen(Color.black);
+        LockInput();
+        player.FacePoint(cube.transform.position);
+        float revealAt = playingMusic ? reveal : fade + revealWithoutMusic;
+        while (Elapsed() < revealAt) yield return null;
 
         State = EncounterState.Reveal;
         HideScreen();
@@ -472,15 +517,16 @@ public sealed class LevelArenaBoss : MonoBehaviour
     {
         if (screen == null)
         {
-            var root = new GameObject("Boss screen", typeof(Canvas));
+            var root = new GameObject("Boss screen", typeof(RectTransform), typeof(Canvas));
             root.transform.SetParent(transform, false);
-            var canvas = root.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 32760;
+            OverlayCanvas = root.GetComponent<Canvas>();
+            OverlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            OverlayCanvas.sortingOrder = 32760;
             var image = new GameObject("Cover", typeof(RectTransform), typeof(Image));
             image.transform.SetParent(root.transform, false);
             screen = image.GetComponent<Image>();
             screen.raycastTarget = false;
+            screen.rectTransform.anchorMin = Vector2.zero;
             screen.rectTransform.anchorMax = Vector2.one;
             screen.rectTransform.offsetMin = screen.rectTransform.offsetMax = Vector2.zero;
         }

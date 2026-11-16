@@ -161,7 +161,7 @@ namespace Sound2.LevelEditing
             {
                 var preview = renderer.name == "Floor" ? floorMaterial
                     : renderer.name == "Walls" || renderer.name == "Ceiling" || renderer.name == "DoorLintels" || renderer.name.StartsWith("EmbeddedLintel_") || renderer.name.StartsWith("Partition_") ? wallMaterial : pitMaterial;
-                renderer.sharedMaterial = gameplay ? gameplayMaterial : preview;
+                renderer.sharedMaterial = gameplay && !DeveloperMode.Enabled ? gameplayMaterial : preview;
             }
             var ceiling = generatedRoot.transform.Find("Ceiling");
             if (ceiling != null) ceiling.gameObject.SetActive(gameplay && !openSky);

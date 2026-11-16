@@ -12,7 +12,10 @@ internal sealed class BossMusic
 
     public BossMusic(GameObject owner)
     {
-        sources = new[] { owner.AddComponent<AudioSource>(), owner.AddComponent<AudioSource>() };
+        var existing = owner.GetComponents<AudioSource>();
+        sources = new AudioSource[2];
+        for (int i = 0; i < sources.Length; i++)
+            sources[i] = i < existing.Length ? existing[i] : owner.AddComponent<AudioSource>();
         foreach (var source in sources)
         {
             source.playOnAwake = false;

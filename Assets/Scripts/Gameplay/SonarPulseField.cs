@@ -231,7 +231,7 @@ public sealed class SonarPulseField : MonoBehaviour
         => Emit(origin, pulseRange, pulseSpeed, pulseAfterglow,
             distanceSettings != null ? distanceSettings.Pack(pulseRange) : new Vector4(0, pulseRange, 0, 1), 0, source: source);
 
-    internal bool IsWhitePulseCurrent(int slot, uint token) => isActiveAndEnabled && parameters[slot].w > .5f && pulseTokens[slot] == token;
+    internal bool IsPulseCurrent(int slot, uint token) => isActiveAndEnabled && parameters[slot].w > .5f && pulseTokens[slot] == token;
 
     // Compatibility entry point; a zero power preserves the original brightness.
     public bool EmitFrom(Vector3 origin, float pulseRange, float pulseSpeed, float pulseAfterglow,
@@ -299,9 +299,9 @@ public sealed class SonarPulseField : MonoBehaviour
             Mathf.Clamp(falloff.z, 0, 8), Mathf.Clamp01(falloff.w));
         densityFalloffs[slot] = densityFalloff;
         uint token = ++pulseTokens[slot];
-        if (bank < (int)SonarPulseKind.Danger && falloff.w > 0 && StoryCollectible.Active.Count > 0
+        if (falloff.w > 0 && StoryCollectible.Active.Count > 0
             && (!TryGetComponent<SphericalSonar>(out var sonar) || sonar.sonarRendering))
-            StoryCollectible.ScheduleWhitePulse(this, slot, token, origin, effectiveRange, pulseSpeed);
+            StoryCollectible.SchedulePulse(this, slot, token, origin, effectiveRange, pulseSpeed);
         using (publishMarker.Auto()) Publish();
         Emissions++;
         if (footstep) FootstepEmissions++;
