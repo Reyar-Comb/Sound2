@@ -191,6 +191,7 @@ MonoBehaviour:
   startingPoint: {fileID: 1492494490}
   profile: {fileID: 11400000, guid: 4df0204e8105b6e43820f26c7c7db56c, type: 2}
   activateOnlyCurrentLevel: 1
+  roomAcousticsEnabled: 1
   activationBudgetMs: 2
   activationBatchSize: 24
 --- !u!4 &169069350
@@ -479,10 +480,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1823936068}
     m_Modifications:
+    - target: {fileID: 3658830638797761757, guid: 9705f465c9c0d0246999440055ccf655, type: 3}
+      propertyPath: gameplayMaterial
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 5029717310868212981, guid: 9705f465c9c0d0246999440055ccf655, type: 3}
       propertyPath: m_Name
       value: Bed
       objectReference: {fileID: 0}
+    - target: {fileID: 7566228074007501635, guid: 9705f465c9c0d0246999440055ccf655, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 2da1900f166444746b256dfd51c794bf, type: 2}
+    - target: {fileID: 7566228074007501635, guid: 9705f465c9c0d0246999440055ccf655, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 2729f5564f342b8468562f0a14ffa00b, type: 2}
+    - target: {fileID: 7566228074007501635, guid: 9705f465c9c0d0246999440055ccf655, type: 3}
+      propertyPath: 'm_Materials.Array.data[2]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 07659f8bb5db4d849b3e7ca97e4743da, type: 2}
     - target: {fileID: 8815436000635319614, guid: 9705f465c9c0d0246999440055ccf655, type: 3}
       propertyPath: m_LocalPosition.x
       value: 4.1977887
