@@ -21,7 +21,9 @@ public static class VerifyMergedBossGate
         var actor=world.player.GetComponent<PlayerInteraction>();
         Check(!gate.Ready,"Gate initially waits for memories");
         foreach(var m in gate.memories)progress.TryCollect(m.id);
-        for(int i=0;i<gate.memories.Length;i++)Check(gate.TryInteract(actor),"Place memory "+i);
+        var slots=gate.displayRoot.GetComponentsInChildren<BossMemorySlot>();
+        Check(slots.Length==gate.memories.Length,"Six clickable memory previews");
+        for(int i=0;i<slots.Length;i++)Check(slots[i].TryInteract(actor),"Place memory "+i);
         Check(gate.Ready&&gate.PlacedCount==6&&gate.displayRoot.childCount==6,"Six memory displays");
         Check(gate.returnButton.TryInteract(actor),"Return button interaction");
         Check(world.CurrentLevel==world.startingLevel&&world.ArrivalCheckpoint==null,"Return reaches starting level");

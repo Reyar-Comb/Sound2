@@ -64,6 +64,17 @@ namespace Sound2.LevelEditing
             && player != null && hinge != null && leafCollider != null && !SonicSpaceStartMenu.BlocksGameplay
             && player.TryGetComponent<PlayerController>(out var controller) && !controller.InputSuspended && !controller.TransportLocked;
 
+        public override Vector3 GetInteractionPosition(PlayerInteraction player)
+        {
+            if (leafCollider == null || player == null || player.viewCamera == null) return InteractionPosition;
+            var camera = player.viewCamera.transform;
+            var ray = new Ray(camera.position, camera.forward);
+            if (leafCollider.Raycast(ray, out var hit, float.MaxValue)) return hit.point;
+            // Preserve the usual aim tolerance just outside the moving door's edges.
+            float distance = Mathf.Max(0, Vector3.Dot(leafCollider.bounds.center - ray.origin, ray.direction));
+            return leafCollider.ClosestPoint(ray.GetPoint(distance));
+        }
+
         protected override void OnInteract(PlayerInteraction player)
         {
             if (!TargetOpen && !CanOpenFrom(player.transform.position))

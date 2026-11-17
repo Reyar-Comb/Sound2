@@ -19,6 +19,7 @@ public sealed class BossMemoryGate : InteractableObject
     public BossMemoryButton returnButton, startButton;
     public Transform displayRoot;
     [SerializeField] Material displayGameplayMaterial;
+    [SerializeField] Material previewMaterial;
     public Memory[] memories;
     [Min(.1f)] public float lineHoldSeconds = 2.4f;
     [Min(1)] public float charactersPerSecond = StorySubtitles.DefaultCharactersPerSecond;
@@ -39,9 +40,7 @@ public sealed class BossMemoryGate : InteractableObject
         {
             int total = memories?.Length ?? 0;
             if (Ready) return $"收集品已摆齐（{PlacedCount}/{total}）";
-            return NextMemory() >= 0
-                ? $"放置收集品（{PlacedCount}/{total}）"
-                : $"查看信物进度（{PlacedCount}/{total}）";
+            return $"点击红色预览放置信物（{PlacedCount}/{total}）";
         }
     }
 
@@ -49,7 +48,15 @@ public sealed class BossMemoryGate : InteractableObject
 
     void Awake()
     {
-        interactionEnabled = true;
+        // A runtime level snapshot may already contain displays from its source gate.
+        if (displayRoot != null)
+            foreach (var display in displayRoot.GetComponentsInChildren<BossMemorySlot>(true))
+            {
+                display.gameObject.SetActive(false);
+                Destroy(display.gameObject);
+            }
+        if (memories != null)
+            for (int slot = 0; slot < memories.Length; slot++) CreateDisplay(memories[slot], slot);
         RefreshButtons();
     }
 
@@ -61,29 +68,30 @@ public sealed class BossMemoryGate : InteractableObject
         if (startButton != null) startButton.SetPulse(Available && Ready);
     }
 
-    int NextMemory()
-    {
-        if (memories != null)
-            for (int i = 0; i < memories.Length; i++)
-                if (!placed.Contains(memories[i].id) && StoryRunProgress.Current.IsCollected(memories[i].id)) return i;
-        return -1;
-    }
+    // Only the individual memory previews accept placement clicks, never the table body.
+    public override bool CanInteract(PlayerInteraction actor) => false;
 
-    public override bool CanInteract(PlayerInteraction actor) => base.CanInteract(actor) && Available;
+    internal bool IsPlaced(int slot) => placed.Contains(memories[slot].id);
 
-    protected override void OnInteract(PlayerInteraction actor)
+    internal void PressMemory(PlayerInteraction actor, int slot, BossMemorySlot display)
     {
-        int slot = NextMemory();
-        if (slot < 0)
+        if (!Available || actor == null) return;
+        var memory = memories[slot];
+        if (IsPlaced(slot))
         {
-            actor.GetComponent<PlayerSubtitles>()?.ShowImmediate(Ready
-                ? "信物已摆齐，可以按右侧按钮开启 Boss 战。"
-                : "没有可摆放的信物。请先在关卡中收集，再回到长桌。");
+            StorySubtitles.Clear();
+            StorySubtitles.Play(memory.title, lineHoldSeconds, charactersPerSecond);
+            foreach (string line in memory.text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                StorySubtitles.Play(line.Trim(), lineHoldSeconds, charactersPerSecond);
             return;
         }
-        var memory = memories[slot];
-        if (!CreateDisplay(memory, slot)) return;
+        if (!StoryRunProgress.Current.IsCollected(memory.id))
+        {
+            actor.GetComponent<PlayerSubtitles>()?.ShowImmediate("没有可摆放的信物。请先在关卡中收集，再回到长桌。");
+            return;
+        }
         placed.Add(memory.id);
+        display.ShowPlaced();
         RefreshButtons();
     }
 
@@ -119,7 +127,7 @@ public sealed class BossMemoryGate : InteractableObject
 
         var presentation = display.AddComponent<LevelProp>();
         presentation.gameplayMaterial = displayGameplayMaterial;
-        presentation.RefreshGameplayPresentation();
+        presentation.enabled = false;
 
         float scale = displaySize / Mathf.Max(.01f, bounds.size.x, bounds.size.y, bounds.size.z);
         display.transform.localScale = Vector3.one * scale;
@@ -131,17 +139,9 @@ public sealed class BossMemoryGate : InteractableObject
         var anchor = new GameObject("Inspect").transform;
         anchor.SetParent(display.transform, false);
         anchor.localPosition = bounds.center;
-        var inspect = display.AddComponent<InteractableObject>();
+        var inspect = display.AddComponent<BossMemorySlot>();
         inspect.interactionAnchor = anchor;
-        inspect.interactionHint = "调查：" + memory.title;
-        inspect.onInteract.AddListener(_ =>
-        {
-            if (!Available) return;
-            StorySubtitles.Clear();
-            StorySubtitles.Play(memory.title, lineHoldSeconds, charactersPerSecond);
-            foreach (string line in memory.text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
-                StorySubtitles.Play(line.Trim(), lineHoldSeconds, charactersPerSecond);
-        });
+        inspect.Initialize(this, slot, presentation, previewMaterial);
         return true;
     }
 

@@ -116,9 +116,10 @@ public sealed class PlayerInteraction : MonoBehaviour
             var target = ResolveTarget(candidates[i]);
             if (target == null || target.transform.IsChildOf(transform) || !target.CanInteract(this)) continue;
             if (pickup.HeldItem != null && !target.AllowWhileHolding) continue;
-            Vector3 viewport = viewCamera.WorldToViewportPoint(target.InteractionPosition);
+            Vector3 position = target.GetInteractionPosition(this);
+            Vector3 viewport = viewCamera.WorldToViewportPoint(position);
             if (viewport.z <= viewCamera.nearClipPlane || viewport.x <= 0 || viewport.x >= 1 || viewport.y <= 0 || viewport.y >= 1) continue;
-            float angle = Vector3.Angle(viewCamera.transform.forward, target.InteractionPosition - viewCamera.transform.position);
+            float angle = Vector3.Angle(viewCamera.transform.forward, position - viewCamera.transform.position);
             bool current = target == FocusedTarget;
             if (angle > aimAngle + (current ? focusHysteresis : 0)) continue;
             float score = angle - (current ? focusHysteresis : 0);
@@ -131,7 +132,7 @@ public sealed class PlayerInteraction : MonoBehaviour
 
     bool HasLineOfSight(InteractableObject target)
     {
-        Vector3 origin = viewCamera.transform.position, delta = target.InteractionPosition - origin;
+        Vector3 origin = viewCamera.transform.position, delta = target.GetInteractionPosition(this) - origin;
         int count;
         while ((count = Physics.RaycastNonAlloc(origin, delta.normalized, hits, delta.magnitude,
             pickup.obstacleLayers, QueryTriggerInteraction.Ignore)) == hits.Length)
@@ -214,7 +215,7 @@ public sealed class PlayerInteraction : MonoBehaviour
             return;
         }
         if (shownTarget == null) { ring.gameObject.SetActive(false); return; }
-        Vector3 screen = viewCamera.WorldToScreenPoint(shownTarget.InteractionPosition);
+        Vector3 screen = viewCamera.WorldToScreenPoint(shownTarget.GetInteractionPosition(this));
         ring.gameObject.SetActive(screen.z > viewCamera.nearClipPlane && viewCamera.pixelRect.Contains(screen));
         Place(ring, screen);
         // Quintic smootherstep has zero speed and acceleration at both ends.

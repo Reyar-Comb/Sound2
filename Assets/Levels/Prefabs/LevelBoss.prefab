@@ -1251,6 +1251,7 @@ MonoBehaviour:
   startButton: {fileID: 7906864066136201020}
   displayRoot: {fileID: 796341329701214643}
   displayGameplayMaterial: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}
+  previewMaterial: {fileID: 2100000, guid: f5225964b7ffe3e4ba6fa99fbeed7275, type: 2}
   memories:
   - id: home.alarm-clock
     title: "\u5BB6\uFF1A\u95F9\u949F"

@@ -121,6 +121,7 @@ MonoBehaviour:
   startButton: {fileID: 3560328403289450626}
   displayRoot: {fileID: 6738006506501420535}
   displayGameplayMaterial: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}
+  previewMaterial: {fileID: 2100000, guid: f5225964b7ffe3e4ba6fa99fbeed7275, type: 2}
   memories:
   - id: home.alarm-clock
     title: "\u5BB6\uFF1A\u95F9\u949F"
@@ -150,6 +151,7 @@ MonoBehaviour:
   charactersPerSecond: 22
   displaySize: 0.52
   slotSpacing: 0.72
+  placed: []
 --- !u!1001 &7198732602478914965
 PrefabInstance:
   m_ObjectHideFlags: 0

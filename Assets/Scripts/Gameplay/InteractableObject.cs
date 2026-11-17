@@ -13,6 +13,7 @@ public class InteractableObject : MonoBehaviour
     public UnityEvent<PlayerInteraction> onInteract = new();
 
     public Vector3 InteractionPosition => interactionAnchor != null ? interactionAnchor.position : transform.position;
+    public virtual Vector3 GetInteractionPosition(PlayerInteraction player) => InteractionPosition;
     public virtual bool CanInteract(PlayerInteraction player) => isActiveAndEnabled && interactionEnabled;
 
     public virtual bool TryInteract(PlayerInteraction player)
