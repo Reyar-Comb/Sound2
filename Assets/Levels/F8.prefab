@@ -48,6 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60898eb98d80405489368309154f5604, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Sound2.LevelEditing.LevelLayout
+  manualGeometry: 0
   partitions: []
   rooms:
   - id: f8-boss-arena
@@ -78,6 +79,7 @@ MonoBehaviour:
   doorways:
   - center: {x: -28, y: -44.5}
     size: {x: 2.65, y: 0.8}
+  roomReverbAmount: 1
   enemyStepHeight: 0.3
   wallHeight: 10
   wallThickness: 0.2
@@ -107,7 +109,7 @@ MonoBehaviour:
   geometryRoot: {fileID: 7428225109826192928}
   geometryLayers:
     serializedVersion: 2
-    m_Bits: 4294967291
+    m_Bits: 307
   agentRadius: 0.35
   agentHeight: 1.8
   agentClimb: 0.3
@@ -200,6 +202,7 @@ MonoBehaviour:
   battleMusic: {fileID: 0}
   musicVolume: 0.85
   revealMusicTime: 21.33
+  introBlackoutTime: 5.33
   loopFromReveal: 1
   loopStartTime: 21.33
   loopEndTime: 0

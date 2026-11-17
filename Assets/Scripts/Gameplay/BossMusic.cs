@@ -7,6 +7,7 @@ internal sealed class BossMusic
     double start, nextLoop, loopDuration;
     int loopSample, nextSource;
     bool playing;
+    float playbackVolume;
 
     public double Elapsed => AudioSettings.dspTime - start;
 
@@ -39,6 +40,7 @@ internal sealed class BossMusic
             source.clip = clip;
             source.volume = volume;
         }
+        playbackVolume = volume;
         start = AudioSettings.dspTime + .15;
         nextLoop = start + (double)end / clip.frequency;
         Schedule(sources[0], 0, start, nextLoop);
@@ -70,5 +72,10 @@ internal sealed class BossMusic
     {
         playing = false;
         foreach (var source in sources) source.Stop();
+    }
+
+    public void SetGain(float gain)
+    {
+        foreach (var source in sources) source.volume = playbackVolume * Mathf.Clamp01(gain);
     }
 }

@@ -3599,6 +3599,7 @@ MonoBehaviour:
       edge: 0
   pits: []
   doorways: []
+  roomReverbAmount: 1
   enemyStepHeight: 0.3
   wallHeight: 6
   wallThickness: 0.2
@@ -3650,6 +3651,7 @@ MonoBehaviour:
     hrtf: 1
     occlusion: 0
     reflections: 0
+    bypassRoomAcoustics: 0
     reflectionMix: 0.65
     distanceMode: 1
     minDistance: 1
@@ -3681,10 +3683,10 @@ MonoBehaviour:
       m_RotationOrder: 4
     farEarGain: 1
   capacity: 14
-  initializeOnStart: 0
-  prewarmAcrossFrames: 1
   preRoll: 0.3
   tailSeconds: 0
+  initializeOnStart: 0
+  prewarmAcrossFrames: 1
 --- !u!114 &8840146704499272021
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3699,7 +3701,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioReactiveSonarEmitter
   analysis: {fileID: 11400000, guid: 580838e9c6584995ae45b9bdbc1d146e, type: 2}
   visual:
-    range: 12
+    range: 23
     waveSpeed: 7
     afterglow: 0.1
     gain: 1
@@ -3709,8 +3711,8 @@ MonoBehaviour:
     highQualityOcclusion: 0
     distance:
       enabled: 1
-      fadeStartDistance: 1
-      fadeEndDistance: 12
+      fadeStartDistance: 2.7
+      fadeEndDistance: 24.7
       falloffPower: 1
       pulseStrength: 1
     density:

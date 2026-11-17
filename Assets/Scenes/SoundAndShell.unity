@@ -192,6 +192,7 @@ MonoBehaviour:
   profile: {fileID: 11400000, guid: 4df0204e8105b6e43820f26c7c7db56c, type: 2}
   activateOnlyCurrentLevel: 1
   roomAcousticsEnabled: 1
+  elevatorMusicFadeSeconds: 1.5
   activationBudgetMs: 2
   activationBatchSize: 24
 --- !u!4 &169069350
@@ -443,7 +444,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: caf8337a2ce50bd43ae256f595593763, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Sound2.LevelEditing.LevelElevator
 --- !u!114 &778228566 stripped
 MonoBehaviour:
@@ -652,6 +653,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 416137931599503426, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: obstacleLayers.m_Bits
+      value: 307
+      objectReference: {fileID: 0}
     - target: {fileID: 872924278679620629, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: profile
       value: 
@@ -711,6 +716,10 @@ PrefabInstance:
     - target: {fileID: 2995332533543264252, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3087854306390339009, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
+      propertyPath: obstacleLayers.m_Bits
+      value: 307
       objectReference: {fileID: 0}
     - target: {fileID: 4599028716362026551, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}
       propertyPath: m_Name
@@ -844,9 +853,32 @@ MonoBehaviour:
   foolCard: {fileID: 2800000, guid: c52b4b940d65e4943be15b0448985d7b, type: 3}
   hermitCard: {fileID: 2800000, guid: 7b73ba416de046341b6dd52739d850ed, type: 3}
   hangedManCard: {fileID: 2800000, guid: ad4a8aa40349c6b42913eae350476857, type: 3}
+  worldCard: {fileID: 2800000, guid: 9ec6bf2ec31b65348ba42f6702caeae2, type: 3}
+  roomMusic:
+    versionA: {fileID: 8300000, guid: f885e439dddb04a42b6bc209b0bae3d9, type: 3}
+    versionB: {fileID: 8300000, guid: 514dd676553ab354291e51ae83259864, type: 3}
+    versionC: {fileID: 8300000, guid: 3af52a6c1c0a0e34fb4756c85307248d, type: 3}
+    volumeA: 0.612
+    volumeB: 1
+    volumeC: 1
+    fadeInSeconds: 2
+    crossfadeSeconds: 2
+    fadeOutSeconds: 1
+    endingAmbience: {fileID: 8300000, guid: c84c80853475cc046bc0273acf73cfc4, type: 3}
+    loopAmbience: 1
+    ambienceVolume: 0.5
+    ambienceFadeInSeconds: 2
+    ambienceFadeOutSeconds: 1
+  endingCredits: {fileID: 11400000, guid: b6b1751c30744513ad6c909a42b85430, type: 2}
+  endingTitle: {fileID: 1744119718}
   fallSeconds: 1.5
-  cardRushSeconds: 0.42
+  cardFadeInSeconds: 0.45
+  cardBackHoldSeconds: 0.25
+  cardFlipSeconds: 1.6
   returnFadeSeconds: 1.1
+  bossReturnFadeSeconds: 2
+  escapeFadeOutSeconds: 0.8
+  escapeFadeInSeconds: 1.2
 --- !u!114 &1227687902 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2922623047068839807, guid: 83840c30a25501c4d9a65bd2ad5a1080, type: 3}

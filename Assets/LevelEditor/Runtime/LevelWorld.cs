@@ -22,6 +22,8 @@ namespace Sound2.LevelEditing
         public FloorProgressionProfile profile;
         public bool activateOnlyCurrentLevel = true;
         public bool roomAcousticsEnabled = true;
+        [Min(0), Tooltip("电梯开始切换时，出发关卡的 2D BGM（含初始房间音乐）淡出的秒数。取消切换时平滑恢复。")]
+        public float elevatorMusicFadeSeconds = 1.5f;
         [Min(.1f), Tooltip("Main-thread activation budget per frame while the elevator travels (milliseconds). A single prop cannot be interrupted.")]
         public float activationBudgetMs = 2;
         [Min(1), Tooltip("Maximum props activated per frame; also spreads Start callbacks across frames.")]
@@ -41,6 +43,50 @@ namespace Sound2.LevelEditing
         }
         readonly Dictionary<LevelLayout, InitialLevel> initialLevels = new();
         readonly HashSet<AsyncInstantiateOperation<LevelLayout>> pendingCopies = new();
+        readonly Dictionary<AudioSource, float> departingMusic = new();
+        float departureMusicGain = 1, departureMusicFrom = 1, departureMusicTarget = 1, departureMusicTime;
+
+        void BeginDepartureMusic()
+        {
+            // A previous cancelled trip may still be fading back in. Preserve authored gains.
+            bool resumingFade = departingMusic.Count > 0;
+            void Capture(AudioSource source)
+            {
+                if (source != null && source.isPlaying && source.spatialBlend <= .001f
+                    && source.GetComponent<SpatialAudioEmitter>() == null)
+                    departingMusic.TryAdd(source, source.volume);
+            }
+            if (CurrentLevel != null)
+                foreach (var source in CurrentLevel.GetComponentsInChildren<AudioSource>()) Capture(source);
+            foreach (var opening in FindObjectsByType<SoundShellOpening>())
+                if (opening.world == this && opening.InStartingRoom)
+                    foreach (var source in opening.roomMusic.Sources) Capture(source);
+            departureMusicFrom = resumingFade ? departureMusicGain : 1;
+            departureMusicGain = departureMusicFrom;
+            departureMusicTarget = 0; departureMusicTime = 0;
+        }
+
+        void LateUpdate()
+        {
+            if (departingMusic.Count == 0 || SonicSpaceStartMenu.BlocksGameplay || AudioListener.pause) return;
+            departureMusicTime += Time.deltaTime;
+            float t = elevatorMusicFadeSeconds <= 0 ? 1 : Mathf.Clamp01(departureMusicTime / elevatorMusicFadeSeconds);
+            departureMusicGain = Mathf.Lerp(departureMusicFrom, departureMusicTarget, Mathf.SmoothStep(0, 1, t));
+            foreach (var pair in departingMusic)
+                if (pair.Key != null) pair.Key.volume = pair.Value * departureMusicGain;
+            if (t >= 1 && departureMusicTarget == 1) RestoreDepartureMusic(false);
+        }
+
+        void RestoreDepartureMusic(bool stop)
+        {
+            foreach (var pair in departingMusic)
+                if (pair.Key != null)
+                {
+                    if (stop) pair.Key.Stop();
+                    pair.Key.volume = pair.Value;
+                }
+            departingMusic.Clear();
+        }
 
         static Dictionary<Transform, Transform> MatchHierarchy(Transform source, Transform target)
         {
@@ -173,6 +219,7 @@ namespace Sound2.LevelEditing
         }
         public bool TryDestination(LevelElevator source,out LevelElevator destination,out float seconds)
         {
+            RepairStartingConnection(source);
             destination=null;seconds=0;
             foreach(var connection in connections)
             {
@@ -182,6 +229,19 @@ namespace Sound2.LevelEditing
                 if(destination!=null){seconds=connection.travelSeconds;return levels.Contains(source.Level)&&levels.Contains(destination.Level);}
             }
             return false;
+        }
+
+        void RepairStartingConnection(LevelElevator source)
+        {
+            // An editor save can erase a broken nested-prefab reference. Recover only the
+            // authored first route, with its existing destination and a unique starting cabin.
+            if (source == null || startingLevel == null || source.Level != startingLevel || connections.Count == 0) return;
+            var first = connections[0];
+            if (first == null || first.source != null || first.destination == null || first.destination.Level == startingLevel) return;
+            var cabins = startingLevel.GetComponentsInChildren<LevelElevator>(true);
+            if (cabins.Length != 1 || cabins[0] != source) return;
+            first.source = source;
+            Debug.LogWarning("已恢复初始电梯的出发端引用，保留原有目的地与运行时间。", this);
         }
         public bool Travel(LevelElevator source,PlayerController actor)
         {
@@ -221,6 +281,7 @@ namespace Sound2.LevelEditing
         IEnumerator TeleportToElevator(LevelElevator destination, PlayerController actor, Vector3 offset)
         {
             Travelling = true;
+            BeginDepartureMusic();
             teleportPassenger = actor;
             actor.TransportLocked = true;
             arrival = destination;
@@ -247,6 +308,7 @@ namespace Sound2.LevelEditing
         IEnumerator Transport(LevelElevator source,LevelElevator destination,PlayerController actor,float seconds)
         {
             Travelling=true;departure=source;arrival=destination;source.Busy=destination.Busy=true;
+            BeginDepartureMusic();
             source.SetPaperEffect("_ArrivalDissolve", 0);
             source.SetPaperEffect("_RespawnPaper", 0);
             source.Open(false);
@@ -306,6 +368,14 @@ namespace Sound2.LevelEditing
 
         IEnumerator CompleteArrival(LevelElevator destination, PlayerController actor, Vector3 offset, float headingDelta, bool faceExit = false)
         {
+            // Even a very short debug transfer must finish its fade before disabling the old level.
+            while (departingMusic.Count > 0 && departureMusicGain > 0)
+            {
+                if (destination == null || actor == null || departure != null && !departure.Contains(actor.transform.position))
+                { Release(true); yield break; }
+                yield return null;
+            }
+            RestoreDepartureMusic(true);
             Physics.SyncTransforms();
             destination.SetPaperEffect("_ArrivalDissolve", 0);
             destination.SetPaperEffect("_RespawnPaper", 0);
@@ -359,6 +429,11 @@ namespace Sound2.LevelEditing
 
         void Release(bool cancelled)
         {
+            if (cancelled && departingMusic.Count > 0)
+            {
+                departureMusicFrom = departureMusicGain;
+                departureMusicTarget = 1; departureMusicTime = 0;
+            }
             preparation?.Dispose(); preparation = null;
             if (teleportPassenger != null) teleportPassenger.TransportLocked = false;
             teleportPassenger = null;
@@ -372,6 +447,7 @@ namespace Sound2.LevelEditing
             foreach (var copy in pendingCopies) if (!copy.isDone) copy.Cancel();
             pendingCopies.Clear();
             StopAllCoroutines();Release(true);
+            RestoreDepartureMusic(false);
         }
     }
 }

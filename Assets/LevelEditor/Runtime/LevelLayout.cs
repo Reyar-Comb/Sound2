@@ -133,6 +133,8 @@ namespace Sound2.LevelEditing
         public List<LevelCorridor> corridors = new List<LevelCorridor>();
         public List<LevelPit> pits = new List<LevelPit>();
         public List<LevelDoorway> doorways = new();
+        [Range(0, 2), Tooltip("主流程本关的房间混响强度。0 关闭，1 使用房间默认值。只调整反射声的音量。")]
+        public float roomReverbAmount = 1;
         [Range(0, 1.8f), Tooltip("本关敌人可跨上的单级台阶高度（米），不是绝对海拔或爬墙高度。")]
         public float enemyStepHeight = .3f;
         [Min(.1f)] public float wallHeight = 3.2f;

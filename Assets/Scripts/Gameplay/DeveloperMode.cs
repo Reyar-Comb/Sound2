@@ -8,6 +8,8 @@ internal static class DeveloperMode
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Reset() => Enabled = false;
 
+    public static void ResetForNewGame() => Reset();
+
     public static void Toggle()
     {
         if (!Available) return;

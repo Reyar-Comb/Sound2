@@ -65,7 +65,9 @@ public sealed class WorldRoomAcoustics : MonoBehaviour
         insideElevator = world.Travelling || IsInsideElevator(level, player.transform.position);
         var room = FindRoom(level, player.transform.position);
         RoomReverb(room, out float roomWet, out float roomDecay);
-        if (insideElevator || SonicSpaceStartMenu.BlocksGameplay) roomWet = -10000;
+        float amount = Mathf.Clamp(level.roomReverbAmount, 0, 2);
+        if (insideElevator || SonicSpaceStartMenu.BlocksGameplay || amount <= 0) roomWet = -10000;
+        else roomWet = Mathf.Clamp(roomWet + 2000 * Mathf.Log10(amount), -10000, 0);
         float blend = 1 - Mathf.Exp(-8 * Time.unscaledDeltaTime);
         wetLevel = Mathf.Lerp(wetLevel, roomWet, blend);
         decay = Mathf.Lerp(decay, roomDecay, blend);

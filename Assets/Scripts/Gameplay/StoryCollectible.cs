@@ -22,9 +22,9 @@ public sealed class StoryCollectible : InteractableObject
     public bool Discovered { get; private set; }
     public bool Collected { get; private set; }
     public override string InteractionHint => sequence != null ? sequence.InteractionHint : "调查";
-    internal Renderer[] OutlineRenderers => outlineRenderers;
-    internal float SurfaceGold => sequence != null && sequence.KeepGold ? 1
-        : Collected ? (recording == null && pulse == null ? 1 : 0)
+    internal Renderer[] OutlineRenderers => sequence != null && sequence.StowingMiniature ? sequence.MiniatureRenderers : outlineRenderers;
+    internal float SurfaceGold => sequence != null && (sequence.KeepGold || sequence.StowingMiniature) ? 1
+        : Collected ? (recording == null && pulse == null && (sequence == null || !sequence.KeepsSceneProp) ? 1 : 0)
         : Mathf.Clamp01((glowUntil - Time.time) / Mathf.Max(.05f, discoveryGlowSeconds));
 
     ICollectibleProgress progress;
@@ -62,7 +62,7 @@ public sealed class StoryCollectible : InteractableObject
         if (progress != null && !string.IsNullOrWhiteSpace(collectibleId) && progress.IsCollected(collectibleId))
         {
             Discovered = Collected = true;
-            if (sequence != null) gameObject.SetActive(false);
+            if (sequence != null && !sequence.KeepsSceneProp) gameObject.SetActive(false);
         }
     }
 

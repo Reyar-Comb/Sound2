@@ -9,12 +9,16 @@ public sealed class StartingRoomBed : InteractableObject
     Collider[] colliders;
     bool[] originalSurfaces, originalColliders;
     SoundShellOpening opening;
+    LevelProp presentation;
+    bool originalPresentationEnabled;
     public bool IsUnlocked => StoryRunProgress.Current.EnteredBossRoom;
     public override string InteractionHint => "躺下休息";
     public override bool AllowWhileHolding => true;
 
     void Awake()
     {
+        presentation = GetComponent<LevelProp>();
+        originalPresentationEnabled = presentation != null && presentation.enabled;
         surfaces = GetComponentsInChildren<Renderer>(true);
         colliders = GetComponentsInChildren<Collider>(true);
         originalSurfaces = new bool[surfaces.Length];
@@ -34,6 +38,8 @@ public sealed class StartingRoomBed : InteractableObject
     void RefreshPresentation()
     {
         bool visible = IsUnlocked;
+        // Preserve the preview materials for the white victory room only.
+        if (presentation != null) presentation.enabled = originalPresentationEnabled && !StoryRunProgress.Current.DefeatedBoss;
         for (int i = 0; i < surfaces.Length; i++)
             if (surfaces[i] != null) surfaces[i].enabled = visible && originalSurfaces[i];
         for (int i = 0; i < colliders.Length; i++)

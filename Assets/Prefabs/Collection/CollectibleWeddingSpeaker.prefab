@@ -79,6 +79,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: visual.distance.fadeEndDistance
+      value: 32.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+      propertyPath: visual.distance.fadeStartDistance
+      value: 5.1
+      objectReference: {fileID: 0}
     - target: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: m_Name
       value: CollectibleWeddingSpeaker
@@ -94,10 +106,6 @@ PrefabInstance:
     - target: {fileID: 8988879547383252713, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
       propertyPath: surfaceAnchor.z
       value: 0.135
-      objectReference: {fileID: 0}
-    - target: {fileID: 7208429312671840563, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
-      propertyPath: m_Enabled
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -116,6 +124,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 4211988467547105505}
   m_SourcePrefab: {fileID: 100100000, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+--- !u!4 &255157905224607480 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8207046225322386196, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
+  m_PrefabInstance: {fileID: 8246031322578322924}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &723863769972491933 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8675172646502712177, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}
@@ -179,12 +192,13 @@ MonoBehaviour:
   cup: {fileID: 0}
   keepGoldAfterDiscovery: 0
   idleLoop: {fileID: 0}
-  interactionClip: {fileID: 8300000, guid: 3a03ff8075f39a54db98a0991c004a67, type: 3}
+  interactionClip: {fileID: 0}
   volume: 0.75
   spatial:
     hrtf: 1
     occlusion: 0
     reflections: 0
+    bypassRoomAcoustics: 0
     reflectionMix: 0.65
     distanceMode: 1
     minDistance: 1
@@ -215,8 +229,9 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
     farEarGain: 1
-  interactionGoldRange: 5
+  interactionGoldRange: 0
   stowSeconds: 0.7
+  miniatureModel: {fileID: 255157905224607480}
 --- !u!4 &6173272413776832338 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2865440834644632254, guid: 8aac195eaf80b5b4b856200d177978d2, type: 3}

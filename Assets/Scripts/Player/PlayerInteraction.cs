@@ -39,6 +39,7 @@ public sealed class PlayerInteraction : MonoBehaviour
     Canvas hud;
     RectTransform hudRect;
     ReticleGraphic dot, ring;
+    TMPro.TextMeshProUGUI buttonHint;
     InteractableObject shownTarget;
     float progress;
     Collider[] candidates = new Collider[32];
@@ -68,6 +69,22 @@ public sealed class PlayerInteraction : MonoBehaviour
         dotRect.anchorMin = dotRect.anchorMax = dotRect.pivot = new Vector2(.5f, .5f);
         dotRect.anchoredPosition = Vector2.zero;
         ring.gameObject.SetActive(false);
+        EnsureButtonHint();
+    }
+
+    void EnsureButtonHint()
+    {
+        if (buttonHint != null || hud == null) return;
+        var hintObject = new GameObject("Boss button hint", typeof(RectTransform), typeof(TMPro.TextMeshProUGUI));
+        hintObject.transform.SetParent(hud.transform, false);
+        buttonHint = hintObject.GetComponent<TMPro.TextMeshProUGUI>();
+        buttonHint.font = GameUiTheme.Current?.textFont ?? TMPro.TMP_Settings.defaultFontAsset;
+        buttonHint.fontSize = 24;
+        buttonHint.alignment = TMPro.TextAlignmentOptions.Center;
+        buttonHint.richText = false; buttonHint.raycastTarget = false;
+        buttonHint.color = Color.white;
+        buttonHint.rectTransform.sizeDelta = new Vector2(600, 44);
+        buttonHint.enabled = false;
     }
 
     ReticleGraphic CreateGraphic(string objectName)
@@ -200,6 +217,8 @@ public sealed class PlayerInteraction : MonoBehaviour
 
     void UpdateRing()
     {
+        EnsureButtonHint();
+        buttonHint.enabled = false;
         if (shownTarget == null || !shownTarget.CanInteract(this) || !HasLineOfSight(shownTarget))
         {
             shownTarget = null;
@@ -218,6 +237,13 @@ public sealed class PlayerInteraction : MonoBehaviour
         Vector3 screen = viewCamera.WorldToScreenPoint(shownTarget.GetInteractionPosition(this));
         ring.gameObject.SetActive(screen.z > viewCamera.nearClipPlane && viewCamera.pixelRect.Contains(screen));
         Place(ring, screen);
+        if (shownTarget is BossMemoryButton && reveal && ring.gameObject.activeSelf)
+        {
+            buttonHint.text = shownTarget.InteractionHint;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(hudRect, screen, null, out var labelPosition);
+            buttonHint.rectTransform.anchoredPosition = labelPosition + Vector2.up * (ringRadius + 28);
+            buttonHint.enabled = true;
+        }
         // Quintic smootherstep has zero speed and acceleration at both ends.
         float eased = progress * progress * progress * (progress * (progress * 6 - 15) + 10);
         EffectiveRingThickness = BlackBoxPointCloudFeature.GetDotDiameter(viewCamera, ringThickness);
@@ -235,6 +261,7 @@ public sealed class PlayerInteraction : MonoBehaviour
         FocusedTarget = shownTarget = null;
         progress = 0;
         if (ring != null) ring.gameObject.SetActive(false);
+        if (buttonHint != null) buttonHint.enabled = false;
     }
 
     void OnDisable()

@@ -1,6 +1,10 @@
 Shader "Sound2/SonicSpace Point Menu"
 {
-    Properties { _MainTex ("Title mask", 2D) = "black" {} }
+    Properties
+    {
+        _MainTex ("Title mask", 2D) = "black" {}
+        _CreditsBody ("Point cloud credits body", Float) = 0
+    }
     SubShader
     {
         Tags { "Queue"="Overlay" "RenderType"="Transparent" "RenderPipeline"="UniversalPipeline" }
@@ -22,6 +26,7 @@ Shader "Sound2/SonicSpace Point Menu"
             float _WindowPush, _WindowFall;
             float _RespawnCover;
             float _PlayerViewTitle;
+            float _CreditsBody;
             struct Input {float4 vertex:POSITION;float2 uv:TEXCOORD0;};
             struct Varyings {float4 vertex:SV_POSITION;float2 uv:TEXCOORD0;};
             Varyings Vert(Input v) {Varyings o;o.vertex=UnityObjectToClipPos(v.vertex);o.uv=v.uv;return o;}
@@ -194,11 +199,14 @@ Shader "Sound2/SonicSpace Point Menu"
                 uint2 id=(uint2)max(cell,0);
                 if (_PlayerViewTitle > .5)
                 {
-                    float coverage = Glyph(centre).r * TitleVisibility(id);
+                    float3 glyph = Glyph(centre);
+                    float bodyCoverage = _CreditsBody > .5 ? max(glyph.g, glyph.b) : 0;
+                    float coverage = max(glyph.r, bodyCoverage) * TitleVisibility(id);
                     float radius = min(pitch*.47, _DotRadius*_TitleDotScale);
                     float dot = 1-smoothstep(radius-aa,radius+aa,length(p-centre));
                     float dissolve = 1-Ease((_Transition-CellRandom(id,23u)*.3)/.7);
-                    return float4(0,0,0,dot*saturate(coverage*2)*step(OrderedRank(id),_TitleDensity)*dissolve);
+                    float alpha = dot*saturate(coverage*2)*step(OrderedRank(id),_TitleDensity)*dissolve;
+                    return float4(0,0,0,alpha);
                 }
                 if (_RespawnCover > 0)
                 {

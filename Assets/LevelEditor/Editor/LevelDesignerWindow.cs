@@ -738,6 +738,7 @@ namespace Sound2.LevelEditing.Editor
         {
             var root = new VisualElement();
             root.Add(new HelpBox("此对象保留完整关卡布局。使用关卡编辑器修改后重新生成；Generated Geometry 下的网格可使用 Unity 工具编辑，但下次生成会覆盖这些网格。", HelpBoxMessageType.Info));
+            root.Add(new PropertyField(serializedObject.FindProperty(nameof(LevelLayout.roomReverbAmount)), "房间混响量"));
             root.Add(new Button(() => { var window = EditorWindow.GetWindow<LevelDesignerWindow>("关卡编辑器"); window.Bind((LevelLayout)target); }) { text = "打开关卡编辑器" });
             return root;
         }

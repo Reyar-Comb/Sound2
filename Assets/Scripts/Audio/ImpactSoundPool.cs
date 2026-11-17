@@ -45,7 +45,7 @@ public sealed class ImpactSoundPool : MonoBehaviour
 
     void Start()
     {
-        if (initializeOnStart && !prewarmAcrossFrames) Initialize();
+        if (initializeOnStart && !prewarmAcrossFrames && clip != null) Initialize();
     }
 
     public void Initialize()
@@ -166,7 +166,7 @@ public sealed class ImpactSoundPool : MonoBehaviour
     // Allows replacement of the settings object and listener at runtime.
     void LateUpdate()
     {
-        if (prewarmAcrossFrames && (initializeOnStart || clip != null) && voices.Count < TargetVoiceCount) AddVoice();
+        if (prewarmAcrossFrames && clip != null && voices.Count < TargetVoiceCount) AddVoice();
         foreach (var voice in voices)
         {
             voice.settings = settings;

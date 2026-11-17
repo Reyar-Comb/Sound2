@@ -20,12 +20,15 @@ namespace Sound2.LevelEditing
         {
             var keyboard = Keyboard.current;
             var player = world.player;
-            if (keyboard == null || player == null || player.DeathSequenceLocked || player.EncounterInputLocked
+            bool inBossIntro = player != null && player.EncounterInputLocked
+                && world.CurrentLevel != null
+                && world.CurrentLevel.GetComponentInChildren<LevelArenaBoss>()?.State == LevelArenaBoss.EncounterState.Intro;
+            if (keyboard == null || player == null || player.DeathSequenceLocked || player.EncounterInputLocked && !inBossIntro
                 || player.OpeningSequenceLocked || SonicSpaceStartMenu.BlocksGameplay) { Close(); return; }
             if (keyboard.backquoteKey.wasPressedThisFrame)
             {
                 if (open) Close();
-                else if (!world.Travelling && !player.InputSuspended && !player.TransportLocked)
+                else if (!world.Travelling && (!player.InputSuspended || inBossIntro) && !player.TransportLocked)
                 {
                     open = true;
                     inputKeyboard = keyboard;
@@ -51,9 +54,42 @@ namespace Sound2.LevelEditing
         void Execute()
         {
             string[] args = command.Trim().Split((char[])null, 2, StringSplitOptions.RemoveEmptyEntries);
+            if (args.Length == 1 && args[0].Equals("unlock", StringComparison.OrdinalIgnoreCase))
+            {
+                var ids = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+                var items = new System.Collections.Generic.List<StoryCollectible>();
+                foreach (var collectibleLevel in world.levels)
+                {
+                    if (collectibleLevel == null) continue;
+                    foreach (var item in collectibleLevel.GetComponentsInChildren<StoryCollectible>(true))
+                    {
+                        items.Add(item);
+                        if (!string.IsNullOrWhiteSpace(item.CollectibleId)) ids.Add(item.CollectibleId);
+                    }
+                    foreach (var gate in collectibleLevel.GetComponentsInChildren<BossMemoryGate>(true))
+                        if (gate.memories != null)
+                            foreach (var memory in gate.memories)
+                                if (memory != null && !string.IsNullOrWhiteSpace(memory.id)) ids.Add(memory.id);
+                }
+                foreach (string id in ids) StoryRunProgress.Current.TryCollect(id);
+                // Update already initialized props too; inactive floors bind the same progress on activation.
+                foreach (var item in items) if (item != null && item.isActiveAndEnabled) item.BindProgress(StoryRunProgress.Current);
+                command = "";
+                message = $"Unlocked all {ids.Count} collectibles. Esc to close.";
+                return;
+            }
+            if (args.Length == 1 && args[0].Equals("skip", StringComparison.OrdinalIgnoreCase))
+            {
+                var boss = world.CurrentLevel != null ? world.CurrentLevel.GetComponentInChildren<LevelArenaBoss>() : null;
+                if (boss == null) { message = "Enter the Boss level first: tp boss"; return; }
+                if (!boss.TrySkipToVictory(world.player)) { message = "Boss victory is unavailable in the current state."; return; }
+                command = message = "";
+                Close();
+                return;
+            }
             if (args.Length != 2 || !args[0].Equals("tp", StringComparison.OrdinalIgnoreCase))
             {
-                message = "Usage: tp <level>";
+                message = "Usage: tp <level> | skip | unlock";
                 return;
             }
 
@@ -104,7 +140,7 @@ namespace Sound2.LevelEditing
             float width = Mathf.Min(Screen.width - 32f, 660f);
             GUI.Box(new Rect(16, 16, width, 106), "");
             GUI.Label(new Rect(28, 26, width - 24, 24), "> " + command + "_");
-            GUI.Label(new Rect(28, 53, width - 24, 22), "tp <level>    Enter to run    Esc to close");
+            GUI.Label(new Rect(28, 53, width - 24, 22), "tp <level>  |  skip  |  unlock    Enter to run    Esc to close");
             GUI.Label(new Rect(28, 78, width - 24, 24), string.IsNullOrEmpty(message) ? LevelNames : message);
         }
     }

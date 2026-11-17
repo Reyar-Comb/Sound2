@@ -111,7 +111,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StorySubtitleTrigger
   charactersPerSecond: 22
   lines:
-  - text: "\u7F20\u7ED5\u7740\u767D\u80F6\u5E03\u7684\u5BFC\u7EBF\uFF0C\u5851\u6599\u63A5\u5934\u5904\u6709\u4E00\u80A1\u5F88\u6DE1\u7684\u6D88\u6BD2\u6C34\u5473"
+  - text: "\u56FE\u50CF\u5DF2\u7ECF\u662F\u4E00\u6761\u76F4\u7EBF\u7684\u5FC3\u7387\u4EEA\uFF0C\u6301\u7EED\u53D1\u51FA\u7740\u5355\u8C03\u7684\u58F0\u54CD"
     duration: 2.7
 --- !u!114 &6510374985251703789
 MonoBehaviour:
@@ -135,6 +135,7 @@ MonoBehaviour:
     hrtf: 1
     occlusion: 0
     reflections: 0
+    bypassRoomAcoustics: 0
     reflectionMix: 0.65
     distanceMode: 1
     minDistance: 1
@@ -167,6 +168,7 @@ MonoBehaviour:
     farEarGain: 1
   interactionGoldRange: 5
   stowSeconds: 0.7
+  miniatureModel: {fileID: 0}
 --- !u!4 &3774262641388939557 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5290020558589178637, guid: 40ca57acd80787549a2669448a960014, type: 3}

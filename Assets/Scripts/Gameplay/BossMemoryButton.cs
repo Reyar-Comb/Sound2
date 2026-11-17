@@ -7,10 +7,10 @@ public sealed class BossMemoryButton : InteractableObject
     public BossMemoryGate gate;
     SonarObjectEmitter pulse;
 
-    public override string InteractionHint => startsFight ? "开启 Boss 战" : "返回初始房间";
+    public override string InteractionHint => startsFight ? "直面（需集齐信物）" : "逃避";
 
     public override bool CanInteract(PlayerInteraction actor) => base.CanInteract(actor)
-        && gate != null && gate.Available && (!startsFight || gate.Ready);
+        && gate != null && gate.Available;
 
     internal void SetPulse(bool active)
     {

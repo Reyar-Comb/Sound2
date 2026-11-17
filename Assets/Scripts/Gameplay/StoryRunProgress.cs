@@ -5,10 +5,12 @@ internal sealed class StoryRunProgress : ICollectibleProgress
 {
     internal static readonly StoryRunProgress Current = new();
     readonly HashSet<string> collected = new(System.StringComparer.Ordinal);
-    bool enteredBossRoom, startedBoss, diedAfterBossStarted;
+    bool enteredBossRoom, startedBoss, diedAfterBossStarted, defeatedBoss, bossReturnPending;
     public bool EnteredBossRoom { get { LoadEditorProgress(); return enteredBossRoom; } }
     public bool StartedBoss { get { LoadEditorProgress(); return startedBoss; } }
     public bool DiedAfterBossStarted { get { LoadEditorProgress(); return diedAfterBossStarted; } }
+    public bool DefeatedBoss { get { LoadEditorProgress(); return defeatedBoss; } }
+    public bool BossReturnPending { get { LoadEditorProgress(); return bossReturnPending; } }
     public event System.Action EndingProgressChanged;
 
     public void EnterBossRoom()
@@ -32,6 +34,20 @@ internal sealed class StoryRunProgress : ICollectibleProgress
         diedAfterBossStarted = true; SaveEndingProgress();
     }
 
+    public void CompleteBoss()
+    {
+        LoadEditorProgress();
+        enteredBossRoom = startedBoss = defeatedBoss = bossReturnPending = true;
+        SaveEndingProgress();
+    }
+
+    public void CompleteBossReturn()
+    {
+        LoadEditorProgress();
+        bossReturnPending = false;
+        SaveEndingProgress();
+    }
+
     void SaveEndingProgress()
     {
 #if UNITY_EDITOR
@@ -40,6 +56,8 @@ internal sealed class StoryRunProgress : ICollectibleProgress
             UnityEditor.SessionState.SetBool(EditorProgressKey + ".EnteredBoss", enteredBossRoom);
             UnityEditor.SessionState.SetBool(EditorProgressKey + ".StartedBoss", startedBoss);
             UnityEditor.SessionState.SetBool(EditorProgressKey + ".BossDeath", diedAfterBossStarted);
+            UnityEditor.SessionState.SetBool(EditorProgressKey + ".BossVictory", defeatedBoss);
+            UnityEditor.SessionState.SetBool(EditorProgressKey + ".BossReturnPending", bossReturnPending);
         }
 #endif
         EndingProgressChanged?.Invoke();
@@ -48,7 +66,18 @@ internal sealed class StoryRunProgress : ICollectibleProgress
     void ResetRunState()
     {
         collected.Clear();
-        enteredBossRoom = startedBoss = diedAfterBossStarted = false;
+        enteredBossRoom = startedBoss = diedAfterBossStarted = defeatedBoss = bossReturnPending = false;
+    }
+
+    public void ResetForNewGame()
+    {
+        ResetRunState();
+#if UNITY_EDITOR
+        // A scene reload does not start a new editor Play session or clear SessionState.
+        loadedEditorProgress = true;
+        UnityEditor.SessionState.EraseString(EditorProgressKey);
+#endif
+        SaveEndingProgress();
     }
 
     public IReadOnlyCollection<string> CollectedIds
@@ -92,6 +121,8 @@ internal sealed class StoryRunProgress : ICollectibleProgress
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".EnteredBoss");
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".StartedBoss");
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".BossDeath");
+        UnityEditor.SessionState.EraseBool(EditorProgressKey + ".BossVictory");
+        UnityEditor.SessionState.EraseBool(EditorProgressKey + ".BossReturnPending");
         Current.ResetRunState();
         Current.loadedEditorProgress = false;
     }
@@ -110,6 +141,8 @@ internal sealed class StoryRunProgress : ICollectibleProgress
         enteredBossRoom = UnityEditor.SessionState.GetBool(EditorProgressKey + ".EnteredBoss", false);
         startedBoss = UnityEditor.SessionState.GetBool(EditorProgressKey + ".StartedBoss", false);
         diedAfterBossStarted = UnityEditor.SessionState.GetBool(EditorProgressKey + ".BossDeath", false);
+        defeatedBoss = UnityEditor.SessionState.GetBool(EditorProgressKey + ".BossVictory", false);
+        bossReturnPending = UnityEditor.SessionState.GetBool(EditorProgressKey + ".BossReturnPending", false);
 #endif
     }
 }

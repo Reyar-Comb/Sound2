@@ -109,11 +109,12 @@ public sealed class AudioReactiveSonarField : MonoBehaviour
         return true;
     }
 
-    public MovingLoop StartMovingLoop(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, double dspStart, Transform source = null)
+    public MovingLoop StartMovingLoop(Vector3 position, AudioReactiveClip clip, AudioReactiveVisualSettings settings, double dspStart, Transform source = null, bool gold = false)
     {
         using var scope = triggerMarker.Auto();
         if (!TryPrepareVoice(position, clip, settings, 1, true, source, out int slot, out var voice)) return null;
         voice.moving = new MovingLoop { position = position, start = dspStart };
+        if (gold) voice.parameters.w = 2;
         voice.nextOcclusion = AudioSettings.dspTime + .25;
         PublishVoice(slot, voice);
         return voice.moving;

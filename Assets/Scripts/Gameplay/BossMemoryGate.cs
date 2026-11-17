@@ -20,11 +20,15 @@ public sealed class BossMemoryGate : InteractableObject
     public Transform displayRoot;
     [SerializeField] Material displayGameplayMaterial;
     [SerializeField] Material previewMaterial;
+    [Tooltip("从左到右的摆放顺序。Title 为调查标题，Text 每换行显示一段。")]
     public Memory[] memories;
     [Min(.1f)] public float lineHoldSeconds = 2.4f;
     [Min(1)] public float charactersPerSecond = StorySubtitles.DefaultCharactersPerSecond;
     [Min(.1f)] public float displaySize = .52f;
     [Min(.1f)] public float slotSpacing = .72f;
+    [Header("独立 Boss 场景的逃避过渡")]
+    [Min(.1f)] public float escapeFadeOutSeconds = .8f;
+    [Min(.1f)] public float escapeFadeInSeconds = 1.2f;
 
     [SerializeField, HideInInspector] List<string> placed = new();
     LevelArenaBoss boss;
@@ -61,6 +65,7 @@ public sealed class BossMemoryGate : InteractableObject
     }
 
     void Update() => RefreshButtons();
+    void OnEnable() => leaving = false;
 
     void RefreshButtons()
     {
@@ -81,7 +86,7 @@ public sealed class BossMemoryGate : InteractableObject
         {
             StorySubtitles.Clear();
             StorySubtitles.Play(memory.title, lineHoldSeconds, charactersPerSecond);
-            foreach (string line in memory.text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            foreach (string line in (memory.text ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries))
                 StorySubtitles.Play(line.Trim(), lineHoldSeconds, charactersPerSecond);
             return;
         }
@@ -163,30 +168,23 @@ public sealed class BossMemoryGate : InteractableObject
         if (world == null)
             foreach (var candidate in FindObjectsByType<LevelWorld>())
                 if (candidate.player == player) { world = candidate; break; }
-        if (world != null && world.ReturnToStart(player)) return;
-
-        leaving = true;
-        RefreshButtons();
-        const string campaignPath = "Assets/Scenes/SoundAndShell.unity";
-#if UNITY_EDITOR
-        var load = UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(
-            campaignPath, new LoadSceneParameters(LoadSceneMode.Single));
-#else
-        var load = SceneManager.LoadSceneAsync(campaignPath, LoadSceneMode.Single);
-#endif
-        if (load == null)
+        if (world != null)
         {
-            leaving = false;
-            RefreshButtons();
+            foreach (var opening in FindObjectsByType<SoundShellOpening>())
+                if (opening.world == world && opening.TryReturnAfterBossEscape(player))
+                {
+                    leaving = true;
+                    RefreshButtons();
+                    return;
+                }
+            // A failed or busy transition must not bypass the cover with an instant teleport.
             return;
         }
-        load.completed += _ =>
+
+        if (BossEscapeTransition.Begin(player, escapeFadeOutSeconds, escapeFadeInSeconds))
         {
-            var campaign = SceneManager.GetSceneByPath(campaignPath);
-            if (!campaign.isLoaded) return;
-            foreach (var root in campaign.GetRootGameObjects())
-                foreach (var menu in root.GetComponentsInChildren<SonicSpaceStartMenu>())
-                    if (!menu.HasStarted) menu.enabled = false;
-        };
+            leaving = true;
+            RefreshButtons();
+        }
     }
 }

@@ -8,7 +8,8 @@ public sealed class StartingRoomWindowVines : MonoBehaviour
     public Vector3 windowCenter;
     public Vector3 windowSize = new(4.3f, 3.65f, .3f);
     GameObject vineRoot;
-    public bool IsOvergrown => StoryRunProgress.Current.DiedAfterBossStarted;
+    GameObject victoryBarrier;
+    public bool IsOvergrown => StoryRunProgress.Current.DiedAfterBossStarted && !StoryRunProgress.Current.DefeatedBoss;
     public MonsterVines Vines => vineRoot != null ? vineRoot.GetComponent<MonsterVines>() : null;
 
     void OnEnable()
@@ -20,6 +21,16 @@ public sealed class StartingRoomWindowVines : MonoBehaviour
 
     void RefreshPresentation()
     {
+        bool victory = StoryRunProgress.Current.DefeatedBoss;
+        if (victory && victoryBarrier == null)
+        {
+            victoryBarrier = new GameObject("Victory window air wall", typeof(BoxCollider));
+            victoryBarrier.transform.SetParent(transform, false);
+            var barrier = victoryBarrier.GetComponent<BoxCollider>();
+            barrier.center = windowCenter;
+            barrier.size = windowSize;
+        }
+        if (victoryBarrier != null) victoryBarrier.SetActive(victory);
         if (IsOvergrown && vineRoot == null) CreateVines();
         if (vineRoot != null) vineRoot.SetActive(IsOvergrown);
     }

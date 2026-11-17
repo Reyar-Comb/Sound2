@@ -17,10 +17,14 @@ public sealed class CollectionItemSequence : MonoBehaviour
     [SerializeField] private SpatialAudioSettings spatial = new() { distanceMode = SoundDistanceMode.Linear, maxDistance = 9 };
     [SerializeField, Min(0)] private float interactionGoldRange = 5;
     [SerializeField, Min(.1f)] private float stowSeconds = .7f;
+    [SerializeField, Tooltip("保留场景物体，只收起这个纯模型的微缩副本。")]
+    private Transform miniatureModel;
 
     StoryCollectible collectible;
     AudioSource idleSource;
     Transform view;
+    Transform miniature, stowTarget;
+    Renderer[] miniatureRenderers;
     Vector3 initialPosition, initialScale;
     Quaternion initialRotation;
     float stowElapsed;
@@ -28,10 +32,23 @@ public sealed class CollectionItemSequence : MonoBehaviour
     bool stowing;
 
     internal bool RequiresShatter => action == Action.ShatterThenStore;
+    internal bool KeepsSceneProp => miniatureModel != null;
+    internal bool StowingMiniature => stowing && KeepsSceneProp && miniature != null;
+    internal Renderer[] MiniatureRenderers => miniatureRenderers;
     internal string InteractionHint => action == Action.InteractAndStore ? "调查" : "拾取";
     internal bool KeepGold => (cup != null && cup.IsHeld) || (keepGoldAfterDiscovery && collectible != null && collectible.Discovered);
 
     void Awake() => collectible = GetComponent<StoryCollectible>();
+
+    void Start()
+    {
+        if (!KeepsSceneProp || collectible.Collected) return;
+        miniature = Instantiate(miniatureModel, transform, false);
+        miniature.name = "Collection miniature";
+        miniature.localScale *= .18f;
+        miniatureRenderers = miniature.GetComponentsInChildren<Renderer>(true);
+        miniature.gameObject.SetActive(false);
+    }
 
     void OnEnable()
     {
@@ -61,6 +78,7 @@ public sealed class CollectionItemSequence : MonoBehaviour
 
     void OnDisable()
     {
+        if (StowingMiniature) Finish();
         if (idleSource != null) idleSource.Stop();
         if (cup == null) return;
         cup.PickedUp -= OnCupPickedUp;
@@ -99,15 +117,25 @@ public sealed class CollectionItemSequence : MonoBehaviour
             Finish();
             return;
         }
-        foreach (var itemCollider in GetComponentsInChildren<Collider>()) itemCollider.enabled = false;
-        if (TryGetComponent<Rigidbody>(out var body))
+        if (KeepsSceneProp)
         {
-            body.collisionDetectionMode = CollisionDetectionMode.Discrete;
-            body.isKinematic = true;
+            if (miniature == null) { Finish(); return; }
+            stowTarget = miniature;
+            miniature.gameObject.SetActive(true);
         }
-        initialPosition = view.InverseTransformPoint(transform.position);
-        initialRotation = Quaternion.Inverse(view.rotation) * transform.rotation;
-        initialScale = transform.localScale;
+        else
+        {
+            stowTarget = transform;
+            foreach (var itemCollider in GetComponentsInChildren<Collider>()) itemCollider.enabled = false;
+            if (TryGetComponent<Rigidbody>(out var body))
+            {
+                body.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                body.isKinematic = true;
+            }
+        }
+        initialPosition = view.InverseTransformPoint(stowTarget.position);
+        initialRotation = Quaternion.Inverse(view.rotation) * stowTarget.rotation;
+        initialScale = stowTarget.localScale;
     }
 
     void PlayInteractionSound(PlayerInteraction player)
@@ -145,13 +173,19 @@ public sealed class CollectionItemSequence : MonoBehaviour
         var bag = new Vector3(.52f, -.70f, .43f);
         Vector3 position = Vector3.Lerp(Vector3.Lerp(initialPosition, hand, lift), bag, tuck);
         Quaternion rotation = Quaternion.Slerp(initialRotation, Quaternion.Euler(34 * tuck, -30 * tuck, 18 * tuck), lift);
-        transform.SetPositionAndRotation(view.TransformPoint(position), view.rotation * rotation);
-        transform.localScale = initialScale * Mathf.Lerp(1, .12f, tuck);
+        stowTarget.SetPositionAndRotation(view.TransformPoint(position), view.rotation * rotation);
+        stowTarget.localScale = initialScale * Mathf.Lerp(1, .12f, tuck);
         if (t >= 1) Finish();
     }
 
     void Finish()
     {
+        if (KeepsSceneProp)
+        {
+            stowing = false;
+            if (miniature != null) miniature.gameObject.SetActive(false);
+            return;
+        }
         gameObject.SetActive(false);
         Destroy(gameObject);
     }

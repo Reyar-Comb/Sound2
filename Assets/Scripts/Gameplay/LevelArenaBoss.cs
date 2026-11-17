@@ -179,11 +179,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
         {
             if (Time.time >= fightEndsAt)
             {
-                StopSequence();
-                ClearAttacks();
-                sonar?.ClearPulses();
-                effectsAudio.Source.Stop();
-                sequence = StartCoroutine(PlayVictory());
+                BeginVictory();
                 return;
             }
             RecordAim(target.center);
@@ -228,6 +224,32 @@ public sealed class LevelArenaBoss : MonoBehaviour
         return true;
     }
 
+    internal bool TrySkipToVictory(PlayerController actor)
+    {
+        if (!isActiveAndEnabled || !EnsureRuntime()) return false;
+        if (player == null) FindPlayer();
+        if (actor == null || actor != player || vitality == null || vitality.IsDead || capsule == null || !capsule.enabled
+            || actor.TransportLocked || actor.DeathSequenceLocked || actor.OpeningSequenceLocked
+            || SonicSpaceStartMenu.BlocksGameplay || State is EncounterState.Ending or EncounterState.Won
+            || world != null && (world.Travelling || world.CurrentLevel != level)) return false;
+        resetRequested = false;
+        StorySubtitles.Clear();
+        StoryRunProgress.Current.StartBoss();
+        HideScreen();
+        cube.enabled = true;
+        BeginVictory();
+        return true;
+    }
+
+    void BeginVictory()
+    {
+        StopSequence();
+        ClearAttacks();
+        sonar?.ClearPulses();
+        effectsAudio.Source.Stop();
+        sequence = StartCoroutine(PlayVictory());
+    }
+
     IEnumerator PlayEncounter()
     {
         State = EncounterState.Intro;
@@ -255,6 +277,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
         while (Elapsed() < revealAt) yield return null;
 
         State = EncounterState.Reveal;
+        if (memoryGate != null) memoryGate.gameObject.SetActive(false);
         HideScreen();
         cube.enabled = true;
         EmitReveal(revealWaveSpeed, revealWaveAfterglow);
@@ -437,6 +460,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
     IEnumerator PlayVictory()
     {
         State = EncounterState.Ending;
+        if (memoryGate != null) memoryGate.gameObject.SetActive(false);
         LockInput();
         EmitReveal(victoryWaveSpeed, victoryWaveAfterglow);
         yield return new WaitForSeconds(victoryWaveLead);
@@ -455,14 +479,30 @@ public sealed class LevelArenaBoss : MonoBehaviour
         yield return new WaitForSeconds(unfoldedHoldSeconds);
         for (float elapsed = 0; elapsed < fadeWhiteSeconds; elapsed += Time.deltaTime)
         {
-            ShowScreen(new Color(1, 1, 1, Mathf.SmoothStep(0, 1, elapsed / fadeWhiteSeconds)));
+            float fade = Mathf.SmoothStep(0, 1, elapsed / fadeWhiteSeconds);
+            ShowScreen(new Color(1, 1, 1, fade));
+            music.SetGain(1 - fade);
             yield return null;
         }
         ShowScreen(Color.white);
+        music.SetGain(0);
         music.Stop();
         State = EncounterState.Won;
         sequence = null;
+        StoryRunProgress.Current.CompleteBoss();
         onVictory.Invoke();
+        UnlockInput();
+        foreach (var opening in FindObjectsByType<SoundShellOpening>())
+            if (opening.player == player && opening.world == world && opening.TryReturnAfterBossVictory()) yield break;
+
+        // The independent Boss test scene has no initial room; continue in the campaign.
+        const string campaignPath = "Assets/Scenes/SoundAndShell.unity";
+#if UNITY_EDITOR
+        UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(campaignPath,
+            new UnityEngine.SceneManagement.LoadSceneParameters(UnityEngine.SceneManagement.LoadSceneMode.Single));
+#else
+        UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(campaignPath, UnityEngine.SceneManagement.LoadSceneMode.Single);
+#endif
     }
 
     void EmitReveal(float speed, float afterglow)
@@ -587,6 +627,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
         HideScreen();
         UnlockInput();
         State = EncounterState.Waiting;
+        if (memoryGate != null) memoryGate.gameObject.SetActive(true);
         if (room == null || cube == null) return;
         cube.SetUnfold(0, unfoldedCellSize);
         cube.enabled = false;

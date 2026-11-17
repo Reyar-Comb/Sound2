@@ -51,9 +51,84 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
     MaterialPropertyBlock glyphProperties;
     bool previousAudioPause,previousInputSuspended,ownsPause,finishing,inputArmed,openingStarted;
     int width,height,openedFrame;
+    EndingCreditsAsset endingCredits;
+    float creditsOffset, creditsDistance;
+
+    public float EndingTitleSeconds => titleDelay + Title.Length * characterInterval + .55f;
+
+    public bool BeginEndingCredits(EndingCreditsAsset content)
+    {
+        if (ownsPause || content == null || menuShader == null || glyphMaskShader == null
+            || GameUiTheme.Current?.textFont == null) return false;
+        ReleaseGraphics();
+        endingCredits = content; creditsOffset = 0; fallTime = 0;
+        introStartedAt = Time.unscaledTime; VisibleTitleCharacters = -1;
+        if (view == null && player != null) view = player.GetComponentInChildren<Camera>();
+        BuildUI();
+        canvas.sortingOrder = 32501;
+        LayoutEndingCredits();
+        RenderEndingCredits(0);
+        return true;
+    }
+
+    void LayoutEndingCredits()
+    {
+        if (endingCredits == null) return;
+        // The original title remains the first item in the same moving presentation.
+        hint.text = (endingCredits.text ?? "").TrimEnd();
+        hint.font = GameUiTheme.Current.textFont;
+        hint.fontSize = endingCredits.fontSize; hint.enableAutoSizing = false;
+        hint.fontWeight = endingCredits.fontWeight;
+        hint.textWrappingMode = TextWrappingModes.Normal;
+        hint.alignment = TextAlignmentOptions.Top; hint.lineSpacing = endingCredits.lineSpacing;
+        hint.rectTransform.pivot = new Vector2(.5f, 1);
+        float bodyWidth = Mathf.Max(100, 720f * width / height - endingCredits.sidePadding * 2);
+        float bodyHeight = hint.GetPreferredValues(hint.text, bodyWidth, Mathf.Infinity).y;
+        hint.rectTransform.sizeDelta = new Vector2(bodyWidth, Mathf.Max(1, bodyHeight + endingCredits.fontSize * 2));
+        hint.rectTransform.anchoredPosition = new Vector2(0, -endingCredits.titleBodyGap);
+        hint.ForceMeshUpdate(true, true);
+        int lastLine = -1;
+        for (int i = hint.textInfo.characterCount - 1; i >= 0; i--)
+            if (hint.textInfo.characterInfo[i].isVisible) { lastLine = hint.textInfo.characterInfo[i].lineNumber; break; }
+        if (lastLine >= 0)
+        {
+            var line = hint.textInfo.lineInfo[lastLine];
+            float lastLineCenter = hint.rectTransform.anchoredPosition.y + (line.ascender + line.descender) * .5f;
+            creditsDistance = Mathf.Max(0, endingCredits.finalLineY - lastLineCenter);
+        }
+        else creditsDistance = 720;
+    }
+
+    public void RenderEndingCredits(float progress)
+    {
+        if (endingCredits == null || menuMaterial == null) return;
+        if (width != Screen.width || height != Screen.height) { RebuildMask(); LayoutEndingCredits(); }
+        creditsOffset = creditsDistance * Mathf.Clamp01(progress);
+        RenderGlyphs();
+        menuMaterial.SetVector("_MenuSize", new Vector4(width, height, 720f * width / height, 720));
+        menuMaterial.SetFloat("_GridPitch", BlackBoxPointCloudFeature.GetDotSpacing(view));
+        menuMaterial.SetFloat("_DotRadius", BlackBoxPointCloudFeature.GetDotDiameter(view) * .5f);
+        menuMaterial.SetFloat("_TitleDotScale", titleDotScale);
+        menuMaterial.SetFloat("_TitleDensity", titlePointDensity);
+        menuMaterial.SetFloat("_TitleShimmer", titleShimmer);
+        menuMaterial.SetFloat("_OpeningTime", OpeningElapsed);
+        menuMaterial.SetFloat("_PlayerViewTitle", 1);
+        menuMaterial.SetFloat("_CreditsBody", 1);
+        menuMaterial.SetFloat("_Transition", 0);
+    }
+
+    public void EndEndingCredits()
+    {
+        if (endingCredits == null) return;
+        endingCredits = null; creditsOffset = 0;
+        ReleaseGraphics();
+    }
 
     void Awake()
     {
+        // A standalone Boss victory resumes the run instead of showing a new-game title.
+        if (StoryRunProgress.Current.BossReturnPending || BossEscapeTransition.LoadingCampaign)
+        { HasStarted = true; enabled = false; return; }
         if(active!=null && active!=this){enabled=false;return;}
         if(player==null)player=FindAnyObjectByType<PlayerController>();
         if(player==null || menuShader==null || glyphMaskShader==null || GameUiTheme.Current?.textFont==null)
@@ -162,7 +237,8 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
             {
                 var mesh=text.textInfo.meshInfo[i];if(mesh.vertexCount==0)continue;
                 glyphProperties.SetTexture("_MainTex",materials[i].mainTexture);
-                command.DrawMesh(mesh.mesh,Matrix4x4.Translate(text.rectTransform.anchoredPosition),glyphMaterial,0,0,glyphProperties);
+                glyphProperties.SetFloat("_GlyphWeight", endingCredits != null && text == hint ? endingCredits.strokeWeight : 0);
+                command.DrawMesh(mesh.mesh,Matrix4x4.Translate(text.rectTransform.anchoredPosition + Vector2.up * creditsOffset),glyphMaterial,0,0,glyphProperties);
             }
         }
         Graphics.ExecuteCommandBuffer(command);

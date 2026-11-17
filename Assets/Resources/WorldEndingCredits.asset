@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37149cbe2de44ea8947032426a36b619, type: 3}
+  m_Name: WorldEndingCredits
+  m_EditorClassIdentifier: Assembly-CSharp::EndingCreditsAsset
+  text: "\u6EDA\u6728\n\u6EDA\u6728\n\u6EDA\u6728\u6EDA\u6728\n\u6EDA\u6728\n\n\u6EDA\u6728\u6EDA\u6728\u6EDA\u6728\n\n\n\u6EDA\u6728\u6EDA\u6728\n\u6EDA\u6728\n\u6EDA\u6728\n\n\u6EDA\u6728\n\n\u6EDA\u6728"
+  whiteFadeSeconds: 3
+  scrollSeconds: 60
+  lastLineHoldSeconds: 10
+  fadeToBlackSeconds: 4
+  fontSize: 32
+  fontWeight: 300
+  strokeWeight: -0.04
+  lineSpacing: 16
+  sidePadding: 80
+  titleBodyGap: 440
+  finalLineY: 0
