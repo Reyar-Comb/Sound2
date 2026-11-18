@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using Sound2.LevelEditing;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 [DisallowMultipleComponent]
 public sealed class BossMemoryGate : InteractableObject
@@ -30,12 +28,20 @@ public sealed class BossMemoryGate : InteractableObject
     [Min(.1f)] public float escapeFadeOutSeconds = .8f;
     [Min(.1f)] public float escapeFadeInSeconds = 1.2f;
 
-    [SerializeField, HideInInspector] List<string> placed = new();
     LevelArenaBoss boss;
     LevelArenaBoss Boss => boss != null ? boss : boss = GetComponentInParent<LevelLayout>()?.GetComponentInChildren<LevelArenaBoss>(true);
     bool leaving;
-    public int PlacedCount => placed.Count;
-    public bool Ready => memories != null && memories.Length > 0 && placed.Count == memories.Length;
+    public int PlacedCount
+    {
+        get
+        {
+            int count = 0;
+            for (int slot = 0; slot < (memories?.Length ?? 0); slot++)
+                if (IsPlaced(slot)) count++;
+            return count;
+        }
+    }
+    public bool Ready => memories != null && memories.Length > 0 && PlacedCount == memories.Length;
     public bool Available => !leaving && (Boss == null || Boss.State == LevelArenaBoss.EncounterState.Waiting);
 
     public override string InteractionHint
@@ -76,7 +82,7 @@ public sealed class BossMemoryGate : InteractableObject
     // Only the individual memory previews accept placement clicks, never the table body.
     public override bool CanInteract(PlayerInteraction actor) => false;
 
-    internal bool IsPlaced(int slot) => placed.Contains(memories[slot].id);
+    internal bool IsPlaced(int slot) => StoryRunProgress.Current.IsMemoryPlaced(memories[slot].id);
 
     internal void PressMemory(PlayerInteraction actor, int slot, BossMemorySlot display)
     {
@@ -90,12 +96,11 @@ public sealed class BossMemoryGate : InteractableObject
                 StorySubtitles.Play(line.Trim(), lineHoldSeconds, charactersPerSecond);
             return;
         }
-        if (!StoryRunProgress.Current.IsCollected(memory.id))
+        if (!StoryRunProgress.Current.TryPlaceMemory(memory.id))
         {
             actor.GetComponent<PlayerSubtitles>()?.ShowImmediate("没有可摆放的信物。请先在关卡中收集，再回到长桌。");
             return;
         }
-        placed.Add(memory.id);
         display.ShowPlaced();
         RefreshButtons();
     }

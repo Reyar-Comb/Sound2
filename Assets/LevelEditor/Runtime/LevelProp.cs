@@ -28,6 +28,7 @@ namespace Sound2.LevelEditing
                 return;
             }
             if (previewMaterials != null) return;
+            GetComponent<PickupItem>()?.RestoreHeldAppearance();
             var filter = GetComponent<MeshFilter>();
             if (combinedGameplayMesh != null && filter != null)
             {
@@ -51,6 +52,7 @@ namespace Sound2.LevelEditing
         {
             if (previewMesh != null) { GetComponent<MeshFilter>().sharedMesh = previewMesh; previewMesh = null; }
             if (previewMaterials == null) return;
+            GetComponent<PickupItem>()?.RestoreHeldAppearance();
             for (int i = 0; i < renderers.Length; i++)
                 if (renderers[i] != null) renderers[i].sharedMaterials = previewMaterials[i];
             previewMaterials = null;

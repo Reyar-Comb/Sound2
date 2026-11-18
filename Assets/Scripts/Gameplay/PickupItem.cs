@@ -51,6 +51,8 @@ public sealed class PickupItem : InteractableObject
 
     Rigidbody body;
     StoryCollectible collectible;
+    HeldItemFade heldFade;
+    internal HeldItemFade HeldFade => heldFade;
     Collider[] colliders;
     bool[] colliderEnabled;
     PlayerPickup holder;
@@ -139,9 +141,22 @@ public sealed class PickupItem : InteractableObject
         body.rotation = rotation;
     }
 
+    internal void SetHeldOpacity(float opacity)
+    {
+        if (opacity >= 1f) RestoreHeldAppearance();
+        else (heldFade ??= new HeldItemFade(this)).SetOpacity(opacity);
+    }
+
+    internal void RestoreHeldAppearance()
+    {
+        heldFade?.Restore();
+        heldFade = null;
+    }
+
     public void Release(Vector3 position, Vector3 velocity, float cooldown = -1, bool thrown = false)
     {
         if (!IsHeld) return;
+        RestoreHeldAppearance();
         if (!Application.isPlaying || Application.exitCancellationToken.IsCancellationRequested) { holder = null; return; }
         if (!gameObject.activeInHierarchy)
         {

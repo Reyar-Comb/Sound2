@@ -112,6 +112,8 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             public Material material;
             public TextureHandle grid, dangerGrid, collectibleMask;
             public TextureHandle depth;
+            public TextureHandle heldDepth;
+            public HeldItemFade heldFade;
             public int index, palette;
             public float animationTime;
             public float sharedDotRadius;
@@ -153,9 +155,11 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             var coinWaves = new Vector4[CoinPickup.SurfaceCapacity];
             int coinCount = CoinPickup.CollectSurfaceWaves(camera.camera, coinSpaces, coinWaves);
             var collectibleMask = RecordCollectibleMask(graph, resources, camera, material);
+            var heldFade = camera.camera.GetComponentInParent<PlayerPickup>()?.HeldItem?.HeldFade;
+            var heldDepth = RecordHeldDepth(graph, camera, heldFade, material);
             if (separateFaces)
-                RecordPoints(graph, resources, camera, faceMaterial, true, false, false, sharedDotRadius, dangerGroups, uiCount, uiRects, uiOptions, coinCount, coinSpaces, coinWaves, collectibleMask);
-            RecordPoints(graph, resources, camera, material, !separateFaces, true, true, sharedDotRadius, dangerGroups, uiCount, uiRects, uiOptions, coinCount, coinSpaces, coinWaves, collectibleMask);
+                RecordPoints(graph, resources, camera, faceMaterial, true, false, false, sharedDotRadius, dangerGroups, uiCount, uiRects, uiOptions, coinCount, coinSpaces, coinWaves, collectibleMask, heldDepth, heldFade);
+            RecordPoints(graph, resources, camera, material, !separateFaces, true, true, sharedDotRadius, dangerGroups, uiCount, uiRects, uiOptions, coinCount, coinSpaces, coinWaves, collectibleMask, heldDepth, heldFade);
             // Clear each palette before drawing to preserve color identity at overlaps and AA edges.
             int colors = SonarPulseField.ActiveColoredPalettes;
             if (collectibleMask.IsValid() || AudioReactiveSonarField.HasGoldWaves) colors |= 1 << 4;
@@ -167,6 +171,29 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             }
             RecordLightningClouds(graph,resources,camera,faceMaterial!=null?faceMaterial:material,sharedDotRadius,uiCount,uiRects,uiOptions);
             RecordVines(graph,resources,camera,faceMaterial!=null?faceMaterial:material,sharedDotRadius,uiCount,uiRects,uiOptions);
+        }
+
+        static TextureHandle RecordHeldDepth(RenderGraph graph, UniversalCameraData camera, HeldItemFade fade, Material material)
+        {
+            if (fade == null || fade.Opacity <= 0) return TextureHandle.nullHandle;
+            var desc = camera.cameraTargetDescriptor;
+            var depth = graph.CreateTexture(new TextureDesc(desc.width, desc.height) {
+                name = "Held item sonar depth", depthBufferBits = DepthBits.Depth24, clearBuffer = true
+            });
+            using var builder = graph.AddRasterRenderPass<Data>("Held item sonar surface", out var data);
+            data.material = material;
+            data.index = material.FindPass("HeldItemDepth");
+            data.heldFade = fade;
+            builder.SetRenderAttachmentDepth(depth, AccessFlags.Write);
+            builder.SetRenderFunc(static (Data d, RasterGraphContext context) => {
+                foreach (var (renderer, submeshes) in d.heldFade.meshes)
+                {
+                    if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy) continue;
+                    for (int slot = 0; slot < submeshes; slot++)
+                        context.cmd.DrawRenderer(renderer, d.material, slot, d.index);
+                }
+            });
+            return depth;
         }
 
         static TextureHandle RecordCollectibleMask(RenderGraph graph, UniversalResourceData resources, UniversalCameraData camera, Material material)
@@ -307,7 +334,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
         static void RecordPoints(RenderGraph graph, UniversalResourceData resources, UniversalCameraData camera,
             Material drawMaterial, bool faces, bool corners, bool stars, float sharedDotRadius, List<Data> dangerGroups,
             int uiCount, Vector4[] uiRects, Vector4[] uiOptions, int coinCount, Matrix4x4[] coinSpaces, Vector4[] coinWaves,
-            TextureHandle collectibleMask)
+            TextureHandle collectibleMask, TextureHandle heldDepth, HeldItemFade heldFade)
         {
             int width = camera.cameraTargetDescriptor.width, height = camera.cameraTargetDescriptor.height;
             var interaction = camera.camera.GetComponentInParent<PlayerInteraction>();
@@ -343,6 +370,8 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     data.dangerGrid = index == 0 ? TextureHandle.nullHandle : dangerGrid;
                     data.depth = index == 0 ? resources.cameraDepthTexture : TextureHandle.nullHandle;
                     data.collectibleMask = index == 0 ? collectibleMask : TextureHandle.nullHandle;
+                    data.heldDepth = index == 0 ? heldDepth : TextureHandle.nullHandle;
+                    data.heldFade = heldFade;
                     data.index = index;
                     data.animationTime = Time.time;
                     data.starViewProjection = GL.GetGPUProjectionMatrix(camera.GetProjectionMatrix(),
@@ -356,6 +385,7 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                         index == 0 ? AccessFlags.Write : AccessFlags.ReadWrite);
                     if (index == 0) builder.SetRenderAttachment(dangerGrid, 1, AccessFlags.Write);
                     if (data.collectibleMask.IsValid()) builder.UseTexture(data.collectibleMask, AccessFlags.Read);
+                    if (data.heldDepth.IsValid()) builder.UseTexture(data.heldDepth, AccessFlags.Read);
                     if (index == 1 || index == 2)
                         dangerGroups.Add(new Data { material = data.material, dangerGrid = dangerGrid,
                             index = index + 3, sharedDotRadius = sharedDotRadius, viewport = data.viewport,
@@ -370,6 +400,8 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                         properties.SetVectorArray("_PlayerUiOptions", d.uiOptions);
                         if(d.index==0)
                         {
+                            properties.SetFloat("_HeldItemOpacity", d.heldDepth.IsValid() ? d.heldFade.Opacity : 0);
+                            if (d.heldDepth.IsValid()) properties.SetTexture("_HeldItemDepth", (RTHandle)d.heldDepth);
                             properties.SetInt("_CoinSurfaceCount",d.coinCount);
                             properties.SetMatrixArray("_CoinSurfaceSpaces",d.coinSpaces);
                             properties.SetVectorArray("_CoinSurfaceWaves",d.coinWaves);

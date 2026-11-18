@@ -101,6 +101,11 @@ public sealed class PlayerPickup : MonoBehaviour
         }
         item.SetHeldPose(origin + delta.normalized * distance,
             followingRotation*Quaternion.Inverse(viewTransform.rotation)*holdPoint.rotation*Quaternion.Euler(item.heldEulerAngles));
+        float reach = localAnchor.magnitude;
+        // Use the nearest side of bulky props, while leaving a margin around the normal hold pose.
+        float near = Mathf.Min(item.CollisionRadius, reach * .45f);
+        float opacity = Mathf.InverseLerp(near, reach * .9f, distance);
+        item.SetHeldOpacity(Mathf.SmoothStep(0f, 1f, opacity));
     }
 
     public bool Interact()

@@ -42,5 +42,11 @@ public sealed class BossMemorySlot : InteractableObject
         presentation.enabled = true;
     }
 
+    void OnEnable()
+    {
+        if (presentation != null && !presentation.enabled && gate != null && gate.IsPlaced(slot))
+            ShowPlaced();
+    }
+
     protected override void OnInteract(PlayerInteraction actor) => gate.PressMemory(actor, slot, this);
 }

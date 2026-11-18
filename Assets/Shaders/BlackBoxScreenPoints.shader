@@ -76,6 +76,9 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                 _CrosshairClearZone.z+radius+max(.1,_CrosshairClearZone.w),distance);
         }
         TEXTURE2D(_PointGrid); TEXTURE2D(_DangerPointGrid); TEXTURE2D_X_FLOAT(_PointDepth);
+        TEXTURE2D_X_FLOAT(_HeldItemDepth);
+        float _HeldItemOpacity;
+        static bool sampleHeldItem = false;
         TEXTURE2D(_CollectibleMask); TEXTURE2D_X_FLOAT(_CollectibleSceneDepth);
         float _RevealDistance, _WorldCircleRadius, _WorldCoreRadius;
         float _ScreenDotSpacing, _ScreenDotRadius;
@@ -117,6 +120,15 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             p=0;
             if(any(pixel<0)||any(pixel>=int2(_PointViewport.xy))) return false;
             float z=LOAD_TEXTURE2D_X(_PointDepth, pixel).r;
+            if (sampleHeldItem)
+            {
+                float held = LOAD_TEXTURE2D_X(_HeldItemDepth, pixel).r;
+                #if UNITY_REVERSED_Z
+                    z = max(z, held);
+                #else
+                    z = min(z, held);
+                #endif
+            }
             #if UNITY_REVERSED_Z
                 if(z<0.000001) return false;
             #else
@@ -241,6 +253,8 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             GridSamples samples; samples.normal=0; samples.danger=0;
             if(_BlackBoxPlayerActive<.5) return samples;
             uint2 cell=(uint2)input.positionCS.xy;
+            // Pick a depth layer once per dot, including every sample used to find its contour.
+            sampleHeldItem = _HeldItemOpacity > 0 && Random01(PointHash(cell.x ^ (cell.y * 65537u))) < _HeldItemOpacity;
             float pitch=max(_ScreenDotSpacing,1)*_PointViewport.y/720.0;
             float2 uv=(float2(cell)+.5)*pitch*_PointViewport.zw;
             if(any(uv>=1)) return samples;
@@ -628,6 +642,16 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             HLSLPROGRAM
             #pragma vertex CollectibleVert
             #pragma fragment CollectibleMask
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "HeldItemDepth"
+            Cull Back ZWrite On ZTest LEqual ColorMask 0
+            HLSLPROGRAM
+            #pragma vertex CollectibleVert
+            #pragma fragment HeldDepthOnly
+            half4 HeldDepthOnly(Varyings input) : SV_Target { return 0; }
             ENDHLSL
         }
     }
