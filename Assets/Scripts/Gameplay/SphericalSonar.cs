@@ -124,7 +124,9 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         style.SetRevealModes(proximityRendering, sonarRendering);
         var k = Keyboard.current;
         var m = Mouse.current;
-        if (k != null)
+        // Console text (boss4, tp, etc.) must not also toggle renderer/debug controls.
+        bool allowControls = GetComponentInParent<PlayerController>()?.InputSuspended != true;
+        if (k != null && allowControls)
         {
             if (k.escapeKey.wasPressedThisFrame || k.tabKey.wasPressedThisFrame) Capture(false);
             if (k.fKey.wasPressedThisFrame) automatic = !automatic;
@@ -141,7 +143,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         }
         PlayerUiPointMask.SetLegacyPanel(this, HudRect, hud);
         if (automatic && Time.time >= nextEmission) Emit();
-        if (m == null) return;
+        if (m == null || !allowControls) return;
         var mousePosition = m.position.ReadValue();
         bool overHud = hud && HudRect.Contains(new Vector2(mousePosition.x, Screen.height - mousePosition.y));
         if (m.leftButton.wasPressedThisFrame && (InputCaptured || !overHud))

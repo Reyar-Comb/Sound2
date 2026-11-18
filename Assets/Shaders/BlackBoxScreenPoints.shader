@@ -485,6 +485,8 @@ Shader "Sound2/Screen Grid Face And Corner Points"
             o.brightness=brightness;return o;
         }
         float4 _VinePoints[768];
+        float4 _VineTint;
+        float _VineFreePoints;
         CloudVaryings VineVert(uint vertexID:SV_VertexID,uint pointID:SV_InstanceID)
         {
             CloudVaryings o;o.positionCS=float4(2,2,0,1);o.offset=0;o.brightness=0;
@@ -501,6 +503,9 @@ Shader "Sound2/Screen Grid Face And Corner Points"
                 && distance(_WorldSpaceCameraPos,p)>distance(_WorldSpaceCameraPos,wall)+.06)return o;
             float pitch=max(1,_ScreenDotSpacing),scale=_PointViewport.y/720;
             float2 screenCenter=(floor(uv*_PointViewport.xy/(pitch*scale))+.5)*pitch;
+            // Small props need their actual projected shape; snapping a tiny ring to
+            // the room's coarse grid collapses its hole into a filled white block.
+            if (_VineFreePoints > .5) screenCenter = uv * _PointViewport.xy / scale;
             float extent=clamp(_ScreenDotRadius,0,pitch*.75)+.70710678/scale;
             float visibility=samplePoint.w*CrosshairPointVisibility(screenCenter,extent)*PlayerUiVisibility(screenCenter*scale,extent);
             float2 snapped=screenCenter*scale*_PointViewport.zw;
@@ -519,7 +524,7 @@ Shader "Sound2/Screen Grid Face And Corner Points"
         }
         half4 ClearCloud(CloudVaryings i):SV_Target {clip(i.brightness*CloudCircle(i)-.000001);return 0;}
         half4 DrawCloud(CloudVaryings i):SV_Target {float v=i.brightness*CloudCircle(i);return half4(0,0,v,0);}
-        half4 DrawVines(CloudVaryings i):SV_Target {float v=i.brightness*CloudCircle(i);return half4(v,0,0,0);}
+        half4 DrawVines(CloudVaryings i):SV_Target {float v=i.brightness*CloudCircle(i);return half4(_VineTint.rgb*v,0);}
         ENDHLSL
         Pass
         {

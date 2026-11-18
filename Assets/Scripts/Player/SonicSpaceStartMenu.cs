@@ -80,7 +80,13 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         hint.fontSize = endingCredits.fontSize; hint.enableAutoSizing = false;
         hint.fontWeight = endingCredits.fontWeight;
         hint.textWrappingMode = TextWrappingModes.Normal;
-        hint.alignment = TextAlignmentOptions.Top; hint.lineSpacing = endingCredits.lineSpacing;
+        hint.alignment = endingCredits.alignment switch
+        {
+            EndingCreditsAsset.BodyAlignment.Left => TextAlignmentOptions.TopLeft,
+            EndingCreditsAsset.BodyAlignment.Right => TextAlignmentOptions.TopRight,
+            _ => TextAlignmentOptions.Top
+        };
+        hint.lineSpacing = endingCredits.lineSpacing;
         hint.rectTransform.pivot = new Vector2(.5f, 1);
         float bodyWidth = Mathf.Max(100, 720f * width / height - endingCredits.sidePadding * 2);
         float bodyHeight = hint.GetPreferredValues(hint.text, bodyWidth, Mathf.Infinity).y;

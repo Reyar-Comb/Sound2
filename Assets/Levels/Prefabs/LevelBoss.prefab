@@ -1285,7 +1285,6 @@ MonoBehaviour:
   slotSpacing: 0.72
   escapeFadeOutSeconds: 0.8
   escapeFadeInSeconds: 1.2
-  placed: []
 --- !u!1 &3668367999733130249
 GameObject:
   m_ObjectHideFlags: 0
@@ -1604,20 +1603,53 @@ MonoBehaviour:
   laserLayers:
     serializedVersion: 2
     m_Bits: 307
-  battleMusic: {fileID: 8300000, guid: 478ed8824f904714eb7ed0124bac567b, type: 3}
+  battleMusic: {fileID: 8300000, guid: 7de813fb099407347bc831aa9da23fde, type: 3}
   musicVolume: 0.85
   revealMusicTime: 16
   introBlackoutTime: 5.3333335
-  loopFromReveal: 1
-  loopStartTime: 16
-  loopEndTime: 58.666668
   revealWithoutMusic: 2
   revealWaveSpeed: 70
   revealWaveAfterglow: 5
   revealWaveRange: 0
   beforeCombatSeconds: 5
+  useMusicStages: 1
+  combatEndMusicTime: 101.333336
+  stageSafetySeconds: 0.2
+  musicStages:
+  - label: "\u7B2C\u4E00\u9636\u6BB5\uFF08\u4E0D\u542B\u4E09\u8FDE\u7838\uFF09"
+    startMusicTime: 16
+    firstSkillDelay: 2
+    skillInterval: 2
+    skills: 010000000000000003000000i
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: "\u7B2C\u4E8C\u9636\u6BB5"
+    startMusicTime: 37.333332
+    firstSkillDelay: 2
+    skillInterval: 2
+    skills: 01000000000000000200000003000000i
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: "\u7B2C\u4E09\u9636\u6BB5"
+    startMusicTime: 58.666668
+    firstSkillDelay: 2
+    skillInterval: 2
+    skills: 01000000000000000200000003000000i
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: "\u7B2C\u56DB\u9636\u6BB5"
+    startMusicTime: 80
+    firstSkillDelay: 2
+    skillInterval: 2
+    skills: 01000000000000000200000003000000i
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
   survivalSeconds: 60
-  useAttackRoundsForVictory: 1
+  useAttackRoundsForVictory: 0
   roundsToSurvive: 4
   skillDamage: 50
   hoverHeight: 5
@@ -1664,10 +1696,55 @@ MonoBehaviour:
     height: 0.55
     sweepWidth: 24
     afterglow: 0.5
+  slamSound: {fileID: 8300000, guid: eb2be2ee96741e34794dbe5b570fc80c, type: 3}
+  slamSoundImpactTime: 0.5
+  slamSoundVolume: 1
+  summonChargeSound: {fileID: 0}
+  summonSound: {fileID: 0}
+  sweepChargeSound: {fileID: 8300000, guid: 63affabbe1ffada4e8c1cb91bde2efa1, type: 3}
+  sweepSound: {fileID: 8300000, guid: 63affabbe1ffada4e8c1cb91bde2efa1, type: 3}
+  laserSound: {fileID: 8300000, guid: d1cf67d965da2ab46b39d98a63eb62a3, type: 3}
+  revealSound: {fileID: 0}
+  victorySound: {fileID: 0}
+  skillSoundVolume: 0.81
+  skillSoundSettings:
+    hrtf: 1
+    occlusion: 0
+    reflections: 0
+    bypassRoomAcoustics: 0
+    reflectionMix: 0.65
+    distanceMode: 1
+    minDistance: 3
+    maxDistance: 55
+    decibelsPerMetre: 3
+    distanceCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: -0.05
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 20
+        value: 0
+        inSlope: -0.05
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    farEarGain: 1
   chargeSound: {fileID: 0}
   impactSound: {fileID: 0}
-  laserSound: {fileID: 0}
-  revealSound: {fileID: 0}
+  victoryLookSeconds: 1.25
   victoryWaveSpeed: 70
   victoryWaveAfterglow: 9
   victoryWaveLead: 0.65
@@ -1676,6 +1753,23 @@ MonoBehaviour:
   unfoldSeconds: 2.8
   unfoldedCellSize: 1.9
   unfoldedHoldSeconds: 0.7
+  victoryShrinkSeconds: 4
+  victoryShrinkScale: 0.015
+  victoryRingPrefab: {fileID: 4074338470786141264, guid: a0afaf9896baa6f40ac63af894c57e34, type: 3}
+  victoryRingScale: 3
+  ringDropSeconds: 1
+  ringBounceHeight: 0.18
+  ringBounceGravity: 9.81
+  ringFallSideAngle: 75
+  ringFallSpin: 110
+  ringLandingSound: {fileID: 8300000, guid: 28012ca9462026643b41b427a1011ac5, type: 3}
+  ringLandingVolume: 1
+  ringWaveSpeed: 180
+  ringWaveRange: 0
+  ringWaveAfterglow: 5
+  ringUnlockDelay: 0.5
+  ringBlinkSeconds: 1.4
+  ringBlinkMinimum: 0.25
   fadeWhiteSeconds: 3
   onVictory:
     m_PersistentCalls:

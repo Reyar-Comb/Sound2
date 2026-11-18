@@ -1,15 +1,14 @@
 using UnityEngine;
 
-// Two alternating sources keep the intro-to-loop transition on the DSP clock.
+// A single scheduled play provides the clock for the entire encounter.
 internal sealed class BossMusic
 {
     readonly AudioSource[] sources;
-    double start, nextLoop, loopDuration;
-    int loopSample, nextSource;
-    bool playing;
+    double start;
     float playbackVolume;
 
     public double Elapsed => AudioSettings.dspTime - start;
+    public double Duration { get; private set; }
 
     public BossMusic(GameObject owner)
     {
@@ -22,58 +21,35 @@ internal sealed class BossMusic
             source.playOnAwake = false;
             source.spatialBlend = 0;
             source.bypassReverbZones = true;
+            source.loop = false;
+            source.pitch = 1;
         }
     }
 
-    public bool Play(AudioClip clip, float volume, float loopStart, float loopEnd, float startOffset = 0)
+    public bool Play(AudioClip clip, float volume, float startOffset = 0)
     {
         Stop();
-        if (clip == null || clip.samples <= 1 || clip.frequency <= 0) return false;
-        int end = loopEnd > 0 ? Mathf.Clamp(Mathf.RoundToInt(loopEnd * clip.frequency), 2, clip.samples) : clip.samples;
-        loopSample = Mathf.Clamp(Mathf.RoundToInt(loopStart * clip.frequency), 0, end - 1);
-        // An invalid or extremely short loop falls back to the full configured track.
-        if ((double)(end - loopSample) / clip.frequency < .1) loopSample = 0;
-        loopDuration = (double)(end - loopSample) / clip.frequency;
-        if (loopDuration < .1) return false;
+        if (clip == null || clip.loadState != AudioDataLoadState.Loaded || clip.samples <= 1 || clip.frequency <= 0) return false;
+        Duration = (double)clip.samples / clip.frequency;
         foreach (var source in sources)
         {
             source.clip = clip;
             source.volume = volume;
+            source.loop = false;
+            source.pitch = 1;
         }
         playbackVolume = volume;
-        int firstSample = Mathf.Max(0, Mathf.RoundToInt(startOffset * clip.frequency));
-        if (firstSample >= end) firstSample = loopSample;
+        int firstSample = Mathf.Clamp(Mathf.RoundToInt(startOffset * clip.frequency), 0, clip.samples - 1);
         double playbackStart = AudioSettings.dspTime + .15;
         start = playbackStart - (double)firstSample / clip.frequency;
-        nextLoop = start + (double)end / clip.frequency;
-        Schedule(sources[0], firstSample, playbackStart, nextLoop);
-        nextSource = 1;
-        playing = true;
+        sources[0].timeSamples = firstSample;
+        sources[0].PlayScheduled(playbackStart);
+        sources[0].SetScheduledEndTime(start + Duration);
         return true;
-    }
-
-    public void Tick()
-    {
-        if (!playing) return;
-        double now = AudioSettings.dspTime;
-        if (nextLoop - now > System.Math.Min(.5, loopDuration * .5)) return;
-        // If a long frame missed the scheduling window, resume on the next available DSP boundary.
-        double begin = System.Math.Max(nextLoop, now + .02);
-        nextLoop = begin + loopDuration;
-        Schedule(sources[nextSource], loopSample, begin, nextLoop);
-        nextSource = 1 - nextSource;
-    }
-
-    static void Schedule(AudioSource source, int sample, double from, double to)
-    {
-        source.timeSamples = sample;
-        source.PlayScheduled(from);
-        source.SetScheduledEndTime(to);
     }
 
     public void Stop()
     {
-        playing = false;
         foreach (var source in sources) source.Stop();
     }
 

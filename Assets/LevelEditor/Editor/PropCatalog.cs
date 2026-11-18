@@ -46,6 +46,10 @@ namespace Sound2.LevelEditing.Editor
             ("WardCurtain", "病房隔帘"),
             ("Bedside", "床头柜"),
             ("Wardrobe", "衣柜"),
+            ("WardrobeWithCoat", "挂有大衣的衣柜"),
+            ("Overcoat", "大衣"),
+            ("CharcoalOvercoat", "炭黑单排扣大衣"),
+            ("BeltedBlueCoat", "雾蓝束腰大衣"),
             ("Sink", "洗手池"),
             ("Toilet", "马桶"),
             ("Washer", "洗衣机"),
@@ -74,7 +78,7 @@ namespace Sound2.LevelEditing.Editor
             { "家", "学校", "超市", "餐厅", "图书馆", "雪林", "医院", "通用" });
         static readonly Dictionary<string, string> CategoryById = new (string category, string[] ids)[]
         {
-            ("家", new[] { "PickupAlarmClock", "Refrigerator", "Stove", "Television", "GameConsole", "WallCabinet", "Bed", "Sofa", "Bedside", "Wardrobe", "Washer", "TeddyBear" }),
+            ("家", new[] { "PickupAlarmClock", "Refrigerator", "Stove", "Television", "GameConsole", "WallCabinet", "Bed", "Sofa", "Bedside", "Wardrobe", "WardrobeWithCoat", "Overcoat", "CharcoalOvercoat", "BeltedBlueCoat", "Washer", "TeddyBear" }),
             ("学校", new[] { "SchoolBlackboard", "SchoolDesk", "SchoolChair", "SchoolChalkBox", "SchoolSpeaker" }),
             ("超市", new[] { "ShoppingCart", "Shelf", "Checkout", "ProduceBin", "EmptyDoubleShelf" }),
             ("餐厅", new[] { "ServiceBell", "BarCounter", "DrapedRingTable", "RestaurantStage" }),

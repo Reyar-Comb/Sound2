@@ -13,6 +13,7 @@ public sealed class HypercubePointCloud : MonoBehaviour
     [Range(0, 360)] public float phaseDegrees;
     readonly Vector3[] vertices = new Vector3[VertexCount];
     float unfold, cellSize;
+    Quaternion netRotation = Quaternion.identity;
     const int UnfoldEdgeSamples = 6;
     const float ProjectionDistance = 3.5f;
 
@@ -36,6 +37,8 @@ public sealed class HypercubePointCloud : MonoBehaviour
         unfold = Mathf.Clamp01(progress);
         cellSize = Mathf.Max(.1f, size);
     }
+
+    public void SetNetRotation(Quaternion rotation) => netRotation = rotation;
 
     public void EvaluateVertices(float seconds, Vector3[] output)
     {
@@ -109,7 +112,7 @@ public sealed class HypercubePointCloud : MonoBehaviour
             point.x = 2 - point.x;
         // Four cells along X, with the other four attached to the central cell along Y and Z.
         point.x -= .5f;
-        return Vector3.Lerp(vertices[vertex], transform.TransformPoint(point * cellSize), unfold);
+        return Vector3.Lerp(vertices[vertex], transform.TransformPoint(netRotation * (point * cellSize)), unfold);
     }
     void OnDrawGizmos()
     {

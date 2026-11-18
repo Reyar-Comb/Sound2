@@ -34,13 +34,14 @@ namespace Sound2.LevelEditing
         [SerializeField, Min(.1f)] float interactionPulseSpeed = 8;
         [SerializeField, Min(.05f)] float interactionPulseAfterglow = .6f;
         public bool TargetOpen { get; private set; }
+        public bool RuntimeLocked { get; set; }
         public bool Blocked { get; private set; }
         public float CurrentAngle { get; private set; }
         public bool IsOpen => Mathf.Abs(CurrentAngle) >= EffectiveOpenAngle - .1f;
         public bool LockedFeedback => shakeRemaining > 0;
         public bool TeleportBlocked { get; private set; }
         public override bool AllowWhileHolding => true;
-        public override string InteractionHint => LockedFeedback ? "已上锁" :
+        public override string InteractionHint => RuntimeLocked || LockedFeedback ? "已上锁" :
             (TargetOpen ? "关门" : "开门") + (Blocked ? "（受阻）" : TeleportBlocked ? "（传送受阻）" : "");
 
         Quaternion closedRotation;
@@ -77,6 +78,11 @@ namespace Sound2.LevelEditing
 
         protected override void OnInteract(PlayerInteraction player)
         {
+            if (RuntimeLocked)
+            {
+                if (!LockedFeedback) shakeRemaining = Mathf.Max(.1f, lockedShakeDuration);
+                return;
+            }
             if (!TargetOpen && !CanOpenFrom(player.transform.position))
             {
                 // Repeated clicks do not reset the oscillation or toggle the door.

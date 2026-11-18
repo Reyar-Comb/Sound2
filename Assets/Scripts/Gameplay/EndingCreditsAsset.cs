@@ -3,6 +3,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Sound2/Ending Credits", fileName = "WorldEndingCredits")]
 public sealed class EndingCreditsAsset : ScriptableObject
 {
+    public enum BodyAlignment { Left, Center, Right }
     [TextArea(12, 40), Tooltip("第四结局滚动字幕。支持中文、空行和自动换行；末尾空行不计入停止位置。")]
     public string text = "";
     [Header("演出时间（秒）")]
@@ -13,6 +14,8 @@ public sealed class EndingCreditsAsset : ScriptableObject
     [Min(0), Tooltip("停留后画面、BGM 和环境音一起淡到黑色/静音。")]
     public float fadeToBlackSeconds = 4;
     [Header("720p 参考排版")]
+    [Tooltip("滚动正文的水平对齐方式；标题保持原来的居中效果。")]
+    public BodyAlignment alignment = BodyAlignment.Left;
     [Min(16)] public float fontSize = 32;
     [Tooltip("正文的字体字重；真实 Light/Thin 字形需要字体资源配置对应变体。")]
     public TMPro.FontWeight fontWeight = TMPro.FontWeight.Light;

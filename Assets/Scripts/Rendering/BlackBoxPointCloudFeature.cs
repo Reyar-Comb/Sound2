@@ -127,6 +127,8 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
             public Vector4 cloudCenter,cloudParameters;
             public int pointCount;
             public Vector4[] vinePoints;
+            public Color pointTint;
+            public bool freePoints;
             public List<(Renderer renderer, int submeshes, float brightness)> collectibleMeshes;
         }
 
@@ -301,16 +303,28 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                 var snapshot=new Vector4[HypercubePointCloud.PointCount]; int count=cube.Collect(snapshot);
                 RecordRedPointBatch(graph,resources,camera,material,radius,uiCount,uiRects,uiOptions,clearZone,snapshot,count);
             }
+            foreach (var ring in BossVictoryRing.Active)
+            {
+                if (ring == null || !ring.isActiveAndEnabled || (camera.camera.cullingMask & (1 << ring.gameObject.layer)) == 0
+                    || !GeometryUtility.TestPlanesAABB(planes, ring.WorldBounds)) continue;
+                var snapshot = new Vector4[BossVictoryRing.Capacity];
+                int count = ring.Collect(snapshot);
+                if (count > 0) RecordRedPointBatch(graph, resources, camera, material, .65f,
+                    uiCount, uiRects, uiOptions, clearZone, snapshot, count, Color.white, true);
+            }
         }
 
         static void RecordRedPointBatch(RenderGraph graph,UniversalResourceData resources,UniversalCameraData camera,
-            Material material,float radius,int uiCount,Vector4[] uiRects,Vector4[] uiOptions,Vector4 clearZone,Vector4[] snapshot,int count)
+            Material material,float radius,int uiCount,Vector4[] uiRects,Vector4[] uiOptions,Vector4 clearZone,Vector4[] snapshot,int count,
+            Color? tint = null, bool freePoints = false)
         {
                 for(int phase=0;phase<2;phase++)
                 {
                     using var builder=graph.AddRasterRenderPass<Data>(phase==0?"Clear vine dots":"Monster surface vines",out var data);
                     data.material=material;data.depth=resources.cameraDepthTexture;data.index=10+phase;
                     data.vinePoints=snapshot;data.pointCount=count;
+                    data.pointTint = tint ?? Color.red;
+                    data.freePoints = freePoints;
                     int width=camera.cameraTargetDescriptor.width,height=camera.cameraTargetDescriptor.height;
                     data.viewport=new Vector4(width,height,1f/width,1f/height);
                     data.starViewProjection=GL.GetGPUProjectionMatrix(camera.GetProjectionMatrix(),!resources.isActiveTargetBackBuffer)*camera.GetViewMatrix();
@@ -321,6 +335,8 @@ public sealed class BlackBoxPointCloudFeature : ScriptableRendererFeature
                     builder.SetRenderFunc(static (Data d,RasterGraphContext context)=>{
                         var properties=new MaterialPropertyBlock();
                         properties.SetTexture("_PointDepth",(RTHandle)d.depth);properties.SetVectorArray("_VinePoints",d.vinePoints);
+                        properties.SetColor("_VineTint", d.pointTint);
+                        properties.SetFloat("_VineFreePoints", d.freePoints ? 1 : 0);
                         properties.SetVector("_PointViewport",d.viewport);properties.SetMatrix("_StarViewProjection",d.starViewProjection);
                         properties.SetFloat("_ScreenDotRadius",d.sharedDotRadius);
                         properties.SetVector("_CrosshairClearZone",d.crosshairClearZone);properties.SetInt("_PlayerUiCount",d.uiCount);

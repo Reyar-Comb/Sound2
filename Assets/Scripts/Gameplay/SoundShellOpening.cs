@@ -139,6 +139,16 @@ public sealed class SoundShellOpening : MonoBehaviour
         canvas.enabled = false; ReleaseInput(); fallenFor = 0; CurrentPhase = Phase.Room; sequence = null;
     }
 
+    public bool TryEnterFourthEndingForTest()
+    {
+        if (!isActiveAndEnabled || sequence != null || world == null || world.Travelling
+            || player == null || spawn == null || startingRoom == null || player.TransportLocked
+            || player.DeathSequenceLocked || player.OpeningSequenceLocked || SonicSpaceStartMenu.BlocksGameplay) return false;
+        world.CurrentLevel?.GetComponentInChildren<LevelArenaBoss>()?.ResetEncounter();
+        StoryRunProgress.Current.CompleteBoss();
+        return TryReturnAfterBossVictory();
+    }
+
     public bool TryReturnAfterBossVictory()
     {
         if (!isActiveAndEnabled || !StoryRunProgress.Current.BossReturnPending || sequence != null

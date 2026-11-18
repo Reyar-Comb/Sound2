@@ -201,16 +201,49 @@ MonoBehaviour:
     m_Bits: 4294967291
   battleMusic: {fileID: 0}
   musicVolume: 0.85
-  revealMusicTime: 21.33
+  revealMusicTime: 16
   introBlackoutTime: 5.33
-  loopFromReveal: 1
-  loopStartTime: 21.33
-  loopEndTime: 0
   revealWithoutMusic: 2
   revealWaveSpeed: 70
   revealWaveAfterglow: 3.5
   revealWaveRange: 0
   beforeCombatSeconds: 5
+  useMusicStages: 1
+  combatEndMusicTime: 101.333336
+  stageSafetySeconds: 0.2
+  musicStages:
+  - label: "第一阶段（不含三连砸）"
+    startMusicTime: 16
+    firstSkillDelay: 2
+    skillInterval: 2
+    skills: 010000000000000003000000
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: "第二阶段"
+    startMusicTime: 37.333332
+    firstSkillDelay: 2
+    skillInterval: 2
+    skills: 01000000000000000200000003000000
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: "第三阶段"
+    startMusicTime: 58.666668
+    firstSkillDelay: 2
+    skillInterval: 2
+    skills: 01000000000000000200000003000000
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: "第四阶段"
+    startMusicTime: 80
+    firstSkillDelay: 2
+    skillInterval: 2
+    skills: 01000000000000000200000003000000
+    onEnter:
+      m_PersistentCalls:
+        m_Calls: []
   survivalSeconds: 120
   skillDamage: 50
   hoverHeight: 4.5
@@ -255,10 +288,20 @@ MonoBehaviour:
     height: 0.55
     sweepWidth: 12
     afterglow: 0.26
+  slamSound: {fileID: 0}
+  slamSoundImpactTime: 0.5
+  slamSoundVolume: 1
+  summonChargeSound: {fileID: 0}
+  summonSound: {fileID: 0}
+  sweepChargeSound: {fileID: 0}
+  sweepSound: {fileID: 0}
+  victorySound: {fileID: 0}
+  skillSoundVolume: 1
   chargeSound: {fileID: 0}
   impactSound: {fileID: 0}
   laserSound: {fileID: 0}
   revealSound: {fileID: 0}
+  victoryLookSeconds: 1.25
   victoryWaveSpeed: 70
   victoryWaveAfterglow: 9
   victoryWaveLead: 0.65
@@ -267,6 +310,23 @@ MonoBehaviour:
   unfoldSeconds: 2.8
   unfoldedCellSize: 1.9
   unfoldedHoldSeconds: 0.7
+  victoryShrinkSeconds: 4
+  victoryShrinkScale: 0.015
+  victoryRingPrefab: {fileID: 4074338470786141264, guid: a0afaf9896baa6f40ac63af894c57e34, type: 3}
+  victoryRingScale: 3
+  ringDropSeconds: 1
+  ringBounceHeight: 0.18
+  ringBounceGravity: 9.81
+  ringFallSideAngle: 75
+  ringFallSpin: 110
+  ringLandingSound: {fileID: 0}
+  ringLandingVolume: 1
+  ringWaveSpeed: 180
+  ringWaveRange: 0
+  ringWaveAfterglow: 6
+  ringUnlockDelay: 0.5
+  ringBlinkSeconds: 1.4
+  ringBlinkMinimum: 0.25
   fadeWhiteSeconds: 3
   onVictory:
     m_PersistentCalls:

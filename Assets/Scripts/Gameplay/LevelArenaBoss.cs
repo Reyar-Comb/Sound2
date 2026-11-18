@@ -13,6 +13,17 @@ public sealed class LevelArenaBoss : MonoBehaviour
     public enum EncounterState { Waiting, Intro, Reveal, Fighting, Ending, Won }
     public enum Skill { Summon, SlamAndLaser, TripleSlam, Sweep }
 
+    [Serializable]
+    public sealed class MusicStage
+    {
+        public string label;
+        [Min(0), InspectorName("开始时间（音乐秒数）")] public float startMusicTime;
+        [Min(0), InspectorName("阶段首次出招前游走（秒）")] public float firstSkillDelay = 2;
+        [Min(0), InspectorName("技能之间游走（秒）")] public float skillInterval = 2;
+        [InspectorName("本阶段技能（依次各执行一次）")] public Skill[] skills;
+        [InspectorName("进入阶段事件")] public UnityEvent onEnter = new();
+    }
+
     [Header("场景引用")]
     public LevelLayout level;
     public HypercubePointCloud cube;
@@ -25,16 +36,35 @@ public sealed class LevelArenaBoss : MonoBehaviour
     [Header("音乐与开场（秒）")]
     public AudioClip battleMusic;
     [Range(0, 1)] public float musicVolume = .85f;
-    [Min(0)] public float revealMusicTime = 21.33f;
+    [Min(0)] public float revealMusicTime = 16;
     [Min(0)] public float introBlackoutTime = 5.33f;
-    public bool loopFromReveal = true;
-    [Min(0)] public float loopStartTime = 21.33f;
-    [Tooltip("0 表示音频末尾。"), Min(0)] public float loopEndTime;
     [Min(0)] public float revealWithoutMusic = 2;
     [Min(.1f)] public float revealWaveSpeed = 70;
     [Min(.05f)] public float revealWaveAfterglow = 3.5f;
     [Tooltip("0 表示根据大厅尺寸计算。"), Min(0)] public float revealWaveRange;
     [Min(0)] public float beforeCombatSeconds = 5;
+
+    [Header("音乐阶段（BGM 单次播放，指定时间结束战斗）")]
+    [InspectorName("按音乐时间划分战斗阶段"), Tooltip("开启时，覆盖下面的生存秒数、轮数和 Rotation Order。")]
+    public bool useMusicStages = true;
+    [UnityEngine.Serialization.FormerlySerializedAs("fallbackMusicDuration")]
+    [InspectorName("战斗结束时间（音乐秒数）"), Min(.1f),
+     Tooltip("默认 101.333333 秒，即 1:41.333。到点立即清除攻击并进入胜利演出，音乐继续播放 outro，白屏时淡出。没有音频时也按此时间模拟。")]
+    public float combatEndMusicTime = 304f / 3;
+    [InspectorName("技能收尾预留时间"), Min(0), Tooltip("新技能预计无法在阶段末尾前完成时，改为游走等待，避免越过下一阶段的音乐节拍。")]
+    public float stageSafetySeconds = .2f;
+    [Tooltip("开始时间填音乐的绝对秒数，按时间递增；最后一阶段结束时间使用上面的战斗结束时间，与音频文件总长度无关。")]
+    public MusicStage[] musicStages =
+    {
+        new() { label = "第一阶段（不含三连砸）", startMusicTime = 16,
+            skills = new[] { Skill.SlamAndLaser, Skill.Summon, Skill.Sweep } },
+        new() { label = "第二阶段", startMusicTime = 112f / 3,
+            skills = new[] { Skill.SlamAndLaser, Skill.Summon, Skill.TripleSlam, Skill.Sweep } },
+        new() { label = "第三阶段", startMusicTime = 176f / 3,
+            skills = new[] { Skill.SlamAndLaser, Skill.Summon, Skill.TripleSlam, Skill.Sweep } },
+        new() { label = "第四阶段", startMusicTime = 80,
+            skills = new[] { Skill.SlamAndLaser, Skill.Summon, Skill.TripleSlam, Skill.Sweep } }
+    };
 
     [Header("战斗与移动")]
     [Min(.1f)] public float survivalSeconds = 120;
@@ -84,13 +114,36 @@ public sealed class LevelArenaBoss : MonoBehaviour
     public float sweepPointDensityMultiplier = 1f;
     public BossWaveSettings sweepWave = new();
 
-    [Header("演出音效（可选）")]
+    [Header("技能音效（可选，音源跟随 Boss）")]
+    [InspectorName("下砸完整音效（含蓄力）")]
+    public AudioClip slamSound;
+    [InspectorName("下砸音效内的落地时间（秒）"), Min(0),
+     Tooltip("例如 0.5：音效播放到 0.5 秒时落地。自动倒推播放时机，包含下落耗时；单次下砸和三连砸共用。")]
+    public float slamSoundImpactTime = .5f;
+    [InspectorName("下砸完整音效音量"), Range(0, 1)] public float slamSoundVolume = 1;
+    [InspectorName("召唤蓄力音效")] public AudioClip summonChargeSound;
+    [InspectorName("召唤生成音效")] public AudioClip summonSound;
+    [InspectorName("横扫蓄力音效")] public AudioClip sweepChargeSound;
+    [InspectorName("横扫声波释放音效")] public AudioClip sweepSound;
+    [InspectorName("激光发射音效")] public AudioClip laserSound;
+    [InspectorName("亮相声波音效")] public AudioClip revealSound;
+    [InspectorName("胜利声波音效")] public AudioClip victorySound;
+    [InspectorName("技能音效总音量"), Range(0, 1)] public float skillSoundVolume = 1;
+    public SpatialAudioSettings skillSoundSettings = new()
+    {
+        distanceMode = SoundDistanceMode.Linear, minDistance = 3, maxDistance = 55
+    };
+
+    [Header("通用备用音效（可选）")]
+    [Tooltip("没有指定技能的独立蓄力音效时使用；下砸已有完整音效时不叠加。")]
     public AudioClip chargeSound;
+    [Tooltip("下砸落地时的额外音效；不需要叠加时留空。横扫未指定独立音效时也使用此项。")]
     public AudioClip impactSound;
-    public AudioClip laserSound;
-    public AudioClip revealSound;
 
     [Header("胜利演出")]
+    [InspectorName("胜利视角转向时间（秒）"), Min(0),
+     Tooltip("玩家位置保持不变，自动转头抬头跟随升空的超立方体；转向和升空完成后展开。0 表示立即转向。")]
+    public float victoryLookSeconds = 1.25f;
     [Min(.1f)] public float victoryWaveSpeed = 70;
     [Min(.05f)] public float victoryWaveAfterglow = 9;
     [Min(0)] public float victoryWaveLead = .65f;
@@ -99,12 +152,32 @@ public sealed class LevelArenaBoss : MonoBehaviour
     [Min(0)] public float unfoldSeconds = 2.8f;
     [Min(.1f)] public float unfoldedCellSize = 1.9f;
     [Min(0)] public float unfoldedHoldSeconds = .7f;
+    [InspectorName("展开后收缩时间"), Min(0)] public float victoryShrinkSeconds = 4;
+    [InspectorName("收缩后的比例"), Range(.001f, .2f)] public float victoryShrinkScale = .015f;
+    [Header("胜利戒指（拾取后才回房间）")]
+    public GameObject victoryRingPrefab;
+    [Min(.1f)] public float victoryRingScale = 3;
+    [Min(.05f)] public float ringDropSeconds = 1;
+    [InspectorName("戒指首次落地反弹高度"), Min(0)] public float ringBounceHeight = .18f;
+    [InspectorName("戒指反弹重力"), Min(.1f)] public float ringBounceGravity = 9.81f;
+    [InspectorName("戒指下落侧倾角度")] public float ringFallSideAngle = 75;
+    [InspectorName("戒指下落旋转速度（度/秒）")] public float ringFallSpin = 110;
+    public AudioClip ringLandingSound;
+    [Range(0, 1)] public float ringLandingVolume = 1;
+    [Min(.1f)] public float ringWaveSpeed = 180;
+    [Tooltip("0 自动计算覆盖全场的距离。"), Min(0)] public float ringWaveRange;
+    [Min(.05f)] public float ringWaveAfterglow = 6;
+    [Tooltip("全场声波余辉消失后，再等待多久解锁玩家。"), Min(0)] public float ringUnlockDelay = .5f;
+    [Min(.1f)] public float ringBlinkSeconds = 1.4f;
+    [Range(.05f, 1)] public float ringBlinkMinimum = .25f;
     [Min(0)] public float fadeWhiteSeconds = 3;
     public UnityEvent onVictory = new();
 
     public EncounterState State { get; private set; }
-    public float RemainingSeconds => State == EncounterState.Fighting && fightEndsAt.HasValue
-        ? Mathf.Max(0, fightEndsAt.Value - Time.time) : 0;
+    public float RemainingSeconds => State != EncounterState.Fighting ? 0 : useMusicStages
+        ? Mathf.Max(0, (float)(EncounterDuration - EncounterTime))
+        : fightEndsAt.HasValue ? Mathf.Max(0, fightEndsAt.Value - Time.time) : 0;
+    public int CurrentMusicStage { get; private set; }
     public Skill? CurrentSkill { get; private set; }
     internal Canvas OverlayCanvas { get; private set; }
     internal float Radius { get; private set; }
@@ -124,10 +197,24 @@ public sealed class LevelArenaBoss : MonoBehaviour
     SonarPulseField sonar;
     BossMusic music;
     SpatialAudioEmitter effectsAudio;
+    readonly SpatialAudioEmitter[] slamAudio = new SpatialAudioEmitter[3];
+    int nextSlamVoice;
     Coroutine sequence;
     Image screen;
     bool inputLocked, originalInputLock, resetRequested;
     float? fightEndsAt;
+    bool encounterHasMusic, encounterClockStarted;
+    double fallbackClockStart;
+    bool victoryLookActive;
+    Vector2 victoryLookFrom;
+    float victoryLookStartedAt;
+    Transform victoryLookTarget;
+    bool victoryLookHorizontal;
+    Vector3 cubeRestScale;
+    BossVictoryRing victoryRing;
+    bool awaitingVictoryRing, victoryRingCollected;
+    double EncounterTime => encounterHasMusic ? music.Elapsed : Time.timeAsDouble - fallbackClockStart;
+    double EncounterDuration => Mathf.Max(.1f, combatEndMusicTime);
     Vector2 previousTarget;
     float previousFeetY;
 
@@ -146,6 +233,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
         if (room == null || cube == null) return false;
 
         Radius = room.size.x * .5f;
+        cubeRestScale = cube.transform.localScale;
         memoryGate = level.GetComponentInChildren<BossMemoryGate>(true);
         music = new BossMusic(gameObject);
         effectsAudio = transform.Find("Boss spatial effects")?.GetComponent<SpatialAudioEmitter>();
@@ -155,6 +243,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
             effects.transform.SetParent(transform, false);
             effectsAudio = effects.AddComponent<SpatialAudioEmitter>();
         }
+        if (slamSound != null && slamSound.loadState == AudioDataLoadState.Unloaded) slamSound.LoadAudioData();
         ResetEncounter();
         return true;
     }
@@ -163,11 +252,19 @@ public sealed class LevelArenaBoss : MonoBehaviour
     {
         if (!EnsureRuntime()) return;
         if (resetRequested) ResetEncounter();
-        music.Tick();
         if (State == EncounterState.Won || State == EncounterState.Ending) return;
 
         if (player == null) FindPlayer();
         if (player == null || capsule == null || vitality == null || vitality.IsDead || !capsule.enabled) return;
+        if (useMusicStages && encounterClockStarted && State is EncounterState.Reveal or EncounterState.Fighting)
+        {
+            if (EncounterTime >= EncounterDuration)
+            {
+                BeginVictory();
+                return;
+            }
+            UpdateMusicStage();
+        }
         var target = capsule.bounds;
         Vector2 local = ToArena(target.center);
 
@@ -209,6 +306,23 @@ public sealed class LevelArenaBoss : MonoBehaviour
         }
         previousTarget = local;
         previousFeetY = target.min.y;
+    }
+
+    void LateUpdate()
+    {
+        if (!victoryLookActive || State != EncounterState.Ending || player == null || cube == null) return;
+        float t = victoryLookSeconds > 0 ? Mathf.Clamp01((Time.time - victoryLookStartedAt) / victoryLookSeconds) : 1;
+        // Smooth acceleration/deceleration, using the shortest yaw arc. Continue following
+        // the moving cube after the turn so it stays framed throughout rise and unfold.
+        float smooth = t * t * t * (t * (t * 6 - 15) + 10);
+        Vector3 lookAt = victoryLookTarget != null ? victoryLookTarget.position : cube.transform.position;
+        if (victoryLookHorizontal) lookAt.y = player.ViewTransform.position.y;
+        player.FacePoint(lookAt, victoryLookFrom, smooth);
+        if (Application.isFocused && !SonicSpaceStartMenu.BlocksGameplay)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     void FindPlayer()
@@ -259,6 +373,21 @@ public sealed class LevelArenaBoss : MonoBehaviour
         return true;
     }
 
+    internal bool TryStartStageFromConsole(PlayerController actor, int stageNumber)
+    {
+        int index = stageNumber - 1;
+        if (!CanUseEncounterCommand(actor) || State is EncounterState.Ending or EncounterState.Won
+            || actor.EncounterInputLocked && !inputLocked || !useMusicStages || musicStages == null
+            || index < 0 || index >= musicStages.Length || musicStages[index] == null
+            || musicStages[index].startMusicTime >= EncounterDuration) return false;
+
+        // Start a clean stage preview, preserving collected memories and the player's health.
+        ResetEncounter();
+        StorySubtitles.Clear();
+        sequence = StartCoroutine(PlayEncounter(startAtReveal: true, startAtStage: index));
+        return true;
+    }
+
     internal bool TrySkipToVictory(PlayerController actor)
     {
         if (!CanUseEncounterCommand(actor) || State is EncounterState.Ending or EncounterState.Won) return false;
@@ -273,6 +402,8 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     void BeginVictory()
     {
+        var viewSonar = player.GetComponentInChildren<SphericalSonar>(true);
+        if (viewSonar != null) viewSonar.SetRevealModes(viewSonar.proximityRendering, true);
         StopSequence();
         ClearAttacks();
         sonar?.ClearPulses();
@@ -280,29 +411,59 @@ public sealed class LevelArenaBoss : MonoBehaviour
         sequence = StartCoroutine(PlayVictory());
     }
 
-    IEnumerator PlayEncounter(bool startAtReveal = false)
+    IEnumerator PlayEncounter(bool startAtReveal = false, int startAtStage = -1)
     {
+        var viewSonar = player.GetComponentInChildren<SphericalSonar>(true);
+        if (viewSonar != null) viewSonar.SetRevealModes(viewSonar.proximityRendering, true);
+        State = EncounterState.Intro;
+        encounterClockStarted = false;
+        CurrentMusicStage = 0;
         StoryRunProgress.Current.StartBoss();
         CloseArenaEntrance();
         if (startAtReveal) player.FacePoint(cube.transform.position);
-        float cutoff = battleMusic != null ? (loopEndTime > 0 ? Mathf.Min(loopEndTime, battleMusic.length) : battleMusic.length) : 0;
+        if (battleMusic != null)
+        {
+            if (battleMusic.loadState == AudioDataLoadState.Unloaded) battleMusic.LoadAudioData();
+            while (battleMusic.loadState == AudioDataLoadState.Loading) yield return null;
+        }
+        float cutoff = battleMusic != null && battleMusic.loadState == AudioDataLoadState.Loaded
+            ? battleMusic.length : (float)EncounterDuration;
         float reveal = Mathf.Min(revealMusicTime, cutoff);
-        bool playingMusic = music.Play(battleMusic, musicVolume, loopFromReveal ? revealMusicTime : loopStartTime,
-            loopEndTime, startAtReveal ? reveal : 0);
+        float startOffset = startAtStage >= 0 ? musicStages[startAtStage].startMusicTime : startAtReveal ? reveal : 0;
+        bool playingMusic = music.Play(battleMusic, musicVolume, startOffset);
+        encounterHasMusic = playingMusic;
+        fallbackClockStart = Time.timeAsDouble - startOffset;
+        encounterClockStarted = true;
         if (!startAtReveal)
         {
             State = EncounterState.Intro;
             yield return PlayIntro(playingMusic, reveal);
+        }
+        else
+        {
+            // Wait for the scheduled audio to start before firing the target stage's events.
+            while (EncounterTime < startOffset) yield return null;
         }
 
         State = EncounterState.Reveal;
         if (memoryGate != null) memoryGate.gameObject.SetActive(false);
         HideScreen();
         cube.enabled = true;
-        EmitReveal(revealWaveSpeed, revealWaveAfterglow);
+        if (startAtStage < 0) EmitReveal(revealWaveSpeed, revealWaveAfterglow);
         UnlockInput();
-        yield return new WaitForSeconds(beforeCombatSeconds);
-        yield return Fight();
+        if (useMusicStages)
+        {
+            UpdateMusicStage();
+            // This hold belongs to stage one, rather than shifting every later stage.
+            double combatAt = startAtStage >= 0 ? startOffset : reveal + Mathf.Max(0, beforeCombatSeconds);
+            while (EncounterTime < combatAt) yield return null;
+            yield return FightMusicStages();
+        }
+        else
+        {
+            yield return new WaitForSeconds(beforeCombatSeconds);
+            yield return Fight();
+        }
     }
 
     void CloseArenaEntrance()
@@ -338,8 +499,115 @@ public sealed class LevelArenaBoss : MonoBehaviour
         ShowScreen(Color.black);
         LockInput();
         player.FacePoint(cube.transform.position);
-        float revealAt = playingMusic ? reveal : fade + revealWithoutMusic;
+        float revealAt = useMusicStages || playingMusic ? reveal : fade + revealWithoutMusic;
         while (Elapsed() < revealAt) yield return null;
+    }
+
+    void UpdateMusicStage()
+    {
+        int active = 0;
+        for (int i = 0; i < (musicStages?.Length ?? 0); i++)
+            if (musicStages[i] != null && EncounterTime >= musicStages[i].startMusicTime) active = i + 1;
+        if (active == CurrentMusicStage) return;
+        CurrentMusicStage = active;
+        if (active > 0) musicStages[active - 1].onEnter?.Invoke();
+    }
+
+    IEnumerator FightMusicStages()
+    {
+        State = EncounterState.Fighting;
+        fightEndsAt = null;
+        for (int i = 0; i < (musicStages?.Length ?? 0); i++)
+        {
+            var stage = musicStages[i];
+            if (stage == null) continue;
+            double end = EncounterDuration;
+            for (int next = i + 1; next < musicStages.Length; next++)
+                if (musicStages[next] != null)
+                {
+                    end = Math.Min(end, musicStages[next].startMusicTime);
+                    break;
+                }
+            if (EncounterTime >= end) continue;
+            yield return RoamUntilMusicTime(Math.Min(stage.startMusicTime, end));
+            for (int skill = 0; skill < (stage.skills?.Length ?? 0); skill++)
+            {
+                double delay = Mathf.Max(0, skill == 0 ? stage.firstSkillDelay : stage.skillInterval);
+                yield return RoamUntilMusicTime(Math.Min(EncounterTime + delay, end));
+                Skill attack = stage.skills[skill];
+                // Keep the next phase on the music clock, even after timing edits or a slow frame.
+                // Reserve a few frames per skill's coroutine transitions as well as the user margin.
+                double reserve = Mathf.Max(0, stageSafetySeconds) + EstimatedSkillFrames(attack) * Time.unscaledDeltaTime;
+                if (EncounterTime + EstimatedSkillSeconds(attack) + reserve > end)
+                {
+                    Debug.LogWarning($"Boss music stage '{stage.label}': not enough time for {attack}; waiting for the next music stage. Shorten timings or adjust the stage skills.", this);
+                    break;
+                }
+                CurrentSkill = attack;
+                yield return PerformSkill(attack);
+                CurrentSkill = null;
+            }
+            yield return RoamUntilMusicTime(end);
+        }
+        yield return RoamUntilMusicTime(EncounterDuration);
+    }
+
+    float EstimatedSkillSeconds(Skill skill)
+    {
+        float slam = Mathf.Max(0, diveTravelSeconds) + (slamSound != null
+            ? Mathf.Max(Mathf.Max(0, slamWindup) + Mathf.Max(0, slamSeconds), Mathf.Max(0, slamSoundImpactTime) + .1f)
+            : Mathf.Max(0, slamWindup) + Mathf.Max(0, slamSeconds));
+        return skill switch
+        {
+            Skill.Summon => Mathf.Max(0, summonWindup),
+            Skill.SlamAndLaser => slam + Mathf.Max(0, laserDelay) + Mathf.Max(.01f, laserVisibleSeconds) + Mathf.Max(0, liftSeconds),
+            Skill.TripleSlam => 3 * (slam + Mathf.Max(0, liftSeconds)) + 2 * Mathf.Max(0, tripleSlamInterval),
+            Skill.Sweep => Mathf.Max(0, sweepWindup) + Mathf.Max(0, sweepSeconds),
+            _ => 0
+        };
+    }
+
+    static int EstimatedSkillFrames(Skill skill) => skill switch
+    {
+        Skill.TripleSlam => 14,
+        Skill.SlamAndLaser => 7,
+        _ => 3
+    };
+
+    IEnumerator RoamUntilMusicTime(double end)
+    {
+        Vector2 destination = ClampBoss(UnityEngine.Random.insideUnitCircle * Radius);
+        while (EncounterTime < end)
+        {
+            Vector2 point = Vector2.MoveTowards(ToArena(transform.position), destination, moveSpeed * Time.deltaTime);
+            transform.position = ToWorld(point, SafeHeight(hoverHeight));
+            if ((point - destination).sqrMagnitude < .04f)
+                destination = ClampBoss(UnityEngine.Random.insideUnitCircle * Radius);
+            yield return null;
+        }
+    }
+
+    IEnumerator PerformSkill(Skill skill)
+    {
+        switch (skill)
+        {
+            case Skill.Summon: yield return Summon(); break;
+            case Skill.SlamAndLaser:
+                yield return Slam();
+                yield return new WaitForSeconds(laserDelay);
+                yield return FireLaser();
+                yield return Fly(ToArena(transform.position), hoverHeight, liftSeconds);
+                break;
+            case Skill.TripleSlam:
+                for (int i = 0; i < 3; i++)
+                {
+                    yield return Slam();
+                    yield return Fly(ToArena(transform.position), hoverHeight, liftSeconds);
+                    if (i < 2) yield return new WaitForSeconds(tripleSlamInterval);
+                }
+                break;
+            case Skill.Sweep: yield return Sweep(); break;
+        }
     }
 
     IEnumerator Fight()
@@ -356,25 +624,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
             if (order == null || order.Length == 0) { next = 0; yield return null; continue; }
             next %= order.Length;
             CurrentSkill = order[next++];
-            switch (CurrentSkill)
-            {
-                case Skill.Summon: yield return Summon(); break;
-                case Skill.SlamAndLaser:
-                    yield return Slam();
-                    yield return new WaitForSeconds(laserDelay);
-                    yield return FireLaser();
-                    yield return Fly(ToArena(transform.position), hoverHeight, liftSeconds);
-                    break;
-                case Skill.TripleSlam:
-                    for (int i = 0; i < 3; i++)
-                    {
-                        yield return Slam();
-                        yield return Fly(ToArena(transform.position), hoverHeight, liftSeconds);
-                        if (i < 2) yield return new WaitForSeconds(tripleSlamInterval);
-                    }
-                    break;
-                case Skill.Sweep: yield return Sweep(); break;
-            }
+            yield return PerformSkill(CurrentSkill.Value);
             CurrentSkill = null;
             if (next < order.Length) continue;
             next = 0;
@@ -403,9 +653,10 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     IEnumerator Summon()
     {
-        PlayEffect(chargeSound);
+        PlayEffect(summonChargeSound != null ? summonChargeSound : chargeSound);
         yield return new WaitForSeconds(summonWindup);
         if (summonPrefab == null || navigation == null || !navigation.Ready) yield break;
+        PlayEffect(summonSound);
         Vector2 center = ToArena(transform.position);
         for (int i = 0; i < summonCount; i++)
         {
@@ -425,10 +676,57 @@ public sealed class LevelArenaBoss : MonoBehaviour
     {
         Vector2 target = ClampBoss(ToArena(capsule.bounds.center));
         yield return Fly(target, diveHeight, diveTravelSeconds);
-        PlayEffect(chargeSound);
+        // Load before establishing the clock: a background load must not shift the impact cue.
+        AudioClip recording = slamSound;
+        if (recording != null)
+        {
+            if (recording.loadState == AudioDataLoadState.Unloaded) recording.LoadAudioData();
+            while (recording.loadState == AudioDataLoadState.Loading) yield return null;
+            if (recording.loadState != AudioDataLoadState.Loaded)
+            {
+                Debug.LogWarning("Boss slam sound could not load; using the fallback charge sound.", this);
+                recording = null;
+            }
+        }
         var mark = DrawMarker(target, impactRadius);
-        yield return new WaitForSeconds(slamWindup);
-        yield return Fly(target, slamCenterHeight, slamSeconds, accelerating: true);
+        if (recording != null)
+        {
+            float fallSeconds = Mathf.Max(0, slamSeconds);
+            double cueTime = Mathf.Max(0, slamSoundImpactTime);
+            // Keep the existing windup/fall duration, extending the windup only if the
+            // recording needs more lead time. Schedule with a safe audio preparation margin.
+            var voice = GetSlamVoice();
+            voice.settings = skillSoundSettings;
+            voice.volume = skillSoundVolume * slamSoundVolume;
+            voice.ApplyBeforePlayback();
+            var source = voice.Source;
+            source.Stop();
+            source.clip = recording;
+            source.loop = false;
+            source.pitch = 1;
+            source.timeSamples = 0;
+            double impactAt = AudioSettings.dspTime + Math.Max(Mathf.Max(0, slamWindup) + fallSeconds, cueTime + .1);
+            source.PlayScheduled(impactAt - cueTime);
+
+            Vector3 from = transform.position;
+            Vector3 landing = ToWorld(target, SafeHeight(slamCenterHeight));
+            double fallAt = impactAt - fallSeconds;
+            // Animation and the impact event share the scheduled audio's DSP clock.
+            // Rendering/hit detection reaches this timestamp on the next rendered frame.
+            while (AudioSettings.dspTime < impactAt)
+            {
+                float t = fallSeconds > 0 ? Mathf.Clamp01((float)((AudioSettings.dspTime - fallAt) / fallSeconds)) : 0;
+                transform.position = Vector3.Lerp(from, landing, t * t);
+                yield return null;
+            }
+            transform.position = landing;
+        }
+        else
+        {
+            PlayEffect(chargeSound);
+            yield return new WaitForSeconds(slamWindup);
+            yield return Fly(target, slamCenterHeight, slamSeconds, accelerating: true);
+        }
         RemoveLine(mark);
         PlayEffect(impactSound);
         var bounds = capsule.bounds;
@@ -472,14 +770,14 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     IEnumerator Sweep()
     {
-        PlayEffect(chargeSound);
+        PlayEffect(sweepChargeSound != null ? sweepChargeSound : chargeSound);
         yield return new WaitForSeconds(sweepWindup);
         Vector2 from = ToArena(transform.position);
         Vector2 direction = (ToArena(capsule.bounds.center) - from).normalized;
         if (direction.sqrMagnitude < .5f) direction = Vector2.up;
         Vector2 destination = ClampBoss(from + direction * sweepTravel);
         yield return Fly(destination, hoverHeight, sweepSeconds);
-        PlayEffect(impactSound);
+        PlayEffect(sweepSound != null ? sweepSound : impactSound);
         AddWave(sweepWave, destination, direction, sweepPointDensityMultiplier);
     }
 
@@ -549,21 +847,105 @@ public sealed class LevelArenaBoss : MonoBehaviour
         State = EncounterState.Ending;
         if (memoryGate != null) memoryGate.gameObject.SetActive(false);
         LockInput();
-        EmitReveal(victoryWaveSpeed, victoryWaveAfterglow);
+        victoryLookFrom = player.AimAngles;
+        victoryLookStartedAt = Time.time;
+        victoryLookActive = true;
+        victoryLookTarget = cube.transform;
+        victoryLookHorizontal = false;
+        EmitReveal(victoryWaveSpeed, victoryWaveAfterglow, victorySound);
         yield return new WaitForSeconds(victoryWaveLead);
         Vector2 viewer = ToArena(player.ViewTransform.position);
         Vector2 destination = viewer.sqrMagnitude < 42
             ? ClampBoss(viewer + (viewer.sqrMagnitude > .1f ? -viewer.normalized : Vector2.up) * 7)
             : Vector2.zero;
         yield return Fly(destination, victoryHeight, victoryRiseSeconds);
-        player.FacePoint(cube.transform.position);
+        while (Time.time < victoryLookStartedAt + Mathf.Max(0, victoryLookSeconds)) yield return null;
+
+        // Turn the existing eight-cell net so its long axis points down, facing the viewer.
+        // The player remains in place while their view tracks the airborne Boss.
+        Vector3 facing = Vector3.ProjectOnPlane(player.ViewTransform.position - cube.transform.position, Vector3.up);
+        if (facing.sqrMagnitude < .001f) facing = -player.transform.forward;
+        var netRotation = Quaternion.LookRotation(facing.normalized, Vector3.up) * Quaternion.Euler(0, 0, -90);
+        cube.SetNetRotation(Quaternion.Inverse(cube.transform.rotation) * netRotation);
+        float ceiling = ToWorld(Vector2.zero, room.Height(level)).y;
+        float clearance = Mathf.Min(cube.transform.position.y - FloorY, ceiling - cube.transform.position.y) - .15f;
+        float scale = Mathf.Max(.001f, cube.transform.lossyScale.magnitude / Mathf.Sqrt(3));
+        float displayCellSize = Mathf.Min(unfoldedCellSize, Mathf.Max(.1f, clearance / (2 * scale)));
         for (float elapsed = 0; elapsed < unfoldSeconds; elapsed += Time.deltaTime)
         {
-            cube.SetUnfold(Mathf.SmoothStep(0, 1, elapsed / unfoldSeconds), unfoldedCellSize);
+            cube.SetUnfold(Mathf.SmoothStep(0, 1, elapsed / unfoldSeconds), displayCellSize);
             yield return null;
         }
-        cube.SetUnfold(1, unfoldedCellSize);
+        cube.SetUnfold(1, displayCellSize);
         yield return new WaitForSeconds(unfoldedHoldSeconds);
+        for (float elapsed = 0; elapsed < victoryShrinkSeconds; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.SmoothStep(0, 1, elapsed / victoryShrinkSeconds);
+            cube.transform.localScale = cubeRestScale * Mathf.Lerp(1, victoryShrinkScale, t);
+            ShowScreen(new Color(0, 0, 0, t));
+            yield return null;
+        }
+        cube.transform.localScale = cubeRestScale * victoryShrinkScale;
+        cube.enabled = false;
+        sonar?.ClearPulses();
+        ShowScreen(Color.black);
+        if (victoryRingPrefab == null)
+        {
+            Debug.LogError("Boss victory requires the Ring prefab.", this);
+            ResetEncounter();
+            yield break;
+        }
+        Vector3 ringStart = cube.transform.position;
+        var ringObject = Instantiate(victoryRingPrefab, ringStart, level.transform.rotation, level.transform);
+        ringObject.name = "Boss victory ring";
+        ringObject.transform.localScale *= victoryRingScale;
+        foreach (var action in ringObject.GetComponentsInChildren<InteractableObject>(true)) action.interactionEnabled = false;
+        var ringColliders = ringObject.GetComponentsInChildren<Collider>(true);
+        foreach (var collider in ringColliders) collider.enabled = false;
+        foreach (var body in ringObject.GetComponentsInChildren<Rigidbody>(true)) { body.isKinematic = true; body.useGravity = false; }
+        victoryRing = ringObject.AddComponent<BossVictoryRing>();
+        victoryRing.Initialize(this, ringBlinkSeconds, ringBlinkMinimum);
+        // Release mouse look for the visible fall; retain the movement lock until
+        // the landing wave fades. The camera no longer follows the ring automatically.
+        victoryLookActive = false;
+        victoryLookTarget = null;
+        player.EncounterLookAllowed = true;
+        Vector3 landing = new Vector3(ringStart.x, FloorY + .006f, ringStart.z);
+        victoryRing.BeginFall(ringBounceGravity, ringBounceHeight, Mathf.Max(.1f, ringStart.y - FloorY),
+            ringDropSeconds, ringFallSideAngle, ringFallSpin);
+        Physics.SyncTransforms();
+        HideScreen();
+        float landingDeadline = Time.time + Mathf.Max(8, ringDropSeconds + 3);
+        while (!victoryRing.FirstGroundContact && Time.time < landingDeadline) yield return null;
+        if (!victoryRing.FirstGroundContact)
+        {
+            // Keep the ending usable even if an authored floor collider is missing.
+            ringObject.GetComponent<Rigidbody>().isKinematic = true;
+            ringObject.transform.position = landing;
+        }
+        landing = ringObject.transform.position;
+        victoryRing.SetLanded();
+        if (ringLandingSound != null)
+        {
+            var sound = ringObject.AddComponent<SpatialAudioEmitter>();
+            sound.settings = skillSoundSettings;
+            sound.volume = ringLandingVolume;
+            sound.PlayOneShot(ringLandingSound);
+        }
+        float waveRange = ringWaveRange > 0 ? ringWaveRange
+            : Mathf.Sqrt(4 * Radius * Radius + room.Height(level) * room.Height(level)) + 2;
+        Vector3 waveOrigin = new Vector3(landing.x, victoryRing.WorldBounds.max.y + .05f, landing.z);
+        sonar?.EmitFrom(waveOrigin, waveRange, ringWaveSpeed, ringWaveAfterglow,
+            distanceSettings: null, source: ringObject.transform);
+        float unlockAt = Time.time + waveRange / Mathf.Max(.1f, ringWaveSpeed) + ringWaveAfterglow + ringUnlockDelay;
+        // Only this first contact plays sound/sonar. Further contacts and settling
+        // are handled by the rigidbody, without replaying landing audio.
+        while (Time.time < unlockAt) yield return null;
+        victoryLookActive = false;
+        awaitingVictoryRing = true;
+        UnlockInput();
+        while (!victoryRingCollected) yield return null;
+        LockInput();
         for (float elapsed = 0; elapsed < fadeWhiteSeconds; elapsed += Time.deltaTime)
         {
             float fade = Mathf.SmoothStep(0, 1, elapsed / fadeWhiteSeconds);
@@ -592,9 +974,23 @@ public sealed class LevelArenaBoss : MonoBehaviour
 #endif
     }
 
-    void EmitReveal(float speed, float afterglow)
+    internal bool CanCollectVictoryRing(PlayerInteraction actor)
+        => awaitingVictoryRing && !victoryRingCollected && State == EncounterState.Ending && !inputLocked
+            && actor != null && actor.GetComponent<PlayerController>() == player && !player.InputSuspended
+            && vitality != null && !vitality.IsDead;
+
+    internal bool TryCollectVictoryRing(PlayerInteraction actor)
     {
-        PlayEffect(revealSound);
+        if (!CanCollectVictoryRing(actor)) return false;
+        victoryRingCollected = true;
+        awaitingVictoryRing = false;
+        LockInput();
+        return true;
+    }
+
+    void EmitReveal(float speed, float afterglow, AudioClip sound = null)
+    {
+        PlayEffect(sound != null ? sound : revealSound);
         float arenaHeight = room.Height(level);
         float range = revealWaveRange > 0 ? revealWaveRange : Mathf.Sqrt(Radius * Radius + arenaHeight * arenaHeight) + 2;
         if (sonar != null) sonar.EmitDangerFrom(ToWorld(Vector2.zero, Mathf.Min(hoverHeight, arenaHeight * .5f)), range, speed, afterglow, null,
@@ -603,7 +999,25 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     void PlayEffect(AudioClip clip)
     {
-        if (clip != null) effectsAudio.PlayOneShot(clip);
+        if (clip == null) return;
+        effectsAudio.settings = skillSoundSettings;
+        effectsAudio.volume = skillSoundVolume;
+        effectsAudio.PlayOneShot(clip);
+    }
+
+    SpatialAudioEmitter GetSlamVoice()
+    {
+        int index = nextSlamVoice++ % slamAudio.Length;
+        if (slamAudio[index] != null) return slamAudio[index];
+        string label = "Boss slam audio " + index;
+        var voice = transform.Find(label)?.GetComponent<SpatialAudioEmitter>();
+        if (voice == null)
+        {
+            var go = new GameObject(label);
+            go.transform.SetParent(transform, false);
+            voice = go.AddComponent<SpatialAudioEmitter>();
+        }
+        return slamAudio[index] = voice;
     }
 
     internal LineRenderer CreateLine(string label, Material material, Color color, float width)
@@ -685,10 +1099,12 @@ public sealed class LevelArenaBoss : MonoBehaviour
         inputLocked = true;
         originalInputLock = player.EncounterInputLocked;
         player.EncounterInputLocked = true;
+        player.EncounterLookAllowed = false;
     }
 
     void UnlockInput()
     {
+        if (player != null) player.EncounterLookAllowed = false;
         if (!inputLocked) return;
         inputLocked = false;
         if (player != null)
@@ -710,6 +1126,12 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     void ClearAttacks()
     {
+        for (int i = 0; i < slamAudio.Length; i++)
+        {
+            // Recover existing voices after an Editor script reload as well.
+            var voice = slamAudio[i] != null ? slamAudio[i] : transform.Find("Boss slam audio " + i)?.GetComponent<SpatialAudioEmitter>();
+            if (voice != null) voice.Source.Stop();
+        }
         waves.Clear();
         foreach (var entry in summons) RemoveSummon(entry.enemy);
         summons.Clear();
@@ -720,6 +1142,20 @@ public sealed class LevelArenaBoss : MonoBehaviour
     public void ResetEncounter()
     {
         resetRequested = false;
+        encounterClockStarted = false;
+        encounterHasMusic = false;
+        victoryLookActive = false;
+        victoryLookTarget = null;
+        victoryLookHorizontal = false;
+        awaitingVictoryRing = victoryRingCollected = false;
+        if (victoryRing != null)
+        {
+            victoryRing.gameObject.SetActive(false);
+            Destroy(victoryRing.gameObject);
+            victoryRing = null;
+        }
+        CurrentMusicStage = 0;
+        fightEndsAt = null;
         if (State != EncounterState.Waiting) sonar?.ClearPulses();
         StopSequence();
         ClearAttacks();
@@ -732,6 +1168,8 @@ public sealed class LevelArenaBoss : MonoBehaviour
         if (entranceSeal != null) entranceSeal.SetActive(false);
         if (memoryGate != null) memoryGate.gameObject.SetActive(true);
         if (room == null || cube == null) return;
+        cube.transform.localScale = cubeRestScale;
+        cube.SetNetRotation(Quaternion.identity);
         cube.SetUnfold(0, unfoldedCellSize);
         cube.enabled = false;
         transform.position = ToWorld(Vector2.zero, SafeHeight(hoverHeight));

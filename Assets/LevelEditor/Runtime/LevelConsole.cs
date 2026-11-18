@@ -10,7 +10,7 @@ namespace Sound2.LevelEditing
     {
         const int MaxCommandLength = 128;
         const string LevelNames = "start  school  library  home  grocery  wedding  hospital  boss";
-        const string Commands = "tp <level>  |  boss  |  skip  |  unlock";
+        const string Commands = "tp <level/ending4> | boss [stage] | boss4 | skip | unlock";
         LevelWorld world;
         Keyboard inputKeyboard;
         string command = "", message = "";
@@ -56,18 +56,31 @@ namespace Sound2.LevelEditing
         void Execute()
         {
             string[] args = command.Trim().Split((char[])null, 2, StringSplitOptions.RemoveEmptyEntries);
-            if (args.Length == 1 && args[0].Equals("boss", StringComparison.OrdinalIgnoreCase))
+            if (args.Length > 0 && (args[0].Equals("boss", StringComparison.OrdinalIgnoreCase)
+                || args[0].Equals("boss4", StringComparison.OrdinalIgnoreCase)))
             {
+                int stage = 0;
+                if (args[0].Equals("boss4", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (args.Length != 1) { message = "Usage: boss4"; return; }
+                    stage = 4;
+                }
+                else if (args.Length == 2 && (!int.TryParse(args[1], out stage) || stage < 1))
+                { message = "Usage: boss <stage number>, e.g. boss 4"; return; }
                 var bossLevel = world.levels.Find(item => item != null && item.GetComponentInChildren<LevelArenaBoss>(true) != null);
                 if (bossLevel == null) { message = "No Boss level in this world."; return; }
+                var encounter = bossLevel.GetComponentInChildren<LevelArenaBoss>(true);
+                if (stage > 0 && (!encounter.useMusicStages || encounter.musicStages == null
+                    || stage > encounter.musicStages.Length || encounter.musicStages[stage - 1] == null))
+                { message = "That Boss music stage is not configured."; return; }
                 if (world.CurrentLevel == bossLevel)
                 {
-                    if (!StartBoss(bossLevel)) return;
+                    if (!StartBoss(bossLevel, stage)) return;
                 }
                 else
                 {
                     if (!world.TryTeleportToLevel(bossLevel)) { message = "The Boss arrival elevator is unavailable."; return; }
-                    StartCoroutine(StartBossAfterArrival(bossLevel));
+                    StartCoroutine(StartBossAfterArrival(bossLevel, stage));
                 }
                 command = message = "";
                 Close();
@@ -112,6 +125,16 @@ namespace Sound2.LevelEditing
                 return;
             }
 
+            if (args[1].Trim().ToLowerInvariant() is "ending4" or "end4" or "四结局")
+            {
+                var opening = world.player.GetComponentInChildren<SoundShellOpening>(true);
+                if (opening == null) { message = "Fourth ending is unavailable in this scene."; return; }
+                // Close first so the return sequence never saves console suspension as the player's normal state.
+                Close();
+                command = "";
+                if (!opening.TryEnterFourthEndingForTest()) Debug.LogWarning("Fourth ending transfer is unavailable in the current state.", this);
+                return;
+            }
             string target = LevelKey(args[1]);
             var level = world.levels.Find(item => item != null && LevelKey(item.name) == target);
             if (level == null) { message = "Unknown level: " + args[1]; return; }
@@ -121,17 +144,18 @@ namespace Sound2.LevelEditing
             Close();
         }
 
-        IEnumerator StartBossAfterArrival(LevelLayout level)
+        IEnumerator StartBossAfterArrival(LevelLayout level, int stage = 0)
         {
             while (world.Travelling) yield return null;
             if (level == null || world.CurrentLevel != level) { message = "Boss transfer cancelled."; yield break; }
-            StartBoss(level);
+            StartBoss(level, stage);
         }
 
-        bool StartBoss(LevelLayout level)
+        bool StartBoss(LevelLayout level, int stage = 0)
         {
             var boss = level.GetComponentInChildren<LevelArenaBoss>();
-            if (boss != null && boss.TryStartFromConsole(world.player)) return true;
+            if (boss != null && (stage > 0 ? boss.TryStartStageFromConsole(world.player, stage)
+                : boss.TryStartFromConsole(world.player))) return true;
             message = "Boss encounter already started or unavailable.";
             return false;
         }

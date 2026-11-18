@@ -1978,6 +1978,16 @@ MonoBehaviour:
   door: {fileID: 910100000000000012}
   doorwaySize: {x: 1.1, y: 2.25}
   exitInset: 2.5
+  wardrobePrefab: {fileID: 2247859662636438201, guid: 9d4d9afd643c1414da41b9f2ecb654e5, type: 3}
+  ringPrefab: {fileID: 4074338470786141264, guid: a0afaf9896baa6f40ac63af894c57e34, type: 3}
+  wardrobePosition: {x: -4.45, y: 0, z: 1.5}
+  wardrobeYaw: -90
+  ringPocketLocalPosition: {x: 0.18, y: 0.42, z: -0.145}
+  ringLiftSeconds: 0.8
+  ringInspectSeconds: 2.5
+  ringStoreSeconds: 0.8
+  whiteBoundaryDistance: 12
+  whiteBoundarySize: 400
 --- !u!1 &910100000000000004
 GameObject:
   m_ObjectHideFlags: 0

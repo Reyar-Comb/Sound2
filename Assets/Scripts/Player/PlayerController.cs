@@ -31,12 +31,14 @@ public sealed class PlayerController : MonoBehaviour
     bool inputSuspended;
     public bool DeathSequenceLocked { get; internal set; }
     internal bool EncounterInputLocked { get; set; }
+    internal bool EncounterLookAllowed { get; set; }
     internal bool OpeningSequenceLocked { get; set; }
     bool consoleInputLocked;
     public bool InputSuspended { get => inputSuspended || DeathSequenceLocked || EncounterInputLocked || OpeningSequenceLocked || consoleInputLocked; set => inputSuspended = value; }
     public bool TransportLocked { get; set; }
     public Transform ViewTransform => cameraTransform;
     public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);
+    internal Vector2 AimAngles => new(yaw, pitch);
     public bool UsesGravity => useGravity;
 
     private void Awake()
@@ -116,11 +118,16 @@ public sealed class PlayerController : MonoBehaviour
     }
 
     internal void FacePoint(Vector3 point)
+        => FacePoint(point, AimAngles, 1);
+
+    internal void FacePoint(Vector3 point, Vector2 fromAngles, float progress)
     {
         Vector3 direction = point - cameraTransform.position;
         Vector2 flat = new(direction.x, direction.z);
-        if (flat.sqrMagnitude > .001f) yaw = Mathf.Atan2(flat.x, flat.y) * Mathf.Rad2Deg;
-        pitch = Mathf.Clamp(-Mathf.Atan2(direction.y, flat.magnitude) * Mathf.Rad2Deg, -maxPitch, maxPitch);
+        float targetYaw = flat.sqrMagnitude > .001f ? Mathf.Atan2(flat.x, flat.y) * Mathf.Rad2Deg : fromAngles.x;
+        float targetPitch = Mathf.Clamp(-Mathf.Atan2(direction.y, flat.magnitude) * Mathf.Rad2Deg, -maxPitch, maxPitch);
+        yaw = Mathf.LerpAngle(fromAngles.x, targetYaw, Mathf.Clamp01(progress));
+        pitch = Mathf.Clamp(Mathf.LerpAngle(fromAngles.y, targetPitch, Mathf.Clamp01(progress)), -maxPitch, maxPitch);
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
@@ -167,16 +174,28 @@ public sealed class PlayerController : MonoBehaviour
         Cursor.visible = !captured;
     }
 
-    private void Update()
+    private void ApplyLookInput()
     {
-        if (DeveloperMode.Available && Keyboard.current?.f9Key.wasPressedThisFrame == true)
-            DeveloperMode.Toggle();
-        if (InputSuspended || !characterController.enabled) return;
         Vector2 look = lookAction.action.ReadValue<Vector2>();
         yaw = Mathf.Repeat(yaw + look.x, 360f);
         pitch = Mathf.Clamp(pitch + look.y, -maxPitch, maxPitch);
         transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    }
+
+    private void Update()
+    {
+        if (DeveloperMode.Available && Keyboard.current?.f9Key.wasPressedThisFrame == true)
+            DeveloperMode.Toggle();
+        if (!characterController.enabled) return;
+        if (InputSuspended)
+        {
+            if (EncounterInputLocked && EncounterLookAllowed && !inputSuspended && !DeathSequenceLocked
+                && !OpeningSequenceLocked && !consoleInputLocked && !SonicSpaceStartMenu.BlocksGameplay)
+                ApplyLookInput();
+            return;
+        }
+        ApplyLookInput();
 
         if (TransportLocked) return;
         Vector2 move = Vector2.ClampMagnitude(moveAction.action.ReadValue<Vector2>(), 1f);
