@@ -96,7 +96,7 @@ namespace Sound2.LevelEditing.Editor
 
         public static void Validate(LevelLayout layout, Paths64 footprint)
         {
-            if (layout.wallHeight < .1f || layout.wallThickness < .05f || layout.floorThickness < .05f)
+            if (!float.IsFinite(layout.wallHeight) || layout.wallHeight < .1f || layout.wallThickness < .05f || layout.floorThickness < .05f)
                 throw new InvalidOperationException("墙高、墙厚与地板厚度必须大于最小值。");
             var holes = new Paths64();
             foreach (var pit in layout.pits)
@@ -109,7 +109,7 @@ namespace Sound2.LevelEditing.Editor
             }
         }
 
-        public static Paths64 WallFootprint(LevelLayout layout, Paths64 footprint, out Paths64 lintels)
+        public static Paths64 WallFootprint(LevelLayout layout, Paths64 footprint, out Paths64 lintels, float minHeight = 0)
         {
             var ring = Difference(Offset(footprint, layout.wallThickness), footprint);
             lintels = new Paths64();
@@ -118,7 +118,7 @@ namespace Sound2.LevelEditing.Editor
                 var partitions = new Paths64();
                 foreach (var room in layout.rooms)
                 {
-                    if (room.openPlan) continue;
+                    if (room.openPlan || room.Height(layout) < minHeight) continue;
                     var outline = new Paths64 { Path(RoomOutline(room, layout.circleSegments)) };
                     partitions.AddRange(Difference(Offset(outline, layout.wallThickness * .5f), Offset(outline, -layout.wallThickness * .5f)));
                 }
@@ -128,7 +128,7 @@ namespace Sound2.LevelEditing.Editor
                     // Every attached endpoint opens its room partition, including elevator vestibules.
                     foreach (var connection in new[] { corridor.start, corridor.end })
                     {
-                        var room = layout.FindRoom(connection.roomId); if (room == null) continue;
+                        var room = layout.FindRoom(connection.roomId); if (room == null || room.Height(layout) < minHeight) continue;
                         var point = room.Edge(connection.edge, out var normal);
                         var cut = new LevelRoom { center = point, size = new Vector2(layout.wallThickness + .4f, corridor.width),
                             rotation = Mathf.Atan2(normal.y, normal.x) * Mathf.Rad2Deg };
@@ -143,10 +143,94 @@ namespace Sound2.LevelEditing.Editor
             return ring;
         }
 
+        // At each ceiling height, keep the footprint of all rooms that still reach it.
+        // Corridor extensions inside rooms belong to the room, including at low doorways.
+        static SortedList<float, Paths64> HeightFootprints(LevelLayout layout, Paths64 footprint)
+        {
+            var levels = new SortedList<float, Paths64>();
+            if (layout.rooms.TrueForAll(room => room.Height(layout) == layout.wallHeight))
+            {
+                levels.Add(layout.wallHeight, footprint);
+                return levels;
+            }
+
+            Paths64 RegionAt(float height)
+            {
+                if (!levels.TryGetValue(height, out var region))
+                {
+                    region = new Paths64();
+                    levels.Add(height, region);
+                }
+                return region;
+            }
+            var rooms = new Paths64();
+            foreach (var room in layout.rooms)
+            {
+                var outline = Path(RoomOutline(room, layout.circleSegments));
+                rooms.Add(outline);
+                RegionAt(room.Height(layout)).Add(outline);
+            }
+            var corridors = Difference(footprint, Union(rooms));
+            if (corridors.Count > 0) RegionAt(layout.wallHeight).AddRange(corridors);
+
+            var higher = new Paths64();
+            for (int i = levels.Count - 1; i > 0; i--)
+            {
+                var outlines = levels.Values[i];
+                outlines.AddRange(higher);
+                higher = Union(outlines);
+                levels[levels.Keys[i]] = higher;
+            }
+            levels[levels.Keys[0]] = footprint;
+            return levels;
+        }
+
+        static void BuildShell(LevelLayout layout, Paths64 footprint, Paths64 baseWalls, Paths64 baseLintels,
+            Dictionary<string, Mesh> meshes)
+        {
+            var walls = new List<(Paths64, float, float)>();
+            var ceilings = new List<(Paths64, float, float)>();
+            var doorLintels = new List<(Paths64, float, float)>();
+            var levels = HeightFootprints(layout, footprint);
+            var higherRoof = new Paths64();
+            for (int i = levels.Count - 1; i >= 0; i--)
+            {
+                float top = levels.Keys[i], bottom = i == 0 ? 0 : levels.Keys[i - 1];
+                var area = levels.Values[i];
+                var roof = Offset(area, layout.wallThickness);
+                ceilings.Add((higherRoof.Count == 0 ? roof : Difference(roof, higherRoof), top, top + layout.floorThickness));
+                higherRoof = roof;
+
+                var ring = baseWalls;
+                var lintels = baseLintels;
+                if (i > 0)
+                {
+                    ring = WallFootprint(layout, area, out lintels, top);
+                    // Close the step above the lower ceiling, even at an open-plan join or doorway.
+                    var step = Clipper.Intersect(Difference(roof, area), footprint, FillRule.NonZero);
+                    ring.AddRange(step);
+                    ring = Union(ring);
+                    lintels = Difference(Union(lintels), step);
+                }
+                walls.Add((ring, bottom, top));
+                float lintelBottom = Mathf.Max(bottom, 2.6f);
+                if (lintels.Count > 0 && top > lintelBottom)
+                    doorLintels.Add((Union(lintels), lintelBottom, top));
+            }
+            meshes.Add("Walls", Extrude(walls, "Walls"));
+            meshes.Add("Ceiling", Extrude(ceilings, "Ceiling"));
+            if (doorLintels.Count > 0) meshes.Add("DoorLintels", Extrude(doorLintels, "DoorLintels"));
+        }
+
         public static Dictionary<string, Mesh> Build(LevelLayout layout)
         {
             foreach (var r in layout.rooms)
+            {
                 if (r.size.x < .5f || r.size.y < .5f) throw new InvalidOperationException("房间尺寸至少为 0.5 米。");
+                float height = r.Height(layout);
+                if (!float.IsFinite(height) || height < .1f)
+                    throw new InvalidOperationException(r.name + " 的净高必须至少为 0.1 米。");
+            }
             foreach (var c in layout.corridors)
             {
                 if (c.width < .3f) throw new InvalidOperationException("走廊宽度至少为 0.3 米。");
@@ -164,8 +248,7 @@ namespace Sound2.LevelEditing.Editor
                 meshes.Add("Floor", Extrude(Difference(footprint, Union(holes)), -layout.floorThickness, 0, "Floor"));
                 var ring = WallFootprint(layout, footprint, out var lintels);
                 var doors = EmbeddedDoorPlacement.ResolveAll(layout, ring);
-                ring = EmbeddedDoorPlacement.Cut(ring, "Walls", layout.wallHeight, doors, meshes);
-                meshes.Add("Walls", Extrude(ring, 0, layout.wallHeight, "Walls"));
+                BuildShell(layout, footprint, ring, lintels, meshes);
                 foreach (var host in LevelPartitions.All(layout))
                 {
                     var partition = host.data;
@@ -174,11 +257,6 @@ namespace Sound2.LevelEditing.Editor
                     var strip = EmbeddedDoorPlacement.Cut(host.Strip, host.key, partition.height, doors, meshes);
                     meshes.Add(host.key, Extrude(strip, 0, partition.height, host.key));
                 }
-                if (lintels.Count > 0 && layout.wallHeight > 2.6f)
-                    meshes.Add("DoorLintels", Extrude(Union(lintels), 2.6f, layout.wallHeight, "DoorLintels"));
-                // Cover the whole room/corridor union, including above floor pits. The pits themselves stay open below.
-                meshes.Add("Ceiling", Extrude(Offset(footprint, layout.wallThickness), layout.wallHeight,
-                    layout.wallHeight + layout.floorThickness, "Ceiling"));
                 for (int i = 0; i < layout.pits.Count; i++)
                 {
                     var pit = layout.pits[i];
@@ -193,7 +271,10 @@ namespace Sound2.LevelEditing.Editor
             catch { foreach (var mesh in meshes.Values) UnityEngine.Object.DestroyImmediate(mesh); throw; }
         }
 
-        public static Mesh Extrude(Paths64 paths, float bottom, float top, string name)
+        public static Mesh Extrude(Paths64 paths, float bottom, float top, string name) =>
+            Extrude(new[] { (paths, bottom, top) }, name);
+
+        static Mesh Extrude(IEnumerable<(Paths64 paths, float bottom, float top)> sections, string name)
         {
             var vertices = new List<Vector3>();
             var triangles = new List<int>();
@@ -208,8 +289,9 @@ namespace Sound2.LevelEditing.Editor
                 foreach (var v in new[] { a, b, c }) uv.Add(Mathf.Abs(normal.y) > .5f ? new Vector2(v.x, v.z) : new Vector2(Vector3.Dot(v, Vector3.Cross(normal, Vector3.up)), v.y));
             }
             Vector3 V(Point64 p, float y) { var v = Point(p); return new Vector3(v.x, y, v.y); }
-            if (paths.Count > 0)
+            foreach (var (paths, bottom, top) in sections)
             {
+                if (paths.Count == 0) continue;
                 var result = Clipper.Triangulate(paths, out Paths64 faces);
                 if (result != TriangulateResult.success) throw new InvalidOperationException("轮廓三角化失败：" + result + "。请调整重合的控制点。");
                 foreach (var f in faces)

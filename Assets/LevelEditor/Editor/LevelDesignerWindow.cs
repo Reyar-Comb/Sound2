@@ -231,7 +231,7 @@ namespace Sound2.LevelEditing.Editor
             var fold = new Foldout { text = "生成设置", value = false }; area.Add(fold);
             Toggle(fold, "露天（不启用顶面）", layout.openSky, v => Change(() => layout.openSky = v));
             Toggle(fold, "保留房间隔墙", layout.architecturalPartitions, v => Change(() => layout.architecturalPartitions = v));
-            Float(fold, "墙高", layout.wallHeight, v => Change(() => layout.wallHeight = Mathf.Max(.1f, v)));
+            Float(fold, "默认墙高（米）", layout.wallHeight, v => { Change(() => layout.wallHeight = Mathf.Max(.1f, v)); DrawProperties(); });
             Float(fold, "墙厚", layout.wallThickness, v => Change(() => layout.wallThickness = Mathf.Max(.05f, v)));
             Float(fold, "地板厚度", layout.floorThickness, v => Change(() => layout.floorThickness = Mathf.Max(.05f, v)));
             var samples = new SliderInt("每段曲线采样", 4, 64) { value = layout.curveSamples };
@@ -333,6 +333,17 @@ namespace Sound2.LevelEditing.Editor
                 if (r.shape == RoomShape.Circle) Float(area, "直径", r.size.x, v => Change(() => r.size = Vector2.one * Mathf.Max(.5f, v)));
                 else Vector(area, "宽 / 长", r.size, v => r.size = Vector2.Max(Vector2.one * .5f, v));
                 Float(area, "旋转角度", r.rotation, v => Change(() => r.rotation = v));
+                var roomHeight = new VisualElement();
+                area.Add(roomHeight);
+                roomHeight.SetEnabled(!layout.manualGeometry);
+                if (layout.manualGeometry) roomHeight.tooltip = "此关卡使用手工模型，层高由模型决定。";
+                Float(roomHeight, "房间净高（米）", r.Height(layout), v =>
+                {
+                    Change(() => r.heightOverride = Mathf.Max(.1f, v));
+                    DrawProperties();
+                });
+                Button(roomHeight, "恢复关卡默认墙高", () => { Change(() => r.heightOverride = 0); DrawProperties(); })
+                    .SetEnabled(r.heightOverride != 0);
                 var partitions = new Foldout { text = "房间隔板", value = true }; area.Add(partitions);
                 for (int i = 0; i < r.partitions.Count; i++)
                 {
@@ -345,7 +356,7 @@ namespace Sound2.LevelEditing.Editor
                     Button(fold, "转为独立隔板", () => DetachPartition(r, p));
                     Button(fold, "删除隔板及其门", () => { Change(() => DeletePartition(p, r)); Refresh(); });
                 }
-                Button(partitions, "添加隔板", () => { Change(() => r.partitions.Add(new RoomPartition { start = SnapPartition(r, Vector2.left * r.size.x * .3f), end = SnapPartition(r, Vector2.right * r.size.x * .3f), height = layout.wallHeight })); Refresh(); });
+                Button(partitions, "添加隔板", () => { Change(() => r.partitions.Add(new RoomPartition { start = SnapPartition(r, Vector2.left * r.size.x * .3f), end = SnapPartition(r, Vector2.right * r.size.x * .3f), height = r.Height(layout) })); Refresh(); });
             }
             else if (kind == Kind.Corridor && selected < layout.corridors.Count)
             {

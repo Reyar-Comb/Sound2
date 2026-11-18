@@ -19,6 +19,65 @@ public static class VerifyLevelEditor
         checks++;
     }
 
+    public static string VerifyRoomHeights()
+    {
+        var scene = EditorSceneManager.NewPreviewScene();
+        var root = EditorUtility.CreateGameObjectWithHideFlags("Room height verification", HideFlags.HideAndDontSave);
+        SceneManager.MoveGameObjectToScene(root, scene);
+        try
+        {
+            var layout = root.AddComponent<LevelLayout>();
+            var low = new LevelRoom { heightOverride = 2 };
+            var tall = new LevelRoom { center = Vector2.right * 20, size = Vector2.one * 10, shape = RoomShape.Circle, heightOverride = 6 };
+            var inherited = new LevelRoom { center = Vector2.left * 10 };
+            layout.rooms.AddRange(new[] { low, tall, inherited });
+            layout.corridors.Add(new LevelCorridor {
+                points = new List<Vector2> { low.center, tall.center },
+                start = new RoomConnection { roomId = low.id, edge = .125f },
+                end = new RoomConnection { roomId = tall.id, edge = .5f }
+            });
+            layout.corridors.Add(new LevelCorridor {
+                doorOnly = true, points = new List<Vector2> { inherited.center, low.center },
+                start = new RoomConnection { roomId = inherited.id, edge = .125f },
+                end = new RoomConnection { roomId = low.id, edge = .625f }
+            });
+            var collider = root.AddComponent<MeshCollider>();
+            bool Ray(float x, float y, Vector3 direction, float distance, out RaycastHit hit) =>
+                collider.Raycast(new Ray(new Vector3(x, y, .03f), direction), out hit, distance);
+            void CheckRoof(float x, float height)
+            {
+                Check(Ray(x, 0, Vector3.up, 12, out var hit) && Mathf.Abs(hit.point.y - height) < .001f, "Ceiling at x=" + x);
+            }
+            for (int pass = 0; pass < 3; pass++)
+            {
+                layout.architecturalPartitions = pass == 1;
+                if (pass == 2) { layout.wallHeight = 4; low.heightOverride = 0; }
+                var meshes = LevelGeometry.Build(layout);
+                try
+                {
+                    collider.sharedMesh = meshes["Ceiling"];
+                    CheckRoof(-10, layout.wallHeight);
+                    CheckRoof(4.5f, low.Height(layout));
+                    CheckRoof(10, layout.wallHeight);
+                    CheckRoof(15.5f, 6);
+                    collider.sharedMesh = meshes["Walls"];
+                    Check(!Ray(4, 1, Vector3.right, 3, out _), "Corridor doorway stays clear");
+                    Check(!Ray(-6, 1, Vector3.right, 3, out _), "Shared doorway stays clear");
+                    Check(Ray(16, 5, Vector3.left, 3, out _), "Tall room closes above corridor");
+                    if (pass < 2)
+                        Check(Ray(-6, 2.5f, Vector3.right, 3, out _), "Height change closes above shared doorway");
+                }
+                finally
+                {
+                    collider.sharedMesh = null;
+                    foreach (var mesh in meshes.Values) Object.DestroyImmediate(mesh);
+                }
+            }
+            return "Room heights, corridor and shared doorways, ceiling and wall collisions, and default reset passed.";
+        }
+        finally { EditorSceneManager.ClosePreviewScene(scene); }
+    }
+
     public static string Main()
     {
         if (Application.isPlaying) throw new Exception("Run in edit mode.");

@@ -420,7 +420,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
     float BossExtent => cube.radius * Mathf.Max(Mathf.Abs(cube.transform.lossyScale.x),
         Mathf.Abs(cube.transform.lossyScale.y), Mathf.Abs(cube.transform.lossyScale.z));
 
-    float SafeHeight(float height) => Mathf.Clamp(height, BossExtent, Mathf.Max(BossExtent, level.wallHeight - BossExtent));
+    float SafeHeight(float height) => Mathf.Clamp(height, BossExtent, Mathf.Max(BossExtent, room.Height(level) - BossExtent));
     Vector2 ClampBoss(Vector2 point) => Vector2.ClampMagnitude(point, Mathf.Max(0, Radius - BossExtent - wallMargin));
     internal Vector2 ToArena(Vector3 position) => level.Local(position) - room.center;
     internal Vector3 ToWorld(Vector2 point, float height) => level.World(room.center + point, height);
@@ -508,8 +508,9 @@ public sealed class LevelArenaBoss : MonoBehaviour
     void EmitReveal(float speed, float afterglow)
     {
         PlayEffect(revealSound);
-        float range = revealWaveRange > 0 ? revealWaveRange : Mathf.Sqrt(Radius * Radius + level.wallHeight * level.wallHeight) + 2;
-        if (sonar != null) sonar.EmitDangerFrom(ToWorld(Vector2.zero, Mathf.Min(hoverHeight, level.wallHeight * .5f)), range, speed, afterglow, null,
+        float arenaHeight = room.Height(level);
+        float range = revealWaveRange > 0 ? revealWaveRange : Mathf.Sqrt(Radius * Radius + arenaHeight * arenaHeight) + 2;
+        if (sonar != null) sonar.EmitDangerFrom(ToWorld(Vector2.zero, Mathf.Min(hoverHeight, arenaHeight * .5f)), range, speed, afterglow, null,
             source: cube != null ? cube.transform : null);
     }
 

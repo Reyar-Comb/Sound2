@@ -144,6 +144,27 @@ namespace Sound2.LevelEditing
             resetTemplates = root.transform;
         }
 
+        void ClearCollectedFloorHazards(LevelLayout level)
+        {
+            // Pickups can be destroyed after collection. The untouched template still identifies the floor.
+            if (!initialLevels.TryGetValue(level, out var initial)) return;
+            foreach (var item in initial.template.GetComponentsInChildren<StoryCollectible>(true))
+            {
+                if (!StoryRunProgress.Current.IsCollected(item.CollectibleId)) continue;
+                foreach (var enemy in level.GetComponentsInChildren<PatrolMonster>(true))
+                    enemy.gameObject.SetActive(false);
+                foreach (var area in level.GetComponentsInChildren<MonsterVineArea>(true))
+                    area.gameObject.SetActive(false);
+                return;
+            }
+        }
+
+        LevelActivation PrepareEntry(LevelLayout level)
+        {
+            ClearCollectedFloorHazards(level);
+            return new LevelActivation(level, activationBudgetMs, activationBatchSize);
+        }
+
         public IEnumerator ResetCurrentLevel()
         {
             if (Travelling || CurrentLevel == null || !initialLevels.TryGetValue(CurrentLevel, out var initial)) yield break;
@@ -189,7 +210,7 @@ namespace Sound2.LevelEditing
             previous.gameObject.SetActive(false);
             Destroy(previous.gameObject);
             CurrentLevel = replacement;
-            using (var activation = new LevelActivation(replacement, activationBudgetMs, activationBatchSize))
+            using (var activation = PrepareEntry(replacement))
             {
                 yield return activation.Prepare();
                 foreach (var nav in replacement.GetComponentsInChildren<RuntimePatrolNavigation>())
@@ -290,7 +311,7 @@ namespace Sound2.LevelEditing
             yield return CaptureInitialLevelAsync(level);
             if (destination == null || level == null || actor == null) { Release(true); yield break; }
 
-            preparation = new LevelActivation(level, activationBudgetMs, activationBatchSize);
+            preparation = PrepareEntry(level);
             yield return preparation.Prepare();
             if (destination == null || level == null || actor == null) { Release(true); yield break; }
             foreach (var nav in level.GetComponentsInChildren<RuntimePatrolNavigation>())
@@ -316,7 +337,7 @@ namespace Sound2.LevelEditing
             if(source==null||destination==null||destination.Level==null||actor==null){Release(true);yield break;}
             yield return CaptureInitialLevelAsync(destination.Level);
             if(source==null||destination==null||destination.Level==null||actor==null){Release(true);yield break;}
-            preparation = new LevelActivation(destination.Level, activationBudgetMs, activationBatchSize);
+            preparation = PrepareEntry(destination.Level);
             var loading = preparation.Prepare();
             bool loadingComplete = false;
             float elapsed = 0;
@@ -410,6 +431,7 @@ namespace Sound2.LevelEditing
         void Activate(LevelLayout level)
         {
             CaptureInitialLevel(level);
+            if (level != null && preparation == null) ClearCollectedFloorHazards(level);
             CurrentLevel=level;
             if (level != null && level.GetComponentInChildren<LevelArenaBoss>(true) != null)
                 StoryRunProgress.Current.EnterBossRoom();
