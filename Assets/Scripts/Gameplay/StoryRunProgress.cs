@@ -69,17 +69,6 @@ internal sealed class StoryRunProgress : ICollectibleProgress
         enteredBossRoom = startedBoss = diedAfterBossStarted = defeatedBoss = bossReturnPending = false;
     }
 
-    public void ResetForNewGame()
-    {
-        ResetRunState();
-#if UNITY_EDITOR
-        // A scene reload does not start a new editor Play session or clear SessionState.
-        loadedEditorProgress = true;
-        UnityEditor.SessionState.EraseString(EditorProgressKey);
-#endif
-        SaveEndingProgress();
-    }
-
     public IReadOnlyCollection<string> CollectedIds
     {
         get

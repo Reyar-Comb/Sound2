@@ -28,6 +28,9 @@ namespace Sound2.LevelEditing
         public Vector2 center;
         public Vector2 size = new Vector2(10, 10);
         public float rotation;
+        [Min(0), Tooltip("房间净高（米）。0 表示使用关卡默认墙高。")]
+        public float heightOverride;
+        public float Height(LevelLayout layout) => heightOverride == 0 ? layout.wallHeight : heightOverride;
         public List<RoomPartition> partitions = new();
         public Vector2 PartitionPoint(Vector2 point) => center + Rotate(point);
         public Vector2 PartitionLocal(Vector2 point)

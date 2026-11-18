@@ -3,7 +3,7 @@ using Sound2.LevelEditing;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-/// <summary>Starting-room tarot endings share one card presentation and restart the entire run on return.</summary>
+/// <summary>Starting-room tarot endings share one card presentation and return to the title.</summary>
 [DisallowMultipleComponent]
 public sealed class SoundShellOpening : MonoBehaviour
 {
@@ -361,10 +361,8 @@ public sealed class SoundShellOpening : MonoBehaviour
         roomMusic.Stop();
         player.GetComponent<PlayerPickup>()?.ClearForRespawn();
         StorySubtitles.Clear();
-        StoryRunProgress.Current.ResetForNewGame();
         DeveloperMode.ResetForNewGame();
-        // Keep the card click out of the fresh title screen. Single-scene loading restores
-        // every prop, collectible, enemy, health/input state, elevator and music controller.
+        // Reload the title and scene objects while keeping the current run's story progress.
         yield return new WaitForEndOfFrame();
         string path = world.gameObject.scene.path;
         if (string.IsNullOrEmpty(path)) path = "Assets/Scenes/SoundAndShell.unity";
