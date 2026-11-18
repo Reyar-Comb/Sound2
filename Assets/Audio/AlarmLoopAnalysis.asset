@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07ae86a58e5fb1d45be69005c23145b2, type: 3}
+  m_Name: AlarmLoopAnalysis
+  m_EditorClassIdentifier: Assembly-CSharp::AudioReactiveClip
+  clip: {fileID: 8300000, guid: bc6846d51a1f55148acc20d68df64429, type: 3}
+  analysisRate: 60
+  data: bee8f2eefef8fcf5ebfbf4f2fffffffcfff7fefcf6f5e8fff3ebf2fff4fffcf2fff6f9f1f8fff0fffff4f9fffbf7fffaf3e5f0ece8f6fff6faf0fef3effefbfffff8fefbf5e6dae1caa09c6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b4e8e6f2eefefcf8f5fbf5f4fff9ffffeefffefcfcf2f5fff7f3eaf2fff4fff6f2fff0f9eef8fff0fffff4f9fffaf7fff4f3f0eaecf2f6fff6fafef8f1ecfefffffff1fefbe9e6e1dac8a08e3c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bce8e8f2fefbfcf5f1fbf5f4fff8fffcedfffef5fcf5f2fff6f3f2ebfff4fff6f1ffeef9f8edfffff5fff9f8fff9effff4f0f0eaecf6eefffafafef4f1eafefff2fffef5fbe9e6e1d2be9c801200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bce8ebf2fef9fcf5ebfbf5f4fffffffcfff7fef5fcf5e8fff3f3f2e4fffffcf2f1fff9f2f8eafffff5fff9f6fff7ecfff3e5f0ece9f6eefffaf0fef4f1fefbfff3fffef5fbe6dde1d2ab9c6e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  frameCount: 505
+  bakedRate: 60
+  bakedSamples: 369942
+  bakedFrequency: 44100
+  bakedChannels: 2
+  bakedRequestedRate: 60
+  sourceHash:

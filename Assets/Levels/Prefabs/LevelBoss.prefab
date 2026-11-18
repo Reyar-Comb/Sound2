@@ -1637,7 +1637,9 @@ MonoBehaviour:
   laserLookback: 1
   laserRange: 55
   laserWidth: 0.2
-  laserVisibleSeconds: 0.28
+  laserVisibleSeconds: 1
+  attackPointSpacing: 0.035
+  impactWarningWidth: 0.18
   slamWave:
     speed: 12
     range: 38

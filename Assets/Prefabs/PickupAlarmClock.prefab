@@ -901,7 +901,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SonarCueSource
   output: {fileID: 5409629760694085448}
   clip: {fileID: 0}
-  generateDefaultPing: 0
 --- !u!114 &7224891340235170946
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -967,6 +966,7 @@ MonoBehaviour:
   hearingRange: 20
   impactClip: {fileID: 8300000, guid: 25444897e3fa86746834c2527bbc004d, type: 3}
   impactVolume: 1
+  landingAudioCooldown: 0.4
 --- !u!114 &1687917139929038505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -992,6 +992,7 @@ MonoBehaviour:
   wallNormalMaxUp: 0.5
   heldEulerAngles: {x: 0, y: 180, z: 0}
   breakable: 1
+  breakOnlyWhenThrown: 0
   breakSpeed: 7
   breakLayers:
     serializedVersion: 2
@@ -1042,7 +1043,25 @@ MonoBehaviour:
   ringInterval: 0.2
   ringRange: 12
   hearingRange: 16
-  alarmClip: {fileID: 0}
+  alarmClip: {fileID: 8300000, guid: bc6846d51a1f55148acc20d68df64429, type: 3}
+  alarmVolume: 0.75
+  alarmSoundRange: 16
+  alarmAnalysis: {fileID: 11400000, guid: a2d3417c8a0643aebc78381705dc95aa, type: 2}
+  alarmVisual:
+    range: 12
+    waveSpeed: 7
+    afterglow: 0.08
+    gain: 1
+    peakFloor: 0.04
+    peakCeiling: 0.8
+    responseExponent: 1.8
+    highQualityOcclusion: 0
+    distance:
+      enabled: 1
+      fadeStartDistance: 1
+      fadeEndDistance: 12
+      falloffPower: 1
+      pulseStrength: 1
 --- !u!114 &7279868106681152539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1059,6 +1078,7 @@ MonoBehaviour:
   surfaceAnchor: {x: 0, y: -0.411, z: 0}
   surfaceOffset: 0.01
   gameplayMaterial: {fileID: 2100000, guid: 736fb58e78551904482077b918c1d14b, type: 2}
+  combinedGameplayMesh: {fileID: 0}
 --- !u!114 &4771390007309392073
 MonoBehaviour:
   m_ObjectHideFlags: 0

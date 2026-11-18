@@ -312,6 +312,8 @@ GameObject:
   - component: {fileID: 6734265899850335793}
   - component: {fileID: 7424285275189805411}
   - component: {fileID: 3498723841956435042}
+  - component: {fileID: 910200000000000001}
+  - component: {fileID: 910200000000000002}
   m_Layer: 0
   m_Name: "Television \xB7 \u6674\u6717\u5929\u6C14\u9884\u62A5"
   m_TagString: Untagged
@@ -385,6 +387,18 @@ MonoBehaviour:
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 910200000000000002}
+        m_TargetAssemblyTypeName: AudioReactiveSonarEmitter, Assembly-CSharp
+        m_MethodName: Toggle
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName:
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument:
           m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &7424285275189805411
@@ -5882,3 +5896,80 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5640771670711399592, guid: 89bd2c2542565e347bd4183342ea318e, type: 3}
   m_PrefabInstance: {fileID: 8891692157980304389}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &910200000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2160051245085206352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3af7f4e9a905a42ccb48a150da63b765, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ImpactSoundPool
+  clip: {fileID: 8300000, guid: e6e17b55fabb4ab899d0eea603a15a0a, type: 3}
+  listener: {fileID: 0}
+  settings:
+    hrtf: 1
+    occlusion: 0
+    reflections: 0
+    bypassRoomAcoustics: 0
+    reflectionMix: 0.65
+    distanceMode: 1
+    minDistance: 1
+    maxDistance: 20
+    decibelsPerMetre: 3
+    farEarGain: 1
+  capacity: 1
+  preRoll: 0.025
+  tailSeconds: 0
+  initializeOnStart: 0
+  prewarmAcrossFrames: 1
+--- !u!114 &910200000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2160051245085206352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0370ee7aabd751478478077173341da, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::AudioReactiveSonarEmitter
+  analysis: {fileID: 11400000, guid: b76884f2b5394ff8932cd42a356764aa, type: 2}
+  visual:
+    range: 14
+    waveSpeed: 7
+    afterglow: 0.08
+    gain: 1
+    peakFloor: 0.025
+    peakCeiling: 0.6
+    responseExponent: 1.8
+    highQualityOcclusion: 0
+    distance:
+      enabled: 1
+      fadeStartDistance: 1
+      fadeEndDistance: 14
+      falloffPower: 1
+      pulseStrength: 1
+    density:
+      enabled: 0
+      fadeStartDistance: 6
+      fadeEndDistance: 10
+      falloffPower: 1
+  field: {fileID: 0}
+  emissionOrigin: {fileID: 7607021853428599319}
+  additionalOrigins: []
+  playAudioAtAdditionalOrigins: 0
+  triggerKey: 0
+  loop: 1
+  playOnStart: 0
+  volume: 0.7
+  triggerOnCollision: 0
+  minimumImpactSpeed: 0.5
+  cooldown: 0.15
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 0

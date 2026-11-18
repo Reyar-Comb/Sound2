@@ -65,7 +65,9 @@ public sealed class LevelArenaBoss : MonoBehaviour
     [Min(0)] public float laserLookback = 1;
     [Min(.1f)] public float laserRange = 55;
     [Min(.02f)] public float laserWidth = .2f;
-    [Min(0)] public float laserVisibleSeconds = .28f;
+    [Tooltip("持续发射期间，每帧追踪 laserLookback 秒前的玩家位置。"), Min(.01f)] public float laserVisibleSeconds = 1;
+    [Tooltip("激光和下砸预警的点间距；越小越密集（米）。"), Min(.005f)] public float attackPointSpacing = .035f;
+    [Tooltip("下砸圆形预警的点云带宽（米）。"), Min(.02f)] public float impactWarningWidth = .18f;
     public BossWaveSettings slamWave = new();
 
     [Header("横扫")]
@@ -366,20 +368,33 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     IEnumerator FireLaser()
     {
-        Vector3 origin = transform.position;
-        Vector3 direction = (AimAt(Time.time - laserLookback) - origin).normalized;
-        if (direction.sqrMagnitude < .5f) yield break;
-        Vector3 end = origin + direction * laserRange;
-        PlayEffect(laserSound);
-        if (Physics.Raycast(origin, direction, out var hit, laserRange, laserLayers, QueryTriggerInteraction.Ignore))
-        {
-            end = hit.point;
-            if (hit.collider.GetComponentInParent<PlayerVitality>() == vitality) DamagePlayer();
-        }
         var line = CreateLine("Boss laser", effectMaterial, new Color(1, .03f, .015f), laserWidth);
         attackLines.Add(line);
-        line.SetPositions(new[] { origin, end });
-        yield return new WaitForSeconds(laserVisibleSeconds);
+        PlayEffect(laserSound);
+        bool damaged = false;
+        float endsAt = Time.time + Mathf.Max(.01f, laserVisibleSeconds);
+        var points = new MaterialPropertyBlock();
+        while (Time.time < endsAt && State == EncounterState.Fighting && vitality != null && !vitality.IsDead)
+        {
+            Vector3 origin = transform.position;
+            Vector3 direction = (AimAt(Time.time - laserLookback) - origin).normalized;
+            Vector3 end = origin + direction * laserRange;
+            if (direction.sqrMagnitude > .5f && Physics.Raycast(origin, direction, out var hit,
+                laserRange, laserLayers, QueryTriggerInteraction.Ignore))
+            {
+                end = hit.point;
+                // A sustained beam is one attack, including when the player re-enters it.
+                if (!damaged && hit.collider.GetComponentInParent<PlayerVitality>() == vitality)
+                {
+                    damaged = true;
+                    DamagePlayer();
+                }
+            }
+            line.SetPosition(0, origin);
+            line.SetPosition(1, end);
+            SetAttackPoints(line, points, Vector3.Distance(origin, end), laserWidth);
+            yield return null;
+        }
         RemoveLine(line);
     }
 
@@ -533,15 +548,29 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     LineRenderer DrawMarker(Vector2 point, float radius)
     {
-        var line = CreateLine("Boss impact warning", effectMaterial, new Color(.72f, .04f, .015f), .06f);
+        var line = CreateLine("Boss impact warning", effectMaterial, new Color(1, .04f, .015f), impactWarningWidth);
         line.positionCount = 49;
+        float length = 0;
+        Vector3 previous = default;
         for (int i = 0; i < line.positionCount; i++)
         {
             float angle = i * (2 * Mathf.PI / (line.positionCount - 1));
-            line.SetPosition(i, ToWorld(Vector2.ClampMagnitude(point + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius, Radius), .04f));
+            Vector3 position = ToWorld(Vector2.ClampMagnitude(point + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius, Radius), .04f);
+            line.SetPosition(i, position);
+            if (i > 0) length += Vector3.Distance(previous, position);
+            previous = position;
         }
+        SetAttackPoints(line, new MaterialPropertyBlock(), length, impactWarningWidth);
         attackLines.Add(line);
         return line;
+    }
+
+    void SetAttackPoints(LineRenderer line, MaterialPropertyBlock properties, float length, float width)
+    {
+        float spacing = Mathf.Max(.005f, attackPointSpacing);
+        properties.SetFloat("_PointColumns", Mathf.Max(1, length / spacing));
+        properties.SetFloat("_PointRows", Mathf.Max(1, width / spacing));
+        line.SetPropertyBlock(properties);
     }
 
     void RemoveLine(LineRenderer line)
