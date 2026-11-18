@@ -51,7 +51,8 @@ float2 BossGroundWaveVisibility(float3 positionWS, float3 normalWS, float ordere
         if (glow <= 0) continue;
         float scale = motion.y / max(.001, min(_RevealDistance, _DistanceBands.w));
         float density = FaceDensityAt(positionWS, normalWS, origin.xyz, scale, true) * saturate(_FaceDensityScale);
-        result = max(result, float2(glow, orderedRank < density ? glow : 0));
+        float faceDensity = saturate(density * motion.w);
+        result = max(result, float2(glow, orderedRank < faceDensity ? glow : 0));
     }
     return result;
 }

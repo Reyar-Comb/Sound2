@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,6 +10,7 @@ namespace Sound2.LevelEditing
     {
         const int MaxCommandLength = 128;
         const string LevelNames = "start  school  library  home  grocery  wedding  hospital  boss";
+        const string Commands = "tp <level>  |  boss  |  skip  |  unlock";
         LevelWorld world;
         Keyboard inputKeyboard;
         string command = "", message = "";
@@ -54,6 +56,23 @@ namespace Sound2.LevelEditing
         void Execute()
         {
             string[] args = command.Trim().Split((char[])null, 2, StringSplitOptions.RemoveEmptyEntries);
+            if (args.Length == 1 && args[0].Equals("boss", StringComparison.OrdinalIgnoreCase))
+            {
+                var bossLevel = world.levels.Find(item => item != null && item.GetComponentInChildren<LevelArenaBoss>(true) != null);
+                if (bossLevel == null) { message = "No Boss level in this world."; return; }
+                if (world.CurrentLevel == bossLevel)
+                {
+                    if (!StartBoss(bossLevel)) return;
+                }
+                else
+                {
+                    if (!world.TryTeleportToLevel(bossLevel)) { message = "The Boss arrival elevator is unavailable."; return; }
+                    StartCoroutine(StartBossAfterArrival(bossLevel));
+                }
+                command = message = "";
+                Close();
+                return;
+            }
             if (args.Length == 1 && args[0].Equals("unlock", StringComparison.OrdinalIgnoreCase))
             {
                 var ids = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
@@ -89,7 +108,7 @@ namespace Sound2.LevelEditing
             }
             if (args.Length != 2 || !args[0].Equals("tp", StringComparison.OrdinalIgnoreCase))
             {
-                message = "Usage: tp <level> | skip | unlock";
+                message = "Usage: " + Commands;
                 return;
             }
 
@@ -100,6 +119,21 @@ namespace Sound2.LevelEditing
 
             command = message = "";
             Close();
+        }
+
+        IEnumerator StartBossAfterArrival(LevelLayout level)
+        {
+            while (world.Travelling) yield return null;
+            if (level == null || world.CurrentLevel != level) { message = "Boss transfer cancelled."; yield break; }
+            StartBoss(level);
+        }
+
+        bool StartBoss(LevelLayout level)
+        {
+            var boss = level.GetComponentInChildren<LevelArenaBoss>();
+            if (boss != null && boss.TryStartFromConsole(world.player)) return true;
+            message = "Boss encounter already started or unavailable.";
+            return false;
         }
 
         static string LevelKey(string name)
@@ -140,7 +174,7 @@ namespace Sound2.LevelEditing
             float width = Mathf.Min(Screen.width - 32f, 660f);
             GUI.Box(new Rect(16, 16, width, 106), "");
             GUI.Label(new Rect(28, 26, width - 24, 24), "> " + command + "_");
-            GUI.Label(new Rect(28, 53, width - 24, 22), "tp <level>  |  skip  |  unlock    Enter to run    Esc to close");
+            GUI.Label(new Rect(28, 53, width - 24, 22), Commands + "    Enter to run    Esc to close");
             GUI.Label(new Rect(28, 78, width - 24, 24), string.IsNullOrEmpty(message) ? LevelNames : message);
         }
     }

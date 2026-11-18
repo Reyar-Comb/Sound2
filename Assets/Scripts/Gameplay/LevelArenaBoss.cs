@@ -38,6 +38,10 @@ public sealed class LevelArenaBoss : MonoBehaviour
 
     [Header("战斗与移动")]
     [Min(.1f)] public float survivalSeconds = 120;
+    [InspectorName("按完整攻击轮数判定胜利"), Tooltip("启用后，胜利由完整轮数决定。最后一轮结束后，再经过一个 Between Skills 间隔进入胜利演出。")]
+    public bool useAttackRoundsForVictory;
+    [Min(1), InspectorName("胜利所需轮数"), Tooltip("按 Rotation Order 从头到尾执行完一遍算一轮。")]
+    public int roundsToSurvive = 3;
     [Min(1)] public float skillDamage = 50;
     [Min(.1f)] public float hoverHeight = 4.5f;
     [Min(0)] public float moveSpeed = 5;
@@ -51,6 +55,8 @@ public sealed class LevelArenaBoss : MonoBehaviour
     [Min(.1f)] public float summonLifetime = 14;
     [Min(.1f)] public float summonDistance = 5;
     [Min(0)] public float summonWindup = .6f;
+    [Min(0), InspectorName("召唤物移速倍率"), Tooltip("生成时乘以召唤物预制体的巡逻和调查速度。1 为原速。")]
+    public float summonSpeedMultiplier = 1f;
 
     [Header("下砸与激光（秒、米）")]
     [Min(0)] public float diveTravelSeconds = .35f;
@@ -74,6 +80,8 @@ public sealed class LevelArenaBoss : MonoBehaviour
     [Min(0)] public float sweepWindup = .7f;
     [Min(0)] public float sweepSeconds = .35f;
     [Min(0)] public float sweepTravel = 2;
+    [Min(0), InspectorName("横扫表面点云密度倍率"), Tooltip("1 为原密度，调大可让横扫经过的表面显示更多点。每次发出横扫时生效。")]
+    public float sweepPointDensityMultiplier = 1f;
     public BossWaveSettings sweepWave = new();
 
     [Header("演出音效（可选）")]
@@ -95,7 +103,8 @@ public sealed class LevelArenaBoss : MonoBehaviour
     public UnityEvent onVictory = new();
 
     public EncounterState State { get; private set; }
-    public float RemainingSeconds => State == EncounterState.Fighting ? Mathf.Max(0, fightEndsAt - Time.time) : 0;
+    public float RemainingSeconds => State == EncounterState.Fighting && fightEndsAt.HasValue
+        ? Mathf.Max(0, fightEndsAt.Value - Time.time) : 0;
     public Skill? CurrentSkill { get; private set; }
     internal Canvas OverlayCanvas { get; private set; }
     internal float Radius { get; private set; }
@@ -107,6 +116,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
     readonly List<LineRenderer> attackLines = new();
     LevelWorld world;
     LevelRoom room;
+    GameObject entranceSeal;
     BossMemoryGate memoryGate;
     PlayerController player;
     PlayerVitality vitality;
@@ -117,7 +127,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
     Coroutine sequence;
     Image screen;
     bool inputLocked, originalInputLock, resetRequested;
-    float fightEndsAt;
+    float? fightEndsAt;
     Vector2 previousTarget;
     float previousFeetY;
 
@@ -226,14 +236,32 @@ public sealed class LevelArenaBoss : MonoBehaviour
         return true;
     }
 
-    internal bool TrySkipToVictory(PlayerController actor)
+    bool CanUseEncounterCommand(PlayerController actor)
     {
         if (!isActiveAndEnabled || !EnsureRuntime()) return false;
         if (player == null) FindPlayer();
-        if (actor == null || actor != player || vitality == null || vitality.IsDead || capsule == null || !capsule.enabled
-            || actor.TransportLocked || actor.DeathSequenceLocked || actor.OpeningSequenceLocked
-            || SonicSpaceStartMenu.BlocksGameplay || State is EncounterState.Ending or EncounterState.Won
-            || world != null && (world.Travelling || world.CurrentLevel != level)) return false;
+        return actor != null && actor == player && vitality != null && !vitality.IsDead && capsule != null && capsule.enabled
+            && !actor.TransportLocked && !actor.DeathSequenceLocked && !actor.OpeningSequenceLocked
+            && !SonicSpaceStartMenu.BlocksGameplay && (world == null || !world.Travelling && world.CurrentLevel == level);
+    }
+
+    internal bool TryStartFromConsole(PlayerController actor)
+    {
+        if (!CanUseEncounterCommand(actor) || State is not (EncounterState.Waiting or EncounterState.Intro)
+            || actor.EncounterInputLocked && !inputLocked) return false;
+        if (State == EncounterState.Intro)
+        {
+            StopSequence();
+            sonar?.ClearPulses();
+        }
+        StorySubtitles.Clear();
+        sequence = StartCoroutine(PlayEncounter(startAtReveal: true));
+        return true;
+    }
+
+    internal bool TrySkipToVictory(PlayerController actor)
+    {
+        if (!CanUseEncounterCommand(actor) || State is EncounterState.Ending or EncounterState.Won) return false;
         resetRequested = false;
         StorySubtitles.Clear();
         StoryRunProgress.Current.StartBoss();
@@ -252,13 +280,48 @@ public sealed class LevelArenaBoss : MonoBehaviour
         sequence = StartCoroutine(PlayVictory());
     }
 
-    IEnumerator PlayEncounter()
+    IEnumerator PlayEncounter(bool startAtReveal = false)
     {
-        State = EncounterState.Intro;
         StoryRunProgress.Current.StartBoss();
+        CloseArenaEntrance();
+        if (startAtReveal) player.FacePoint(cube.transform.position);
         float cutoff = battleMusic != null ? (loopEndTime > 0 ? Mathf.Min(loopEndTime, battleMusic.length) : battleMusic.length) : 0;
         float reveal = Mathf.Min(revealMusicTime, cutoff);
-        bool playingMusic = music.Play(battleMusic, musicVolume, loopFromReveal ? revealMusicTime : loopStartTime, loopEndTime);
+        bool playingMusic = music.Play(battleMusic, musicVolume, loopFromReveal ? revealMusicTime : loopStartTime,
+            loopEndTime, startAtReveal ? reveal : 0);
+        if (!startAtReveal)
+        {
+            State = EncounterState.Intro;
+            yield return PlayIntro(playingMusic, reveal);
+        }
+
+        State = EncounterState.Reveal;
+        if (memoryGate != null) memoryGate.gameObject.SetActive(false);
+        HideScreen();
+        cube.enabled = true;
+        EmitReveal(revealWaveSpeed, revealWaveAfterglow);
+        UnlockInput();
+        yield return new WaitForSeconds(beforeCombatSeconds);
+        yield return Fight();
+    }
+
+    void CloseArenaEntrance()
+    {
+        // Debug starts can come from the elevator or from inside the doorway.
+        Vector2 local = ToArena(player.transform.position);
+        float clearance = Mathf.Max(roomEntryInset, capsule.radius + capsule.skinWidth);
+        if (local.magnitude > Radius - clearance)
+        {
+            float pivotAboveFeet = player.transform.position.y - capsule.bounds.min.y;
+            player.Teleport(ToWorld(local.normalized * Radius * .7f, 0) + Vector3.up * (pivotAboveFeet + .05f));
+        }
+        if (entranceSeal == null) entranceSeal = BossArenaEntrance.Build(level, room);
+        entranceSeal.SetActive(true);
+        Physics.SyncTransforms();
+    }
+
+    IEnumerator PlayIntro(bool playingMusic, float reveal)
+    {
         float fade = memoryGate == null ? 0 : (playingMusic ? Mathf.Min(introBlackoutTime, reveal) : introBlackoutTime);
         float start = Time.time;
         double Elapsed() => playingMusic ? music.Elapsed : Time.time - start;
@@ -277,23 +340,22 @@ public sealed class LevelArenaBoss : MonoBehaviour
         player.FacePoint(cube.transform.position);
         float revealAt = playingMusic ? reveal : fade + revealWithoutMusic;
         while (Elapsed() < revealAt) yield return null;
+    }
 
-        State = EncounterState.Reveal;
-        if (memoryGate != null) memoryGate.gameObject.SetActive(false);
-        HideScreen();
-        cube.enabled = true;
-        EmitReveal(revealWaveSpeed, revealWaveAfterglow);
-        UnlockInput();
-        yield return new WaitForSeconds(beforeCombatSeconds);
-
+    IEnumerator Fight()
+    {
         State = EncounterState.Fighting;
-        fightEndsAt = Time.time + Mathf.Max(.1f, survivalSeconds);
+        int targetRounds = useAttackRoundsForVictory ? Mathf.Max(1, roundsToSurvive) : 0;
+        fightEndsAt = targetRounds > 0 ? null : Time.time + Mathf.Max(.1f, survivalSeconds);
+        int completedRounds = 0;
         int next = 0;
         while (true)
         {
             yield return Roam(betweenSkills);
-            if (rotationOrder == null || rotationOrder.Length == 0) { yield return null; continue; }
-            CurrentSkill = rotationOrder[next++ % rotationOrder.Length];
+            var order = rotationOrder;
+            if (order == null || order.Length == 0) { next = 0; yield return null; continue; }
+            next %= order.Length;
+            CurrentSkill = order[next++];
             switch (CurrentSkill)
             {
                 case Skill.Summon: yield return Summon(); break;
@@ -314,6 +376,14 @@ public sealed class LevelArenaBoss : MonoBehaviour
                 case Skill.Sweep: yield return Sweep(); break;
             }
             CurrentSkill = null;
+            if (next < order.Length) continue;
+            next = 0;
+            if (targetRounds == 0 || ++completedRounds < targetRounds) continue;
+
+            // Keep the encounter active during the final interval so remaining hazards can still hit.
+            fightEndsAt = Time.time + betweenSkills;
+            yield return Roam(betweenSkills);
+            yield break;
         }
     }
 
@@ -343,6 +413,8 @@ public sealed class LevelArenaBoss : MonoBehaviour
             Vector2 point = Vector2.ClampMagnitude(center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * summonDistance, Radius - 1);
             var enemy = Instantiate(summonPrefab, ToWorld(point, 0), level.transform.rotation, level.transform);
             enemy.actor.navigation = navigation;
+            enemy.actor.patrolSpeed *= summonSpeedMultiplier;
+            enemy.actor.investigateSpeed *= summonSpeedMultiplier;
             enemy.actor.exactContactDamage = skillDamage;
             enemy.actor.InvestigateOnSpawn(capsule.bounds.center);
             summons.Add((enemy.gameObject, Time.time + summonLifetime));
@@ -408,15 +480,15 @@ public sealed class LevelArenaBoss : MonoBehaviour
         Vector2 destination = ClampBoss(from + direction * sweepTravel);
         yield return Fly(destination, hoverHeight, sweepSeconds);
         PlayEffect(impactSound);
-        AddWave(sweepWave, destination, direction);
+        AddWave(sweepWave, destination, direction, sweepPointDensityMultiplier);
     }
 
-    void AddWave(BossWaveSettings settings, Vector2 point, Vector2 direction)
+    void AddWave(BossWaveSettings settings, Vector2 point, Vector2 direction, float pointDensityMultiplier = 1f)
     {
         Vector3 origin = ToWorld(point, 0);
         Vector3 forward = (ToWorld(point + direction, 0) - origin).normalized;
         waves.Add(new BossGroundWave(this, settings, point, direction));
-        sonar?.EmitBossGroundWave(origin, ToWorld(Vector2.zero, 0), Radius, forward, settings);
+        sonar?.EmitBossGroundWave(origin, ToWorld(Vector2.zero, 0), Radius, forward, settings, pointDensityMultiplier);
     }
 
     IEnumerator Fly(Vector2 point, float y, float seconds, bool accelerating = false)
@@ -657,6 +729,7 @@ public sealed class LevelArenaBoss : MonoBehaviour
         HideScreen();
         UnlockInput();
         State = EncounterState.Waiting;
+        if (entranceSeal != null) entranceSeal.SetActive(false);
         if (memoryGate != null) memoryGate.gameObject.SetActive(true);
         if (room == null || cube == null) return;
         cube.SetUnfold(0, unfoldedCellSize);
@@ -665,6 +738,11 @@ public sealed class LevelArenaBoss : MonoBehaviour
     }
 
     void RequestReset() => resetRequested = true;
+
+    void OnDestroy()
+    {
+        if (entranceSeal != null) Destroy(entranceSeal);
+    }
 
     void OnDisable()
     {

@@ -249,7 +249,7 @@ public sealed class SonarPulseField : MonoBehaviour
         => EmitFrom(origin,range,speed,afterglow,SonarPulseKind.Danger,distanceSettings,densitySettings,source);
 
     internal void EmitBossGroundWave(Vector3 origin, Vector3 arenaCenter, float arenaRadius,
-        Vector3 forward, BossWaveSettings settings)
+        Vector3 forward, BossWaveSettings settings, float pointDensityMultiplier)
     {
         if (!isActiveAndEnabled || blockers == null) return;
         int slot = bossWaveIndex;
@@ -257,7 +257,7 @@ public sealed class SonarPulseField : MonoBehaviour
         bossWaveOrigins[slot] = new Vector4(origin.x, origin.y, origin.z, Time.time);
         bossWaveArenas[slot] = new Vector4(arenaCenter.x, arenaCenter.z, arenaRadius, settings.height);
         bossWaveShapes[slot] = new Vector4(forward.x, forward.z, settings.sweepWidth * .5f, settings.thickness * .5f);
-        bossWaveMotion[slot] = new Vector4(settings.speed, settings.range, Mathf.Max(.05f, settings.afterglow), 0);
+        bossWaveMotion[slot] = new Vector4(settings.speed, settings.range, Mathf.Max(.05f, settings.afterglow), pointDensityMultiplier);
         bossWavesActive = true;
         PublishBossWaves();
     }

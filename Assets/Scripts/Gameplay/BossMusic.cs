@@ -25,7 +25,7 @@ internal sealed class BossMusic
         }
     }
 
-    public bool Play(AudioClip clip, float volume, float loopStart, float loopEnd)
+    public bool Play(AudioClip clip, float volume, float loopStart, float loopEnd, float startOffset = 0)
     {
         Stop();
         if (clip == null || clip.samples <= 1 || clip.frequency <= 0) return false;
@@ -41,9 +41,12 @@ internal sealed class BossMusic
             source.volume = volume;
         }
         playbackVolume = volume;
-        start = AudioSettings.dspTime + .15;
+        int firstSample = Mathf.Max(0, Mathf.RoundToInt(startOffset * clip.frequency));
+        if (firstSample >= end) firstSample = loopSample;
+        double playbackStart = AudioSettings.dspTime + .15;
+        start = playbackStart - (double)firstSample / clip.frequency;
         nextLoop = start + (double)end / clip.frequency;
-        Schedule(sources[0], 0, start, nextLoop);
+        Schedule(sources[0], firstSample, playbackStart, nextLoop);
         nextSource = 1;
         playing = true;
         return true;

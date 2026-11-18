@@ -60,6 +60,7 @@ MonoBehaviour:
     center: {x: -28, y: -23}
     size: {x: 36, y: 36}
     rotation: 0
+    heightOverride: 0
     partitions: []
   corridors:
   - id: 5abe654ceea4460b9f8cd681e05a12f2
@@ -1282,6 +1283,8 @@ MonoBehaviour:
   charactersPerSecond: 22
   displaySize: 0.52
   slotSpacing: 0.72
+  escapeFadeOutSeconds: 0.8
+  escapeFadeInSeconds: 1.2
   placed: []
 --- !u!1 &3668367999733130249
 GameObject:
@@ -1614,17 +1617,20 @@ MonoBehaviour:
   revealWaveRange: 0
   beforeCombatSeconds: 5
   survivalSeconds: 60
+  useAttackRoundsForVictory: 1
+  roundsToSurvive: 4
   skillDamage: 50
-  hoverHeight: 4.5
+  hoverHeight: 5
   moveSpeed: 5
   wallMargin: 0.5
   roomEntryInset: 0.7
-  betweenSkills: 2.25
-  rotationOrder: 00000000010000000200000003000000i
+  betweenSkills: 2
+  rotationOrder: 01000000000000000200000003000000i
   summonCount: 3
-  summonLifetime: 14
+  summonLifetime: 30
   summonDistance: 5
   summonWindup: 0.6
+  summonSpeedMultiplier: 1.7
   diveTravelSeconds: 0.35
   diveHeight: 6
   slamWindup: 0.65
@@ -1632,7 +1638,7 @@ MonoBehaviour:
   slamCenterHeight: 2
   impactRadius: 2
   liftSeconds: 0.45
-  tripleSlamInterval: 0.25
+  tripleSlamInterval: 0.2
   laserDelay: 1
   laserLookback: 1
   laserRange: 55
@@ -1650,13 +1656,14 @@ MonoBehaviour:
   sweepWindup: 0.7
   sweepSeconds: 0.35
   sweepTravel: 2
+  sweepPointDensityMultiplier: 3
   sweepWave:
-    speed: 12
+    speed: 10
     range: 38
-    thickness: 0.9
+    thickness: 2
     height: 0.55
-    sweepWidth: 12
-    afterglow: 0.26
+    sweepWidth: 24
+    afterglow: 0.5
   chargeSound: {fileID: 0}
   impactSound: {fileID: 0}
   laserSound: {fileID: 0}
