@@ -24,7 +24,7 @@ namespace Sound2.LevelEditing
         [InspectorName("擦除区段（0° 为本地 +X，朝 +Z 增加）")]
         public List<Gap> gaps = new();
         Mesh ownedVisual, ownedCollision;
-        bool needsRebuild = true;
+        bool needsMeshCheck = true;
         int appliedHash;
         [SerializeField, HideInInspector] Mesh storedVisual, storedCollision;
         [SerializeField, HideInInspector] int storedHash;
@@ -33,23 +33,31 @@ namespace Sound2.LevelEditing
 
         void OnEnable()
         {
-            int hash = ParameterHash();
-            if (ownedVisual != null && ownedCollision != null && appliedHash == hash)
-                needsRebuild = false;
-            else if (storedVersion == MeshVersion && storedHash == hash && storedVisual != null && storedCollision != null)
-            {
-                ApplyMeshes(storedVisual, storedCollision);
-                appliedHash = hash; needsRebuild = false;
-            }
-            else needsRebuild = true;
+            needsMeshCheck = !TryReuseMeshes(ParameterHash());
         }
-        void OnValidate() => needsRebuild = true;
+        void OnValidate() => needsMeshCheck = true;
         void Update()
         {
 #if UNITY_EDITOR
             if (UnityEditor.EditorUtility.IsPersistent(this)) return;
 #endif
-            if (needsRebuild || appliedHash != ParameterHash()) Rebuild();
+            int hash = ParameterHash();
+            if (!needsMeshCheck && appliedHash == hash) return;
+            needsMeshCheck = false;
+            if (!TryReuseMeshes(hash)) Rebuild();
+        }
+        bool TryReuseMeshes(int hash)
+        {
+            if (storedVersion == MeshVersion && storedHash == hash && storedVisual != null && storedCollision != null)
+            {
+                ApplyMeshes(storedVisual, storedCollision);
+                ReleaseOwnedMeshes();
+                appliedHash = hash;
+                return true;
+            }
+            if (appliedHash != hash || ownedVisual == null || ownedCollision == null) return false;
+            ApplyMeshes(ownedVisual, ownedCollision);
+            return true;
         }
         void OnDestroy() => ReleaseOwnedMeshes();
         static float Finite(float value, float fallback) => float.IsNaN(value) || float.IsInfinity(value) ? fallback : value;
@@ -141,7 +149,7 @@ namespace Sound2.LevelEditing
         }
         public void Rebuild()
         {
-            Normalize(); needsRebuild = false; appliedHash = ParameterHash();
+            Normalize(); needsMeshCheck = false; appliedHash = ParameterHash();
             var visual = new MeshData(); var collision = new MeshData();
             foreach (var arc in VisibleIntervals())
             {
@@ -182,7 +190,7 @@ namespace Sound2.LevelEditing
         {
             Normalize();
             ApplyMeshes(visual, collision);
-            ReleaseOwnedMeshes(); appliedHash = ParameterHash(); needsRebuild = false;
+            ReleaseOwnedMeshes(); appliedHash = ParameterHash(); needsMeshCheck = false;
             storedVisual = visual; storedCollision = collision;
             storedHash = appliedHash; storedVersion = MeshVersion;
         }
