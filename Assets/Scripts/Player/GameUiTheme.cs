@@ -9,6 +9,7 @@ public sealed class GameUiTheme : ScriptableObject
     [Min(0)] public float pointPadding = 6;
     [Min(.1f)] public float pointFeather = 6;
     static GameUiTheme current;
+    internal static TMP_Text EndingCreditsText;
     static float nextFontRefresh;
     public static GameUiTheme Current
     {
@@ -22,7 +23,7 @@ public sealed class GameUiTheme : ScriptableObject
         }
     }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetCache() { current = null; nextFontRefresh = 0; }
+    static void ResetCache() { current = null; nextFontRefresh = 0; EndingCreditsText = null; }
 
     static void RefreshFontLookups(TMP_FontAsset font, System.Collections.Generic.HashSet<TMP_FontAsset> visited)
     {
@@ -42,7 +43,7 @@ public sealed class GameUiTheme : ScriptableObject
         if (theme == null) return;
         if (theme.textFont != null)
             foreach (var text in Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include))
-                if (text.font != theme.textFont) text.font = theme.textFont;
+                if (text != EndingCreditsText && text.font != theme.textFont) text.font = theme.textFont;
         if (theme.legacyFont != null)
             foreach (var text in Object.FindObjectsByType<UnityEngine.UI.Text>(FindObjectsInactive.Include))
                 if (text.font != theme.legacyFont) text.font = theme.legacyFont;

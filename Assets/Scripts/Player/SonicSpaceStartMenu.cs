@@ -28,7 +28,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
     public float OpeningElapsed => Mathf.Max(0,Time.unscaledTime-introStartedAt);
     public int VisibleTitleCharacters {get;private set;}
     public bool IntroReady => OpeningElapsed>=titleDelay+Title.Length*characterInterval+.55f;
-    const string Title="SOUND & SHELL";
+    const string Title="ECHO";
     string titleAmpersand="&";
     public bool IsTransitioning {get;private set;}
     public bool HasStarted {get;private set;}
@@ -52,6 +52,7 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
     bool previousAudioPause,previousInputSuspended,ownsPause,finishing,inputArmed,openingStarted;
     int width,height,openedFrame;
     EndingCreditsAsset endingCredits;
+    TMP_FontAsset creditsBodyFont;
     float creditsOffset, creditsDistance;
 
     public float EndingTitleSeconds => titleDelay + Title.Length * characterInterval + .55f;
@@ -76,7 +77,14 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         if (endingCredits == null) return;
         // The original title remains the first item in the same moving presentation.
         hint.text = (endingCredits.text ?? "").TrimEnd();
-        hint.font = GameUiTheme.Current.textFont;
+        if (endingCredits.bodyFont != null && creditsBodyFont == null)
+        {
+            creditsBodyFont = Instantiate(endingCredits.bodyFont);
+            creditsBodyFont.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset>
+                { GameUiTheme.Current.textFont };
+        }
+        hint.font = creditsBodyFont != null ? creditsBodyFont : GameUiTheme.Current.textFont;
+        GameUiTheme.EndingCreditsText = hint;
         hint.fontSize = endingCredits.fontSize; hint.enableAutoSizing = false;
         hint.fontWeight = endingCredits.fontWeight;
         hint.textWrappingMode = TextWrappingModes.Normal;
@@ -120,11 +128,19 @@ public sealed class SonicSpaceStartMenu : MonoBehaviour
         menuMaterial.SetFloat("_OpeningTime", OpeningElapsed);
         menuMaterial.SetFloat("_PlayerViewTitle", 1);
         menuMaterial.SetFloat("_CreditsBody", 1);
+        menuMaterial.SetFloat("_CreditsDensity", Mathf.Clamp01(endingCredits.pointDensity));
+        menuMaterial.SetFloat("_CreditsPitch", Mathf.Max(1, endingCredits.pointSpacing));
         menuMaterial.SetFloat("_Transition", 0);
     }
 
     public void EndEndingCredits()
     {
+        if (GameUiTheme.EndingCreditsText == hint) GameUiTheme.EndingCreditsText = null;
+        if (creditsBodyFont != null)
+        {
+            hint.font = GameUiTheme.Current.textFont;
+            Destroy(creditsBodyFont); creditsBodyFont = null;
+        }
         if (endingCredits == null) return;
         endingCredits = null; creditsOffset = 0;
         ReleaseGraphics();

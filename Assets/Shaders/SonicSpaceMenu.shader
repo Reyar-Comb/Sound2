@@ -4,6 +4,8 @@ Shader "Sound2/SonicSpace Point Menu"
     {
         _MainTex ("Title mask", 2D) = "black" {}
         _CreditsBody ("Point cloud credits body", Float) = 0
+        _CreditsDensity ("Credits point density", Range(0,1)) = .9
+        _CreditsPitch ("Credits point spacing", Float) = 3
     }
     SubShader
     {
@@ -27,6 +29,7 @@ Shader "Sound2/SonicSpace Point Menu"
             float _RespawnCover;
             float _PlayerViewTitle;
             float _CreditsBody;
+            float _CreditsDensity, _CreditsPitch;
             struct Input {float4 vertex:POSITION;float2 uv:TEXCOORD0;};
             struct Varyings {float4 vertex:SV_POSITION;float2 uv:TEXCOORD0;};
             Varyings Vert(Input v) {Varyings o;o.vertex=UnityObjectToClipPos(v.vertex);o.uv=v.uv;return o;}
@@ -200,12 +203,25 @@ Shader "Sound2/SonicSpace Point Menu"
                 if (_PlayerViewTitle > .5)
                 {
                     float3 glyph = Glyph(centre);
-                    float bodyCoverage = _CreditsBody > .5 ? max(glyph.g, glyph.b) : 0;
-                    float coverage = max(glyph.r, bodyCoverage) * TitleVisibility(id);
+                    float coverage = glyph.r * TitleVisibility(id);
                     float radius = min(pitch*.47, _DotRadius*_TitleDotScale);
                     float dot = 1-smoothstep(radius-aa,radius+aa,length(p-centre));
                     float dissolve = 1-Ease((_Transition-CellRandom(id,23u)*.3)/.7);
                     float alpha = dot*saturate(coverage*2)*step(OrderedRank(id),_TitleDensity)*dissolve;
+                    if (_CreditsBody > .5)
+                    {
+                        float bodyPitch = max(1, _CreditsPitch);
+                        float2 bodyCell = floor(p / bodyPitch);
+                        float2 bodyCentre = (bodyCell + .5) * bodyPitch;
+                        uint2 bodyId = (uint2)max(bodyCell, 0);
+                        float3 bodyGlyph = Glyph(bodyCentre);
+                        float bodyCoverage = max(bodyGlyph.g, bodyGlyph.b) * TitleVisibility(bodyId);
+                        float bodyRadius = min(bodyPitch * .4, _DotRadius * _TitleDotScale);
+                        float bodyDot = 1-smoothstep(bodyRadius-aa, bodyRadius+aa, length(p-bodyCentre));
+                        float bodyDissolve = 1-Ease((_Transition-CellRandom(bodyId,23u)*.3)/.7);
+                        float bodyAlpha = bodyDot*saturate(bodyCoverage*2)*step(OrderedRank(bodyId),_CreditsDensity)*bodyDissolve;
+                        alpha = max(alpha, bodyAlpha);
+                    }
                     return float4(0,0,0,alpha);
                 }
                 if (_RespawnCover > 0)

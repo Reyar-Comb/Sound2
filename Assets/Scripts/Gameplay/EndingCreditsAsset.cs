@@ -16,6 +16,13 @@ public sealed class EndingCreditsAsset : ScriptableObject
     [Header("720p 参考排版")]
     [Tooltip("滚动正文的水平对齐方式；标题保持原来的居中效果。")]
     public BodyAlignment alignment = BodyAlignment.Left;
+    [Tooltip("片尾正文的常规英文字体；中文沿用游戏字体回退。标题不受影响。")]
+    public TMPro.TMP_FontAsset bodyFont;
+    [Header("正文点云（独立于标题）")]
+    [Range(.1f, 1), Tooltip("正文点的保留比例；越大越完整。")]
+    public float pointDensity = .9f;
+    [Min(1), Tooltip("720p 参考像素中的正文点间距；越小越密集。")]
+    public float pointSpacing = 3;
     [Min(16)] public float fontSize = 32;
     [Tooltip("正文的字体字重；真实 Light/Thin 字形需要字体资源配置对应变体。")]
     public TMPro.FontWeight fontWeight = TMPro.FontWeight.Light;

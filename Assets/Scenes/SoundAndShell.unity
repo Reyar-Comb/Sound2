@@ -2101,7 +2101,7 @@ MonoBehaviour:
   roomMusic:
     versionA: {fileID: 8300000, guid: f885e439dddb04a42b6bc209b0bae3d9, type: 3}
     versionB: {fileID: 8300000, guid: 514dd676553ab354291e51ae83259864, type: 3}
-    versionC: {fileID: 8300000, guid: 3af52a6c1c0a0e34fb4756c85307248d, type: 3}
+    versionC: {fileID: 8300000, guid: 5579b82a226ea534687f2adbac48802e, type: 3}
     volumeA: 0.612
     volumeB: 1
     volumeC: 1
