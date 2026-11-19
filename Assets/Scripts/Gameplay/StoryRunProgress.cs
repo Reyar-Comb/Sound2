@@ -5,6 +5,7 @@ internal sealed class StoryRunProgress : ICollectibleProgress
 {
     internal static readonly StoryRunProgress Current = new();
     readonly HashSet<string> collected = new(System.StringComparer.Ordinal);
+    readonly HashSet<string> carriedToNextFloor = new(System.StringComparer.Ordinal);
     readonly HashSet<string> placedMemories = new(System.StringComparer.Ordinal);
     bool enteredBossRoom, startedBoss, diedAfterBossStarted, defeatedBoss, bossReturnPending;
     public bool EnteredBossRoom { get { LoadEditorProgress(); return enteredBossRoom; } }
@@ -67,6 +68,7 @@ internal sealed class StoryRunProgress : ICollectibleProgress
     void ResetRunState()
     {
         collected.Clear();
+        carriedToNextFloor.Clear();
         placedMemories.Clear();
         enteredBossRoom = startedBoss = diedAfterBossStarted = defeatedBoss = bossReturnPending = false;
 #if UNITY_EDITOR
@@ -100,17 +102,43 @@ internal sealed class StoryRunProgress : ICollectibleProgress
     {
         LoadEditorProgress();
         if (string.IsNullOrWhiteSpace(id) || !collected.Add(id)) return false;
+        SaveCollectedIds();
+        return true;
+    }
+
+    public void LoseCollectibleOnDeath(string id)
+    {
+        if (WasCarriedToNextFloor(id) || !collected.Remove(id)) return;
+        SaveCollectedIds();
+    }
+
+    void SaveCollectedIds()
+    {
 #if UNITY_EDITOR
         if (Application.isPlaying)
             UnityEditor.SessionState.SetString(EditorProgressKey, string.Join("\n", collected));
 #endif
-        return true;
     }
 
     public bool IsMemoryPlaced(string id)
     {
         LoadEditorProgress();
         return placedMemories.Contains(id);
+    }
+
+    public bool WasCarriedToNextFloor(string id)
+    {
+        LoadEditorProgress();
+        return carriedToNextFloor.Contains(id);
+    }
+
+    public void RecordCarriedToNextFloor(string id)
+    {
+        if (!IsCollected(id) || !carriedToNextFloor.Add(id)) return;
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            UnityEditor.SessionState.SetString(EditorCarriedKey, string.Join("\n", carriedToNextFloor));
+#endif
     }
 
     public bool TryPlaceMemory(string id)
@@ -126,6 +154,7 @@ internal sealed class StoryRunProgress : ICollectibleProgress
 #if UNITY_EDITOR
     const string EditorProgressKey = "Sound2.StoryRunProgress";
     const string EditorPlacedKey = EditorProgressKey + ".Placed";
+    const string EditorCarriedKey = EditorProgressKey + ".CarriedToNextFloor";
     bool loadedEditorProgress;
 
     // A script reload during the same run must keep its recovery data.
@@ -141,6 +170,7 @@ internal sealed class StoryRunProgress : ICollectibleProgress
     {
         UnityEditor.SessionState.EraseString(EditorProgressKey);
         UnityEditor.SessionState.EraseString(EditorPlacedKey);
+        UnityEditor.SessionState.EraseString(EditorCarriedKey);
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".EnteredBoss");
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".StartedBoss");
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".BossDeath");
@@ -159,6 +189,8 @@ internal sealed class StoryRunProgress : ICollectibleProgress
         loadedEditorProgress = true;
         var saved = UnityEditor.SessionState.GetString(EditorProgressKey, "");
         collected.UnionWith(saved.Split('\n', System.StringSplitOptions.RemoveEmptyEntries));
+        carriedToNextFloor.UnionWith(UnityEditor.SessionState.GetString(EditorCarriedKey, "")
+            .Split('\n', System.StringSplitOptions.RemoveEmptyEntries));
         placedMemories.UnionWith(UnityEditor.SessionState.GetString(EditorPlacedKey, "")
             .Split('\n', System.StringSplitOptions.RemoveEmptyEntries));
         enteredBossRoom = UnityEditor.SessionState.GetBool(EditorProgressKey + ".EnteredBoss", false);

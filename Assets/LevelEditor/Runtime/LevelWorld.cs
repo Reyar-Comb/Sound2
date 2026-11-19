@@ -150,7 +150,7 @@ namespace Sound2.LevelEditing
             if (!initialLevels.TryGetValue(level, out var initial)) return;
             foreach (var item in initial.template.GetComponentsInChildren<StoryCollectible>(true))
             {
-                if (!StoryRunProgress.Current.IsCollected(item.CollectibleId)) continue;
+                if (!StoryRunProgress.Current.WasCarriedToNextFloor(item.CollectibleId)) continue;
                 foreach (var enemy in level.GetComponentsInChildren<PatrolMonster>(true))
                     enemy.gameObject.SetActive(false);
                 foreach (var area in level.GetComponentsInChildren<MonsterVineArea>(true))
@@ -165,7 +165,16 @@ namespace Sound2.LevelEditing
             return new LevelActivation(level, activationBudgetMs, activationBatchSize);
         }
 
-        public IEnumerator ResetCurrentLevel()
+        void RecordCollectiblesCarriedOut(LevelLayout from, LevelLayout to)
+        {
+            if (from == null || !initialLevels.TryGetValue(from, out var initial)) return;
+            int index = levels.IndexOf(from);
+            if (index < 0 || index + 1 >= levels.Count || levels[index + 1] != to) return;
+            foreach (var item in initial.template.GetComponentsInChildren<StoryCollectible>(true))
+                StoryRunProgress.Current.RecordCarriedToNextFloor(item.CollectibleId);
+        }
+
+        public IEnumerator ResetCurrentLevel(bool respawningAfterDeath = false)
         {
             if (Travelling || CurrentLevel == null || !initialLevels.TryGetValue(CurrentLevel, out var initial)) yield break;
             var previous = CurrentLevel;
@@ -210,6 +219,12 @@ namespace Sound2.LevelEditing
             previous.gameObject.SetActive(false);
             Destroy(previous.gameObject);
             CurrentLevel = replacement;
+            if (respawningAfterDeath)
+            {
+                // Restore progress before the new pickups read it in Awake.
+                foreach (var item in replacement.GetComponentsInChildren<StoryCollectible>(true))
+                    StoryRunProgress.Current.LoseCollectibleOnDeath(item.CollectibleId);
+            }
             using (var activation = PrepareEntry(replacement))
             {
                 yield return activation.Prepare();
@@ -398,6 +413,10 @@ namespace Sound2.LevelEditing
                 { Release(true); yield break; }
                 yield return null;
             }
+            if (destination == null || actor == null || actor.DeathSequenceLocked ||
+                (!faceExit && (departure == null || !departure.Contains(actor.transform.position))))
+            { Release(true); yield break; }
+            var sourceLevel = departure != null && departure.Level == CurrentLevel ? CurrentLevel : null;
             RestoreDepartureMusic(true);
             Physics.SyncTransforms();
             destination.SetPaperEffect("_ArrivalDissolve", 0);
@@ -415,6 +434,7 @@ namespace Sound2.LevelEditing
             Physics.SyncTransforms();
             Activate(destination.Level);
             preparation.Commit(); preparation = null;
+            RecordCollectiblesCarriedOut(sourceLevel, CurrentLevel);
             actor.GetComponent<PlayerFloorProgression>()?.EnterAuthoredLevel(levels.IndexOf(destination.Level)+1);
             destination.Open(true);
             while(destination!=null&&destination.DoorOpen<.999f)yield return null;

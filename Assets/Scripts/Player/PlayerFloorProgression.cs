@@ -81,7 +81,7 @@ public sealed class PlayerFloorProgression : MonoBehaviour
         }
         // Finish an in-flight level transaction before resolving this floor's checkpoint.
         while (World != null && World.Travelling) yield return null;
-        if (World != null) yield return World.ResetCurrentLevel();
+        if (World != null) yield return World.ResetCurrentLevel(respawningAfterDeath: true);
         else if (Map != null) Map.ResetFloor(CurrentFloor);
         ReturnToCheckpoint();
         if (damageFeedback != null)
