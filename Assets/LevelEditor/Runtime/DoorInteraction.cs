@@ -10,6 +10,13 @@ namespace Sound2.LevelEditing
         [InspectorName("仅背面（本地 -Z）")] BackOnly
     }
 
+    public enum DoorSwingDirection
+    {
+        [InspectorName("按交互侧决定")] ByPlayerSide,
+        [InspectorName("固定正角度")] Positive,
+        [InspectorName("固定负角度")] Negative
+    }
+
     [DisallowMultipleComponent]
     public sealed class DoorInteraction : InteractableObject
     {
@@ -20,6 +27,7 @@ namespace Sound2.LevelEditing
         public LayerMask obstructionLayers = ~0;
         [Header("Door behaviour")]
         public DoorOpeningSide openingSide;
+        public DoorSwingDirection swingDirection;
         [Tooltip("成功开门的同一帧传送到此门，保持门前相对位置与视角。留空为普通门；目标须已激活、竖直且与此门等比例。")]
         public DoorInteraction teleportDestination;
         [Tooltip("完全打开后等待的秒数；0 表示不自动关闭。")]
@@ -91,7 +99,12 @@ namespace Sound2.LevelEditing
             }
             shakeRemaining = 0;
             if (!TargetOpen && Mathf.Abs(CurrentAngle) < .1f)
-                swingSign = Vector3.Dot(player.transform.position - hinge.position, transform.forward) >= 0 ? 1 : -1;
+                swingSign = swingDirection switch
+                {
+                    DoorSwingDirection.Positive => 1,
+                    DoorSwingDirection.Negative => -1,
+                    _ => Vector3.Dot(player.transform.position - hinge.position, transform.forward) >= 0 ? 1 : -1
+                };
             TargetOpen = !TargetOpen;
             Blocked = false;
             TeleportBlocked = false;
