@@ -79,9 +79,9 @@ public static class VerifyColoredSonar
             field.ClearPulses();field.EmitFrom(origin,3,100000000,.05f,SonarPulseKind.Lightning,profile);yield return new WaitForSeconds(.15f);yield return Capture("expired");
             Check(Lit()==0,"Blue wave expires normally");
             field.ClearPulses();field.EmitFrom(origin,3,100000000,10000000);field.EmitDangerFrom(origin,3,100000000,10000000,profile);
-            var before=(Vector4[])Shader.GetGlobalVectorArray("_SonarPulseOrigins").Clone();
+            var before=(Vector4[])Shader.GetGlobalVectorArray("_SonarPulseOrigins80").Clone();
             for(int i=0;i<12;i++)field.EmitFrom(origin+Vector3.right*i,3,100000000,10000000,SonarPulseKind.Coin,profile);
-            var after=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
+            var after=Shader.GetGlobalVectorArray("_SonarPulseOrigins80");
             Check(before.Take(SonarPulseField.CoinPulseOffset).SequenceEqual(after.Take(SonarPulseField.CoinPulseOffset)) && after.Length==SonarPulseField.MaxPulses,"Coins use eight reserved slots without replacing player, footsteps or monster scans");
             UnityEngine.Object.Destroy(cube);yield return null;
             lightningBody=UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/BallLightning.prefab"));

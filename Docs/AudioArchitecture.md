@@ -116,7 +116,7 @@ public void Reveal(Vector3 origin)
 }
 ```
 
-`SonarPulseField` 沿用原有六面采样、首个碰撞面遮挡和 Shader 参数；32 个主波槽供主动探测与物体使用，另有 4 个脚步波槽、4 个危险波槽、8 个金币波槽和 4 个闪电波槽。一个场景共用一份 Field；所有物体指向它，不要为每个声源各建一份。它控制可视声波的直达可见性，声音的反射由 Steam Audio 负责。
+`SonarPulseField` 沿用原有六面采样、首个碰撞面遮挡和 Shader 参数；32 个主波槽供主动探测与物体使用，另有 4 个脚步波槽、32 个危险波槽、8 个金币波槽和 4 个闪电波槽。一个场景共用一份 Field；所有物体指向它，不要为每个声源各建一份。它控制可视声波的直达可见性，声音的反射由 Steam Audio 负责。
 
 普通波原先只有 4 槽，多个钟表同帧 tick 会覆盖所有尚未结束的波，新波未抵达表面时造成点云短暂全黑。现在各组优先复用空闲或已结束的槽；只有整组仍全部活跃时才替换最接近自然结束的一道波，`ActivePulseReplacements` 可用于诊断容量压力。遮挡纹理通过单面上传与 Graphics.CopyTexture 仅更新新波的六层，不再为每次发射重新上传整份纹理数组。没有延长余辉或启用近处渲染。
 
@@ -179,11 +179,11 @@ public void Reveal(Vector3 origin)
 
 `SonarDistanceSettings` 是玩家、物体、脚步共用的可序列化配置类型，每个组件独立持有实例。包含 enabled、fadeStartDistance、fadeEndDistance、falloffPower、pulseStrength，Inspector 在 Distance Settings 下调整。已有玩家/物体平铺字段通过 FormerlySerializedAs 和版本标记迁移，原调用名称仍作为兼容属性保留。现有场景的玩家与方块配置保持原值。
 
-`SonarPulseField.EmitFrom(origin, range, speed, afterglow, settings)` 在发射时打包配置，旧四参数入口仍关闭衰减，原八参数入口也保留。Shader 的 `_SonarPulseDistanceFalloffs` 为每个槽独立记录开始/终止距离、指数及强度。距离从固定发声原点计算，终止距离外硬裁剪；范围内将距离增益乘到原时间淡出上，多个波仍取 max。这是可视探索范围，与音频距离增益分别配置。
+`SonarPulseField.EmitFrom(origin, range, speed, afterglow, settings)` 在发射时打包配置，旧四参数入口仍关闭衰减，原八参数入口也保留。Shader 的 `_SonarPulseDistanceFalloffs80` 为每个槽独立记录开始/终止距离、指数及强度。距离从固定发声原点计算，终止距离外硬裁剪；范围内将距离增益乘到原时间淡出上，多个波仍取 max。这是可视探索范围，与音频距离增益分别配置。
 
 `FootstepEmitter` 位于共享 `Assets/Prefabs/Player.prefab` 根物体，玩家场景继承它；原场景独有的步距和波参数保留为预制体覆盖。CubeRoom、MazeRoom、CircularHall 的旧版 `BouncePlaytest` 场景也显式配置了同一组件，不在运行时补建。组件只读取实际水平位移和控制器的输入暂停状态，不接管输入或移动。默认每 1.5m 一步，最小间隔 0.18s；停步、转头、纯升降、顶墙、输入暂停不触发。单帧位移超过 2m 重置累计，不补发传送脚步。重力玩家始终禁止空中脚步；`Require Grounded` 可额外约束调试用的自由升降模式。纯编辑场景不额外添加玩家。
 
-脚步调用 `EmitFootstepFrom`，起点为胶囊底部上方 0.12m，默认 3m 范围、8m/s、0.3s 余像、0.4–3m 距离衰减、指数 2、强度 0.6。波槽 0–31 供主波使用，32–35 供脚步使用，各组独立，不互相覆盖。36–39 供怪物危险波使用。Shader 共读取 52 槽；脚步使用 24×24×6 方向采样，主波使用 48×48×6，沿用同一首碰撞面纹理布局。局部脚步的角采样精度较低，薄小物体和边界可能存在误差。
+脚步调用 `EmitFootstepFrom`，起点为胶囊底部上方 0.12m，默认 3m 范围、8m/s、0.3s 余像、0.4–3m 距离衰减、指数 2、强度 0.6。波槽 0–31 供主波使用，32–35 供脚步使用，各组独立，不互相覆盖。36–67 供怪物危险波使用。Shader 共读取 80 槽；脚步使用 24×24×6 方向采样，主波使用 48×48×6，沿用同一首碰撞面纹理布局。局部脚步的角采样精度较低，薄小物体和边界可能存在误差。
 
 共享 `Player.prefab` 的 `FootstepEmitter` 已绑定独立子物体 `Footstep Audio` 和 `Assets/Audio/Footstep/step1.wav` 至 `step4.wav`。录音预加载，按 `Clips` 列表顺序轮换，每步一次 `PlayOneShot`，与脚底声波在同一个步伐事件中发出；墙面仍在波到达时才显影。这是同帧触发，不是 DSP 级对齐。默认本地玩家音源不做 3D 衰减，不影响脚底波纹或怪物听觉；如需 3D 混音可替换 `Audio Source`。原始 WAV 不改动。
 
@@ -234,14 +234,14 @@ public void Reveal(Vector3 origin)
 
 `GameplayNoise` 将玩法听觉与音频 Clip、显影范围解耦。脚步和有效球碰撞分别发布 Footstep/Impact 事件；`PatrolMonster` 在范围和墙体检查通过后前往事件的固定位置，搜索后恢复巡视。`RuntimePatrolNavigation` 为地图静态碰撞体构建共享 NavMesh。组件参数与使用方法见 [MonsterGameplay.md](MonsterGameplay.md)。
 
-`MonsterScanEmitter` 根据玩家距离调整周期，向同一 SonarPulseField 的 36–39 槽发红波。全局数组为 `_SonarPulseOrigins`、`_SonarPulseParameters`、`_SonarPulseDistanceFalloffs`，总长度 52。Shader 的同一次采样输出普通/危险两份网格，调用相同点位、疏密、半径和遮挡规则；所有白点绘制后，仅清除红点实际覆盖区域，再以 Max 绘制红点，保证交叠时红色优先且抗锯齿不泛白。原靠近显影、准星避让和样式开关继续生效。
+`MonsterScanEmitter` 根据玩家距离调整周期，向同一 SonarPulseField 的 36–67 槽发红波。全局数组为 `_SonarPulseOrigins80`、`_SonarPulseParameters80`、`_SonarPulseDistanceFalloffs80`，总长度 80。Shader 的同一次采样输出普通/危险两份网格，调用相同点位、疏密、半径和遮挡规则；所有白点绘制后，仅清除红点实际覆盖区域，再以 Max 绘制红点，保证交叠时红色优先且抗锯齿不泛白。原靠近显影、准星避让和样式开关继续生效。
 
 
 ## 场景奖励、危险物与密度配置
 
 SonarObjectEmitter 新增 Pulse Kind、Emission Origin、Density Settings 和 Emitted 事件，旧白色物体保持默认 Main 类型。金币和闪电都组合这个正式组件：CoinPickup 负责浮动/自转、短暂本体显现和钱包交易；BallLightning 负责独立导航、状态配置、伤害及怪物避让信息。PlayerWallet、PlayerVitality 和 PlayerStatusHUD 分别处理经济、生命和展示，后续商店/奖励通过钱包接口调用，不直接修改显示计数。详见 [WorldObjects.md](WorldObjects.md)。
 
-SonarDensitySettings 经 `_SonarPulseDensityFalloffs` 保存每次发射的密度起止距离与指数，原亮度配置继续经 `_SonarPulseDistanceFalloffs` 发布。当前波场全局数组长度 52，新增金币/闪电槽与原三组隔离；彩色网格保存面/边的亮度及各自调色板编号，统一圆点绘制按黄、蓝、红顺序合成，保留危险红色优先级。
+SonarDensitySettings 经 `_SonarPulseDensityFalloffs80` 保存每次发射的密度起止距离与指数，原亮度配置继续经 `_SonarPulseDistanceFalloffs80` 发布。当前波场全局数组长度 80，新增金币/闪电槽与原三组隔离；彩色网格保存面/边的亮度及各自调色板编号，统一圆点绘制按黄、蓝、红顺序合成，保留危险红色优先级。
 
 
 ## 可视声波射线批处理
@@ -253,6 +253,6 @@ SonarDensitySettings 经 `_SonarPulseDensityFalloffs` 保存每次发射的密�
 
 ## 可选音频驱动实验
 
-新增独立的 `AudioReactiveSonarEmitter` / `AudioReactiveSonarField` 和离线 `AudioReactiveClip` 数据，不替换原有52个手动波槽。纯峰值包络（无FFT）通过现有点阵采样路径叠加；每次播放只采一份遮挡，循环期间不重复采样。
+新增独立的 `AudioReactiveSonarEmitter` / `AudioReactiveSonarField` 和离线 `AudioReactiveClip` 数据，不替换现有的 80 个手动波槽。纯峰值包络（无FFT）通过现有点阵采样路径叠加；每次播放只采一份遮挡，循环期间不重复采样。
 
 `audiotest` 场景复用球和收音机模型。B切换球的新旧碰撞波；V开关收音机连续播放。资源中选择 Clip 后通过 Inspector 的 Bake peak envelope 烘焙（已接入的用户录音保留）。完整接入步骤、参数与第一版边界见 [AudioReactiveSonar.md](AudioReactiveSonar.md)。

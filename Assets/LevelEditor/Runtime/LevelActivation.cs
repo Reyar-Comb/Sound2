@@ -11,7 +11,8 @@ namespace Sound2.LevelEditing
         readonly LevelLayout level;
         readonly double budgetSeconds;
         readonly int batchSize;
-        readonly List<GameObject> staged = new();
+        readonly List<GameObject> surroundings = new();
+        readonly List<GameObject> gravityProps = new();
         bool committed;
 
         public LevelActivation(LevelLayout level, float milliseconds, int batchSize)
@@ -27,6 +28,7 @@ namespace Sound2.LevelEditing
             level.IsPreparing = true;
             var pending = new Stack<Transform>();
             var components = new List<Component>();
+            var bodies = new List<Rigidbody>();
             pending.Push(level.transform);
             double start = Time.realtimeSinceStartupAsDouble;
             int count = 0;
@@ -43,7 +45,12 @@ namespace Sound2.LevelEditing
                 }
                 else
                 {
-                    staged.Add(node.gameObject);
+                    // The level is still inactive. Include child bodies so a prop with
+                    // its physics below the root waits for its support as a whole.
+                    node.GetComponentsInChildren(true, bodies);
+                    var phase = bodies.Exists(body => body.useGravity && !body.isKinematic)
+                        ? gravityProps : surroundings;
+                    phase.Add(node.gameObject);
                     node.gameObject.SetActive(false);
                 }
                 if (++count >= batchSize || Time.realtimeSinceStartupAsDouble - start >= budgetSeconds)
@@ -54,18 +61,21 @@ namespace Sound2.LevelEditing
             }
             level.gameObject.SetActive(true);
             yield return null;
-            start = Time.realtimeSinceStartupAsDouble; count = 0;
-            foreach (var item in staged)
+            foreach (var phase in new[] { surroundings, gravityProps })
             {
-                if (item != null) item.SetActive(true);
-                if (++count >= batchSize || Time.realtimeSinceStartupAsDouble - start >= budgetSeconds)
+                start = Time.realtimeSinceStartupAsDouble; count = 0;
+                foreach (var item in phase)
                 {
-                    yield return null;
-                    start = Time.realtimeSinceStartupAsDouble; count = 0;
+                    if (item != null) item.SetActive(true);
+                    if (++count >= batchSize || Time.realtimeSinceStartupAsDouble - start >= budgetSeconds)
+                    {
+                        yield return null;
+                        start = Time.realtimeSinceStartupAsDouble; count = 0;
+                    }
                 }
+                // Allow Start to finish setting up support colliders before enabling gravity props.
+                yield return null;
             }
-            // Start callbacks can also initialize geometry, so readiness needs a further frame.
-            yield return null;
             // Start queues passive voices instead of constructing them all in that frame.
             // Keep the floor in preparation until its voices are ready for immediate impacts.
             var emitters = level.GetComponentsInChildren<SonarObjectEmitter>();
@@ -83,7 +93,8 @@ namespace Sound2.LevelEditing
             // Restore staged activeSelf values while the parent is disabled: cancellation
             // must neither initialize the rest of the floor nor lose authored inactive nodes.
             level.gameObject.SetActive(false);
-            foreach (var item in staged) if (item != null) item.SetActive(true);
+            foreach (var item in surroundings) if (item != null) item.SetActive(true);
+            foreach (var item in gravityProps) if (item != null) item.SetActive(true);
             level.IsPreparing = false;
         }
     }

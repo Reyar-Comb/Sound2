@@ -47,28 +47,28 @@ public static class VerifyConcurrentSonar
             field.ClearPulses();Check(Capture("dark")==0,"No passive nearby reveal masks the regression");
             field.EmitFrom(origin,5,10000,2);
             await Task.Delay(30);
-            var before=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
+            var before=Shader.GetGlobalVectorArray("_SonarPulseOrigins80");
             int litBefore=Capture("before-tick");Check(litBefore>0,"Existing arrived pulse reveals the cube");
             int replacements=field.ActivePulseReplacements;
             for(int i=0;i<7;i++)field.EmitFrom(origin+Vector3.right*i*.01f,5,7,.5f);
-            var after=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
+            var after=Shader.GetGlobalVectorArray("_SonarPulseOrigins80");
             Check(before[0]==after[0]&&field.ActivePulseReplacements==replacements,"Seven simultaneous ticks retain the still-visible wave");
-            Check(Shader.GetGlobalVectorArray("_SonarPulseParameters").Count(p=>p.w>.5f)==8,"All concurrent waves have their own slots");
+            Check(Shader.GetGlobalVectorArray("_SonarPulseParameters80").Count(p=>p.w>.5f)==8,"All concurrent waves have their own slots");
             int litAfter=Capture("after-tick");Check(litAfter>litBefore*.8f,"GPU points remain visible while new tick waves are travelling");
 
             var profile=new SonarDistanceSettings();
             field.EmitFootstepFrom(origin,5,7,.5f,profile);field.EmitDangerFrom(origin,5,7,.5f,profile);
             field.EmitFrom(origin,5,7,.5f,SonarPulseKind.Coin,profile);field.EmitFrom(origin,5,7,.5f,SonarPulseKind.Lightning,profile);
-            var parameters=Shader.GetGlobalVectorArray("_SonarPulseParameters");
+            var parameters=Shader.GetGlobalVectorArray("_SonarPulseParameters80");
             Check(parameters.Length==SonarPulseField.MaxPulses&&parameters[SonarPulseField.FootstepPulseOffset].w==1&&parameters[SonarPulseField.DangerPulseOffset].w==1&&parameters[SonarPulseField.CoinPulseOffset].w==1&&parameters[SonarPulseField.LightningPulseOffset].w==1,"All reserved color and footstep banks use matching shader offsets");
             Check(SonarPulseField.ActiveColoredPalettes==14,"Colored palette selection still includes danger, coin and lightning");
             // Leave one very long pulse at slot 0 and let all other slots expire.
             field.ClearPulses();field.EmitFrom(origin,1,100000,100);
             for(int i=1;i<SonarPulseField.MainPulseCapacity;i++)field.EmitFrom(origin,1,100000,.05f);
             await Task.Delay(100);
-            before=Shader.GetGlobalVectorArray("_SonarPulseOrigins");replacements=field.ActivePulseReplacements;
+            before=Shader.GetGlobalVectorArray("_SonarPulseOrigins80");replacements=field.ActivePulseReplacements;
             field.EmitFrom(origin+Vector3.right,1,100000,.05f);
-            after=Shader.GetGlobalVectorArray("_SonarPulseOrigins");
+            after=Shader.GetGlobalVectorArray("_SonarPulseOrigins80");
             Check(after[0]==before[0]&&field.ActivePulseReplacements==replacements,"Expired slots are reused before overwriting a long-lived wave");
 
             field.ClearPulses();replacements=field.ActivePulseReplacements;

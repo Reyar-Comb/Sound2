@@ -20,7 +20,7 @@ public sealed class SonarPulseField : MonoBehaviour
     const int MaskSize = 48;
     public const int MainPulseCapacity = 32;
     public const int FootstepPulseCapacity = 4;
-    public const int DangerPulseCapacity = 4;
+    public const int DangerPulseCapacity = 32;
     public const int CoinPulseCapacity = 8;
     public const int LightningPulseCapacity = 4;
     public const int FootstepPulseOffset = MainPulseCapacity;
@@ -109,11 +109,11 @@ public sealed class SonarPulseField : MonoBehaviour
         Shader.SetGlobalFloat("_SonarActive", 1);
         Shader.SetGlobalFloat("_SonarMaskSize", MaskSize);
         // New names avoid Unity retaining the previous global array capacity after a reload.
-        Shader.SetGlobalVectorArray("_SonarPulseOrigins", origins);
-        Shader.SetGlobalVectorArray("_SonarPulseParameters", parameters);
-        Shader.SetGlobalVectorArray("_SonarPulseDistanceFalloffs", distanceFalloffs);
-        Shader.SetGlobalVectorArray("_SonarPulseDensityFalloffs", densityFalloffs);
-        Shader.SetGlobalVectorArray("_SonarBlockerRotations", blockerRotations);
+        Shader.SetGlobalVectorArray("_SonarPulseOrigins80", origins);
+        Shader.SetGlobalVectorArray("_SonarPulseParameters80", parameters);
+        Shader.SetGlobalVectorArray("_SonarPulseDistanceFalloffs80", distanceFalloffs);
+        Shader.SetGlobalVectorArray("_SonarPulseDensityFalloffs80", densityFalloffs);
+        Shader.SetGlobalVectorArray("_SonarBlockerRotations80", blockerRotations);
         Shader.SetGlobalTexture("_SonarBlockingPlanes", blockers);
     }
 

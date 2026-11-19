@@ -65,7 +65,7 @@ public static class VerifyBatchedSonar
             maxPlane=Mathf.Max(maxPlane,Mathf.Abs(a.r-b.r),Mathf.Abs(a.g-b.g),Mathf.Abs(a.b-b.b),Mathf.Abs(a.a-b.a));
         }
         Check(maxPlane<.005f,label+": all six uploaded GPU faces agree");
-        Check(Shader.GetGlobalVectorArray("_SonarPulseParameters")[Offset(kind)].w==1,label+": correct bank published synchronously");
+        Check(Shader.GetGlobalVectorArray("_SonarPulseParameters80")[Offset(kind)].w==1,label+": correct bank published synchronously");
         return hits;
     }
     public static async Task<string> Main()

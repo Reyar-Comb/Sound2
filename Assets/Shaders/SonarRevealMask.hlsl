@@ -1,16 +1,16 @@
 // Pulse arrival, distance attenuation and per-source face density. Contour detection,
 // ordered point placement, dot sizing and drawing stay in BlackBoxScreenPoints.shader.
 float _SonarActive, _SonarMaskSize, _BossWavesActive;
-// Match SonarPulseField capacities: main 32, footsteps 4, danger 4, coin 8, lightning 4.
-#define SONAR_PULSE_COUNT 52
+// Match SonarPulseField capacities: main 32, footsteps 4, danger 32, coin 8, lightning 4.
+#define SONAR_PULSE_COUNT 80
 #define SONAR_DANGER_OFFSET 36
-#define SONAR_COIN_OFFSET 40
-#define SONAR_LIGHTNING_OFFSET 48
+#define SONAR_COIN_OFFSET 68
+#define SONAR_LIGHTNING_OFFSET 76
 #define BOSS_WAVE_COUNT 6
-float4 _SonarPulseOrigins[SONAR_PULSE_COUNT], _SonarPulseParameters[SONAR_PULSE_COUNT];
-float4 _SonarPulseDensityFalloffs[SONAR_PULSE_COUNT];
-float4 _SonarBlockerRotations[SONAR_PULSE_COUNT]; // cos/sin of doorway mapping yaw
-float4 _SonarPulseDistanceFalloffs[SONAR_PULSE_COUNT]; // start metres, end metres, power (0 = disabled), strength
+float4 _SonarPulseOrigins80[SONAR_PULSE_COUNT], _SonarPulseParameters80[SONAR_PULSE_COUNT];
+float4 _SonarPulseDensityFalloffs80[SONAR_PULSE_COUNT];
+float4 _SonarBlockerRotations80[SONAR_PULSE_COUNT]; // cos/sin of doorway mapping yaw
+float4 _SonarPulseDistanceFalloffs80[SONAR_PULSE_COUNT]; // start metres, end metres, power (0 = disabled), strength
 float4 _BossWaveOrigins[BOSS_WAVE_COUNT], _BossWaveShapes[BOSS_WAVE_COUNT];
 float4 _BossWaveMotion[BOSS_WAVE_COUNT], _BossWaveArenas[BOSS_WAVE_COUNT];
 TEXTURE2D_ARRAY(_SonarBlockingPlanes);
@@ -65,14 +65,14 @@ PulseReveals SonarVisibility(float3 positionWS, float3 normalWS, float orderedRa
     if(_SonarActive>.5 && _BlackBoxRevealModes.y>.5)
     [loop] for (int i = 0; i < SONAR_PULSE_COUNT; i++)
     {
-        float4 settings = _SonarPulseParameters[i];
+        float4 settings = _SonarPulseParameters80[i];
         if (settings.w < .5) continue;
-        float elapsed = _PointAnimationTime - _SonarPulseOrigins[i].w;
+        float elapsed = _PointAnimationTime - _SonarPulseOrigins80[i].w;
         if (elapsed < 0 || elapsed >= settings.x / settings.y + settings.z) continue;
-        float3 delta = positionWS - _SonarPulseOrigins[i].xyz;
+        float3 delta = positionWS - _SonarPulseOrigins80[i].xyz;
         float distance = length(delta);
         if (distance > settings.x || distance < .0001) continue;
-        float4 attenuation = _SonarPulseDistanceFalloffs[i];
+        float4 attenuation = _SonarPulseDistanceFalloffs80[i];
         float distanceGain = attenuation.w;
         if (attenuation.z > 0)
         {
@@ -80,7 +80,7 @@ PulseReveals SonarVisibility(float3 positionWS, float3 normalWS, float orderedRa
             if (distance >= attenuation.y) continue;
             distanceGain *= pow(saturate(1 - smoothstep(attenuation.x, attenuation.y, distance)), attenuation.z);
         }
-        float4 thinning = _SonarPulseDensityFalloffs[i];
+        float4 thinning = _SonarPulseDensityFalloffs80[i];
         float densityGain = 1;
         if (thinning.w>.5)
         {
@@ -91,7 +91,7 @@ PulseReveals SonarVisibility(float3 positionWS, float3 normalWS, float orderedRa
         if (age < 0 || age >= settings.z) continue;
         // Read the original blocker cubemap in its original frame after a doorway transfer.
         // Distance/fade and world-space density above/below remain in the arrival space.
-        float2 basis = _SonarBlockerRotations[i].xy;
+        float2 basis = _SonarBlockerRotations80[i].xy;
         delta.xz = float2(basis.x * delta.x - basis.y * delta.z, basis.y * delta.x + basis.x * delta.z);
         float3 magnitude = abs(delta);
         int face;
@@ -111,7 +111,7 @@ PulseReveals SonarVisibility(float3 positionWS, float3 normalWS, float orderedRa
         if (thinning.w>.5) reach=min(reach,thinning.y);
         float referenceRange = max(.001, min(_RevealDistance, _DistanceBands.w));
         float patternScale = max(.001, reach / referenceRange);
-        float density = FaceDensityAt(positionWS, normalWS, _SonarPulseOrigins[i].xyz, patternScale, true)
+        float density = FaceDensityAt(positionWS, normalWS, _SonarPulseOrigins80[i].xyz, patternScale, true)
             * saturate(_FaceDensityScale) * densityGain;
         float2 visibility = float2(orderedRank < densityGain ? reveal : 0, orderedRank < density ? reveal : 0);
         if (i>=SONAR_LIGHTNING_OFFSET) brightness.lightning=max(brightness.lightning,visibility);
