@@ -69,6 +69,16 @@ internal sealed class StoryRunProgress : ICollectibleProgress
         collected.Clear();
         placedMemories.Clear();
         enteredBossRoom = startedBoss = diedAfterBossStarted = defeatedBoss = bossReturnPending = false;
+#if UNITY_EDITOR
+        ClearEditorProgress();
+        loadedEditorProgress = false;
+#endif
+    }
+
+    internal void ResetForNewGame()
+    {
+        ResetRunState();
+        EndingProgressChanged?.Invoke();
     }
 
     public IReadOnlyCollection<string> CollectedIds
@@ -118,13 +128,17 @@ internal sealed class StoryRunProgress : ICollectibleProgress
     const string EditorPlacedKey = EditorProgressKey + ".Placed";
     bool loadedEditorProgress;
 
-    // A script reload can happen during a run. Clear the recovery data only on a new Play transition.
+    // A script reload during the same run must keep its recovery data.
     [UnityEditor.InitializeOnLoadMethod]
     static void WatchEditorPlayMode() => UnityEditor.EditorApplication.playModeStateChanged += ResetEditorRun;
 
     static void ResetEditorRun(UnityEditor.PlayModeStateChange state)
     {
-        if (state != UnityEditor.PlayModeStateChange.ExitingEditMode) return;
+        if (state == UnityEditor.PlayModeStateChange.ExitingEditMode) Current.ResetRunState();
+    }
+
+    static void ClearEditorProgress()
+    {
         UnityEditor.SessionState.EraseString(EditorProgressKey);
         UnityEditor.SessionState.EraseString(EditorPlacedKey);
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".EnteredBoss");
@@ -132,8 +146,6 @@ internal sealed class StoryRunProgress : ICollectibleProgress
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".BossDeath");
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".BossVictory");
         UnityEditor.SessionState.EraseBool(EditorProgressKey + ".BossReturnPending");
-        Current.ResetRunState();
-        Current.loadedEditorProgress = false;
     }
 #else
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

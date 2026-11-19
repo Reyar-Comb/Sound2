@@ -94,6 +94,7 @@ public sealed class SoundShellOpening : MonoBehaviour
         // Finish at exact silence before the card, even when a frame straddles the fade boundary.
         roomMusic.Stop();
         if (titleReady) endingTitle.EndEndingCredits();
+        StoryRunProgress.Current.ResetForNewGame();
         yield return ShowCard(worldCard);
     }
 
@@ -372,7 +373,7 @@ public sealed class SoundShellOpening : MonoBehaviour
         player.GetComponent<PlayerPickup>()?.ClearForRespawn();
         StorySubtitles.Clear();
         DeveloperMode.ResetForNewGame();
-        // Reload the title and scene objects while keeping the current run's story progress.
+        // Reload the title and all scene-local gameplay state.
         yield return new WaitForEndOfFrame();
         string path = world.gameObject.scene.path;
         if (string.IsNullOrEmpty(path)) path = "Assets/Scenes/SoundAndShell.unity";

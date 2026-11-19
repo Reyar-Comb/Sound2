@@ -4147,14 +4147,6 @@ PrefabInstance:
       propertyPath: output
       value: 
       objectReference: {fileID: 5995543615163531479}
-    - target: {fileID: 3047326352703695177, guid: 210bc21bc29559f4b98c92e08144c7ed, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -2.9999998
-      objectReference: {fileID: 0}
-    - target: {fileID: 3047326352703695177, guid: 210bc21bc29559f4b98c92e08144c7ed, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -1.7649994
-      objectReference: {fileID: 0}
     - target: {fileID: 3736741722189426867, guid: 210bc21bc29559f4b98c92e08144c7ed, type: 3}
       propertyPath: emissionOrigin
       value: 
