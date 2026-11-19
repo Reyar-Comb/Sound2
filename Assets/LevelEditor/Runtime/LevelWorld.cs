@@ -235,7 +235,9 @@ namespace Sound2.LevelEditing
         {
             if(player!=null&&startingPoint!=null)player.Teleport(startingPoint.position);
             if(player!=null&&GetComponent<ElevatorHudContrast>()==null)gameObject.AddComponent<ElevatorHudContrast>();
+#if UNITY_EDITOR
             if (player != null && GetComponent<LevelConsole>() == null) gameObject.AddComponent<LevelConsole>();
+#endif
             if (player != null && GetComponent<WorldRoomAcoustics>() == null) gameObject.AddComponent<WorldRoomAcoustics>();
         }
         public bool TryDestination(LevelElevator source,out LevelElevator destination,out float seconds)

@@ -125,8 +125,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         var k = Keyboard.current;
         var m = Mouse.current;
         // Console text (boss4, tp, etc.) must not also toggle renderer/debug controls.
-        bool allowControls = GetComponentInParent<PlayerController>()?.InputSuspended != true;
-        if (k != null && allowControls)
+        if (k != null && InputCaptured)
         {
             if (k.escapeKey.wasPressedThisFrame || k.tabKey.wasPressedThisFrame) Capture(false);
             if (k.fKey.wasPressedThisFrame) automatic = !automatic;
@@ -143,14 +142,15 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         }
         PlayerUiPointMask.SetLegacyPanel(this, HudRect, hud);
         if (automatic && Time.time >= nextEmission) Emit();
-        if (m == null || !allowControls) return;
+        if (m == null || !m.leftButton.wasPressedThisFrame) return;
         var mousePosition = m.position.ReadValue();
         bool overHud = hud && HudRect.Contains(new Vector2(mousePosition.x, Screen.height - mousePosition.y));
-        if (m.leftButton.wasPressedThisFrame && (InputCaptured || !overHud))
+        if (!InputCaptured)
         {
-            if (!InputCaptured) Capture(true);
-            if (leftClickScanEnabled) Emit();
+            if (overHud || player == null || !player.CanRecaptureCursor) return;
+            Capture(true);
         }
+        if (leftClickScanEnabled) Emit();
     }
 
     public bool Emit()
@@ -174,7 +174,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
 
     public void ClearPulses() { if (PulseField != null) PulseField.ClearPulses(); }
     void Capture(bool active) { if (player != null) player.SetInputCaptured(active); }
-    void OnApplicationFocus(bool focused) { if (!focused) Capture(false); }
+    void OnApplicationFocus(bool focused) { if (!focused && InputCaptured) Capture(false); }
     void OnDisable()
     {
         PlayerUiPointMask.SetLegacyPanel(this, HudRect, false);

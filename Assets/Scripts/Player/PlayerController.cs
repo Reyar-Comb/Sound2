@@ -28,13 +28,20 @@ public sealed class PlayerController : MonoBehaviour
     private InputAction jumpAction;
     private Vector3 pushVelocity;
     public event System.Action<float> Landed;
-    bool inputSuspended;
+    enum InputState { Active, CursorReleased, Suspended }
+    InputState inputState;
     public bool DeathSequenceLocked { get; internal set; }
     internal bool EncounterInputLocked { get; set; }
     internal bool EncounterLookAllowed { get; set; }
     internal bool OpeningSequenceLocked { get; set; }
     bool consoleInputLocked;
-    public bool InputSuspended { get => inputSuspended || DeathSequenceLocked || EncounterInputLocked || OpeningSequenceLocked || consoleInputLocked; set => inputSuspended = value; }
+    bool GameplayInputLocked => DeathSequenceLocked || EncounterInputLocked || OpeningSequenceLocked || consoleInputLocked;
+    internal bool CanRecaptureCursor => isActiveAndEnabled && inputState == InputState.CursorReleased && !GameplayInputLocked;
+    public bool InputSuspended
+    {
+        get => inputState != InputState.Active || GameplayInputLocked;
+        set => inputState = value ? InputState.Suspended : InputState.Active;
+    }
     public bool TransportLocked { get; set; }
     public Transform ViewTransform => cameraTransform;
     public Quaternion AimLocalRotation => Quaternion.Euler(pitch, 0f, 0f);
@@ -93,7 +100,7 @@ public sealed class PlayerController : MonoBehaviour
     {
         if(SonicSpaceStartMenu.BlocksGameplay)captured=false;
         if (captured) EnableJumpInput();
-        InputSuspended = !captured;
+        inputState = captured ? InputState.Active : InputState.CursorReleased;
         ApplyCursorCapture(captured && isActiveAndEnabled);
     }
 
@@ -190,7 +197,7 @@ public sealed class PlayerController : MonoBehaviour
         if (!characterController.enabled) return;
         if (InputSuspended)
         {
-            if (EncounterInputLocked && EncounterLookAllowed && !inputSuspended && !DeathSequenceLocked
+            if (EncounterInputLocked && EncounterLookAllowed && inputState == InputState.Active && !DeathSequenceLocked
                 && !OpeningSequenceLocked && !consoleInputLocked && !SonicSpaceStartMenu.BlocksGameplay)
                 ApplyLookInput();
             return;
