@@ -89,6 +89,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
     bool ownsCue;
     float nextEmission;
     [SerializeField] bool hud;
+    bool HudVisible => Application.isEditor && hud;
     static readonly Rect HudRect = new Rect(16, 16, 480, 305);
     bool InputCaptured => player != null && player.isActiveAndEnabled && !player.InputSuspended;
 
@@ -129,6 +130,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
         {
             if (k.escapeKey.wasPressedThisFrame || k.tabKey.wasPressedThisFrame) Capture(false);
             if (k.fKey.wasPressedThisFrame) automatic = !automatic;
+#if UNITY_EDITOR
             if (k.f1Key.wasPressedThisFrame) hud = !hud;
             if (k.digit1Key.wasPressedThisFrame) facePoints = !facePoints;
             if (k.digit2Key.wasPressedThisFrame) edgePoints = !edgePoints;
@@ -137,14 +139,15 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
             if (k.digit5Key.wasPressedThisFrame) distanceAttenuation = !distanceAttenuation;
             if (k.digit6Key.wasPressedThisFrame && footsteps != null)
                 footsteps.emissionEnabled = !footsteps.emissionEnabled;
+#endif
             if (k.rKey.wasPressedThisFrame) ClearPulses();
             if (k.enterKey.wasPressedThisFrame) Emit();
         }
-        PlayerUiPointMask.SetLegacyPanel(this, HudRect, hud);
+        PlayerUiPointMask.SetLegacyPanel(this, HudRect, HudVisible);
         if (automatic && Time.time >= nextEmission) Emit();
         if (m == null || !m.leftButton.wasPressedThisFrame) return;
         var mousePosition = m.position.ReadValue();
-        bool overHud = hud && HudRect.Contains(new Vector2(mousePosition.x, Screen.height - mousePosition.y));
+        bool overHud = HudVisible && HudRect.Contains(new Vector2(mousePosition.x, Screen.height - mousePosition.y));
         if (!InputCaptured)
         {
             if (overHud || player == null || !player.CanRecaptureCursor) return;
@@ -189,7 +192,7 @@ public sealed class SphericalSonar : MonoBehaviour, ISerializationCallbackReceiv
 
     void OnGUI()
     {
-        if (!hud) return;
+        if (!HudVisible) return;
         var previousFont = GUI.skin.font;
         if (GameUiTheme.Current != null && GameUiTheme.Current.legacyFont != null) GUI.skin.font = GameUiTheme.Current.legacyFont;
         GUILayout.BeginArea(HudRect, GUI.skin.box);

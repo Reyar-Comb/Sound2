@@ -29,16 +29,19 @@ public sealed class BlackBoxCenterControls : MonoBehaviour
         source = GetComponent<BlackBoxProximitySource>();
         player = GetComponent<PlayerController>();
         // Project-wide Input Actions own their lifetime; this component only owns its callbacks.
+#if UNITY_EDITOR
         foreach (var reference in styleShortcuts)
         {
             reference.action.performed += OnStyleShortcut;
         }
+#endif
         menuAction.action.performed += OnMenu;
         closeAction.action.performed += OnClose;
         SetMenuOpen(false);
         SyncToggles();
     }
 
+#if UNITY_EDITOR
     private void OnStyleShortcut(InputAction.CallbackContext context)
     {
         if(SonicSpaceStartMenu.BlocksGameplay)return;
@@ -50,6 +53,7 @@ public sealed class BlackBoxCenterControls : MonoBehaviour
                 break;
             }
     }
+#endif
     private void OnMenu(InputAction.CallbackContext context) => SetMenuOpen(!menuOpen);
     private void OnClose(InputAction.CallbackContext context) { if (menuOpen) SetMenuOpen(false); }
 
@@ -86,12 +90,14 @@ public sealed class BlackBoxCenterControls : MonoBehaviour
 
     private void OnDisable()
     {
+#if UNITY_EDITOR
         if (styleShortcuts != null)
             foreach (var reference in styleShortcuts)
                 if (reference != null && reference.action != null)
                 {
                     reference.action.performed -= OnStyleShortcut;
                 }
+#endif
         if (menuAction != null && menuAction.action != null)
         { menuAction.action.performed -= OnMenu; }
         if (closeAction != null && closeAction.action != null)
